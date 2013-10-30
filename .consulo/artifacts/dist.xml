@@ -6,9 +6,11 @@
         <element id="directory" name="lib">
           <element id="zip-archive" name="junit.jar">
             <element id="module-output" name="consulo-junit" />
+            <element id="module-production-resource-output" name="consulo-junit" />
           </element>
           <element id="zip-archive" name="junit-rt.jar">
             <element id="module-output" name="junit-rt" />
+            <element id="module-production-resource-output" name="junit-rt" />
           </element>
         </element>
       </element>
