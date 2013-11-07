@@ -16,6 +16,8 @@
 
 package com.intellij.execution.junit;
 
+import org.mustbe.consulo.roots.ContentFolderScopes;
+import org.mustbe.consulo.roots.impl.TestContentFolderTypeProvider;
 import com.intellij.execution.actions.ConfigurationContext;
 import com.intellij.execution.junit2.info.LocationUtil;
 import com.intellij.openapi.module.Module;
@@ -23,7 +25,6 @@ import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ContentEntry;
 import com.intellij.openapi.roots.ContentFolder;
-import com.intellij.openapi.roots.ContentFolderType;
 import com.intellij.openapi.roots.ModuleRootManager;
 import com.intellij.openapi.util.Ref;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -48,7 +49,7 @@ public class AllInDirectoryConfigurationProducer extends JUnitConfigurationProdu
     final ContentEntry[] entries = ModuleRootManager.getInstance(module).getContentEntries();
     int testRootCount = 0;
     for (ContentEntry entry : entries) {
-      for (ContentFolder sourceFolder : entry.getFolders(ContentFolderType.TEST)) {
+      for (ContentFolder sourceFolder : entry.getFolders(ContentFolderScopes.of(TestContentFolderTypeProvider.getInstance()))) {
         testRootCount++;
         if (testRootCount > 1) {
           break;
