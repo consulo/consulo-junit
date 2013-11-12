@@ -16,6 +16,12 @@
 
 package com.intellij.execution.junit;
 
+import javax.swing.Icon;
+
+import org.consulo.java.module.extension.JavaModuleExtension;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.mustbe.consulo.module.extension.ModuleExtensionHelper;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.configuration.ConfigurationFactoryEx;
 import com.intellij.execution.configurations.ConfigurationFactory;
@@ -26,51 +32,69 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.extensions.Extensions;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.containers.ContainerUtil;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
+public class JUnitConfigurationType implements ConfigurationType
+{
+	private final ConfigurationFactory myFactory;
 
-public class JUnitConfigurationType implements ConfigurationType {
-  private final ConfigurationFactory myFactory;
+	public JUnitConfigurationType()
+	{
+		myFactory = new ConfigurationFactoryEx(this)
+		{
+			@Override
+			public RunConfiguration createTemplateConfiguration(Project project)
+			{
+				return new JUnitConfiguration("", project, this);
+			}
 
-  /**reflection*/
-  public JUnitConfigurationType() {
-    myFactory = new ConfigurationFactoryEx(this) {
-      public RunConfiguration createTemplateConfiguration(Project project) {
-        return new JUnitConfiguration("", project, this);
-      }
+			@Override
+			public void onNewConfigurationCreated(@NotNull RunConfiguration configuration)
+			{
+				((ModuleBasedConfiguration) configuration).onNewConfigurationCreated();
+			}
 
-      @Override
-      public void onNewConfigurationCreated(@NotNull RunConfiguration configuration) {
-        ((ModuleBasedConfiguration)configuration).onNewConfigurationCreated();
-      }
-    };
-  }
+			@Override
+			public boolean isApplicable(@NotNull Project project)
+			{
+				return ModuleExtensionHelper.getInstance(project).hasModuleExtension(JavaModuleExtension.class);
+			}
+		};
+	}
 
-  public String getDisplayName() {
-    return ExecutionBundle.message("junit.configuration.display.name");
-  }
+	@Override
+	public String getDisplayName()
+	{
+		return ExecutionBundle.message("junit.configuration.display.name");
+	}
 
-  public String getConfigurationTypeDescription() {
-    return ExecutionBundle.message("junit.configuration.description");
-  }
+	@Override
+	public String getConfigurationTypeDescription()
+	{
+		return ExecutionBundle.message("junit.configuration.description");
+	}
 
-  public Icon getIcon() {
-    return AllIcons.RunConfigurations.Junit;
-  }
+	@Override
+	public Icon getIcon()
+	{
+		return AllIcons.RunConfigurations.Junit;
+	}
 
-  public ConfigurationFactory[] getConfigurationFactories() {
-    return new ConfigurationFactory[]{myFactory};
-  }
+	@Override
+	public ConfigurationFactory[] getConfigurationFactories()
+	{
+		return new ConfigurationFactory[]{myFactory};
+	}
 
-  @NotNull
-  public String getId() {
-    return "JUnit";
-  }
+	@Override
+	@NotNull
+	public String getId()
+	{
+		return "JUnit";
+	}
 
-  @Nullable
-  public static JUnitConfigurationType getInstance() {
-    return ContainerUtil.findInstance(Extensions.getExtensions(CONFIGURATION_TYPE_EP), JUnitConfigurationType.class);
-  }
+	@Nullable
+	public static JUnitConfigurationType getInstance()
+	{
+		return ContainerUtil.findInstance(Extensions.getExtensions(CONFIGURATION_TYPE_EP), JUnitConfigurationType.class);
+	}
 }
