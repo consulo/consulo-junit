@@ -16,6 +16,9 @@
 
 package com.intellij.execution.junit2.ui.actions;
 
+import javax.swing.JComponent;
+
+import org.jetbrains.annotations.NonNls;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.Location;
 import com.intellij.execution.junit2.TestProxy;
@@ -27,59 +30,72 @@ import com.intellij.execution.testframework.TestFrameworkRunningModel;
 import com.intellij.execution.testframework.TestsUIUtil;
 import com.intellij.execution.testframework.ToolbarPanel;
 import com.intellij.execution.testframework.actions.ScrollToTestSourceAction;
+import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.project.Project;
 import com.intellij.pom.Navigatable;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.config.ToggleBooleanProperty;
-import org.jetbrains.annotations.NonNls;
 
-import javax.swing.*;
+public class JUnitToolbarPanel extends ToolbarPanel
+{
+	@NonNls
+	protected static final String TEST_SUITE_CLASS_NAME = "junit.framework.TestSuite";
 
-public class JUnitToolbarPanel extends ToolbarPanel {
-  @NonNls protected static final String TEST_SUITE_CLASS_NAME = "junit.framework.TestSuite";
+	public JUnitToolbarPanel(final TestConsoleProperties properties, final ExecutionEnvironment environment, final JComponent parentComponent)
+	{
+		super(properties, environment, parentComponent);
+	}
 
-  public JUnitToolbarPanel(final TestConsoleProperties properties,
-                           final ExecutionEnvironment environment,
-                           final JComponent parentComponent) {
-    super(properties, environment, parentComponent);
-  }
-
-  @Override
-  protected void appendAdditionalActions(DefaultActionGroup actionGroup,
-                                         TestConsoleProperties properties,
-                                         ExecutionEnvironment environment, JComponent parent) {
-    super.appendAdditionalActions(actionGroup, properties, environment, parent);
-    actionGroup.addAction(new ToggleBooleanProperty(
-      ExecutionBundle.message("junit.runing.info.include.non.started.in.rerun.failed.action.name"),
-      null,
-      null,
-      properties, TestConsoleProperties.INCLUDE_NON_STARTED_IN_RERUN_FAILED)).setAsSecondary(true);
-  }
+	@Override
+	protected void appendAdditionalActions(
+			DefaultActionGroup actionGroup, TestConsoleProperties properties, ExecutionEnvironment environment, JComponent parent)
+	{
+		super.appendAdditionalActions(actionGroup, properties, environment, parent);
+		actionGroup.addAction(new ToggleBooleanProperty(ExecutionBundle.message("junit.runing.info.include.non.started.in.rerun.failed.action.name")
+				, null, AllIcons.RunConfigurations.IncludeNonStartedTests_Rerun, properties,
+				TestConsoleProperties.INCLUDE_NON_STARTED_IN_RERUN_FAILED)).setAsSecondary(true);
+	}
 
 
-  public void setModel(final TestFrameworkRunningModel model) {
-    super.setModel(model);
-    final JUnitRunningModel jUnitModel = (JUnitRunningModel)model;
-    JUnitActions.installAutoscrollToFirstDefect(jUnitModel);
-    RunningTestTracker.install(jUnitModel);
-    jUnitModel.addListener(new LvcsLabeler(jUnitModel));
-    jUnitModel.addListener(new JUnitAdapter() {
-      public void onTestSelected(final TestProxy test) {
-        if (test == null) return;
-        final Project project = jUnitModel.getProject();
-        if (!ScrollToTestSourceAction.isScrollEnabled(model)) return;
-        final Location location = test.getInfo().getLocation(project, jUnitModel.getProperties().getScope());
-        if (location != null) {
-          final PsiClass aClass = PsiTreeUtil.getParentOfType(location.getPsiElement(), PsiClass.class, false);
-          if (aClass != null && JUnitToolbarPanel.TEST_SUITE_CLASS_NAME.equals(aClass.getQualifiedName())) return;
-        }
-        final Navigatable descriptor = TestsUIUtil.getOpenFileDescriptor(test, model);
-        if (descriptor != null && descriptor.canNavigate()) {
-          descriptor.navigate(false);
-        }
-      }
-    });
-  }
+	@Override
+	public void setModel(final TestFrameworkRunningModel model)
+	{
+		super.setModel(model);
+		final JUnitRunningModel jUnitModel = (JUnitRunningModel) model;
+		JUnitActions.installAutoscrollToFirstDefect(jUnitModel);
+		RunningTestTracker.install(jUnitModel);
+		jUnitModel.addListener(new LvcsLabeler(jUnitModel));
+		jUnitModel.addListener(new JUnitAdapter()
+		{
+			@Override
+			public void onTestSelected(final TestProxy test)
+			{
+				if(test == null)
+				{
+					return;
+				}
+				final Project project = jUnitModel.getProject();
+				if(!ScrollToTestSourceAction.isScrollEnabled(model))
+				{
+					return;
+				}
+				final Location location = test.getInfo().getLocation(project, jUnitModel.getProperties().getScope());
+				if(location != null)
+				{
+					final PsiClass aClass = PsiTreeUtil.getParentOfType(location.getPsiElement(), PsiClass.class, false);
+					if(aClass != null && JUnitToolbarPanel.TEST_SUITE_CLASS_NAME.equals(aClass.getQualifiedName()))
+					{
+						return;
+					}
+				}
+				final Navigatable descriptor = TestsUIUtil.getOpenFileDescriptor(test, model);
+				if(descriptor != null && descriptor.canNavigate())
+				{
+					descriptor.navigate(false);
+				}
+			}
+		});
+	}
 }
