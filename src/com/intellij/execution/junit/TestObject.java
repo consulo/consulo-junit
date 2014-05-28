@@ -122,10 +122,7 @@ public abstract class TestObject implements JavaCommandLine
 	public File myListenersFile;
 
 	public static TestObject fromString(
-			final String id,
-			final Project project,
-			final JUnitConfiguration configuration,
-			ExecutionEnvironment environment)
+			final String id, final Project project, final JUnitConfiguration configuration, ExecutionEnvironment environment)
 	{
 		if(JUnitConfiguration.TEST_METHOD.equals(id))
 		{
@@ -173,15 +170,10 @@ public abstract class TestObject implements JavaCommandLine
 	public abstract RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration);
 
 	public abstract boolean isConfiguredByElement(
-			JUnitConfiguration configuration,
-			PsiClass testClass,
-			PsiMethod testMethod,
-			PsiJavaPackage testPackage);
+			JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiJavaPackage testPackage);
 
 	protected void configureModule(
-			final JavaParameters parameters,
-			final RunConfigurationModule configurationModule,
-			final String mainClassName) throws CantRunException
+			final JavaParameters parameters, final RunConfigurationModule configurationModule, final String mainClassName) throws CantRunException
 	{
 		int classPathType = JavaParametersUtil.getClasspathType(configurationModule, mainClassName, true);
 		JavaParametersUtil.configureModule(configurationModule, parameters, classPathType, myConfiguration.isAlternativeJrePathEnabled() ?
@@ -204,10 +196,7 @@ public abstract class TestObject implements JavaCommandLine
 
 		@Override
 		public boolean isConfiguredByElement(
-				final JUnitConfiguration configuration,
-				PsiClass testClass,
-				PsiMethod testMethod,
-				PsiJavaPackage testPackage)
+				final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiJavaPackage testPackage)
 		{
 			return false;
 		}
@@ -464,9 +453,8 @@ public abstract class TestObject implements JavaCommandLine
 
 	private ExecutionResult useSmRunner(Executor executor, JUnitProcessHandler handler)
 	{
-		TestConsoleProperties testConsoleProperties = new SMTRunnerConsoleProperties(new RuntimeConfigurationProducer
-				.DelegatingRuntimeConfiguration<JUnitConfiguration>((JUnitConfiguration) myEnvironment.getRunProfile()), JUNIT_TEST_FRAMEWORK_NAME,
-				executor);
+		TestConsoleProperties testConsoleProperties = new SMTRunnerConsoleProperties((JUnitConfiguration) myEnvironment.getRunProfile(),
+				JUNIT_TEST_FRAMEWORK_NAME, executor);
 
 		testConsoleProperties.setIfUndefined(TestConsoleProperties.HIDE_PASSED_TESTS, false);
 
@@ -589,11 +577,7 @@ public abstract class TestObject implements JavaCommandLine
 	}
 
 	protected <T> void addClassesListToJavaParameters(
-			Collection<? extends T> elements,
-			Function<T, String> nameFunction,
-			String packageName,
-			boolean createTempFile,
-			boolean junit4)
+			Collection<? extends T> elements, Function<T, String> nameFunction, String packageName, boolean createTempFile, boolean junit4)
 	{
 		try
 		{

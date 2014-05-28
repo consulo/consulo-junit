@@ -20,21 +20,27 @@
  */
 package com.intellij.execution.junit;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import javax.swing.Icon;
+
+import org.jetbrains.annotations.NotNull;
 import com.intellij.execution.RunManager;
 import com.intellij.execution.configurations.RunConfiguration;
-import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.actionSystem.LangDataKeys;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.ui.popup.PopupStep;
 import com.intellij.openapi.ui.popup.util.BaseListPopupStep;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMember;
-import org.jetbrains.annotations.NotNull;
-
-import javax.swing.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 public class AddToTestsPatternAction extends AnAction {
   @Override
@@ -97,7 +103,7 @@ public class AddToTestsPatternAction extends AnAction {
   }
 
   private static List<JUnitConfiguration> collectPatternConfigurations(Set<PsiMember> foundClasses, Project project) {
-    final RunConfiguration[] configurations = RunManager.getInstance(project).getConfigurations(JUnitConfigurationType.getInstance());
+    final List<RunConfiguration> configurations = RunManager.getInstance(project).getConfigurationsList(JUnitConfigurationType.getInstance());
     final List<JUnitConfiguration> foundConfigurations = new ArrayList<JUnitConfiguration>();
     for (RunConfiguration configuration : configurations) {
       final JUnitConfiguration.Data data = ((JUnitConfiguration)configuration).getPersistentData();

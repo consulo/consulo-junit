@@ -16,6 +16,16 @@
 
 package com.intellij.execution.junit2.ui.model;
 
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+
+import javax.swing.JTree;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+
 import com.intellij.execution.junit.JUnitConfiguration;
 import com.intellij.execution.junit2.TestProxy;
 import com.intellij.execution.junit2.ui.Animator;
@@ -32,185 +42,244 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.util.ui.tree.TreeUtil;
 
-import javax.swing.*;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
+public class JUnitRunningModel implements TestFrameworkRunningModel
+{
+	private final TestProgress myProgress;
+	private final TestProxy myRoot;
+	private final JUnitConsoleProperties myProperties;
+	private final MyTreeSelectionListener myTreeListener = new MyTreeSelectionListener();
+	private JTree myTreeView;
+	private TestTreeBuilder myTreeBuilder;
 
-public class JUnitRunningModel implements TestFrameworkRunningModel {
-  private final TestProgress myProgress;
-  private final TestProxy myRoot;
-  private final JUnitConsoleProperties myProperties;
-  private final MyTreeSelectionListener myTreeListener = new MyTreeSelectionListener();
-  private JTree myTreeView;
-  private TestTreeBuilder myTreeBuilder;
+	private final JUnitListenersNotifier myNotifier = new JUnitListenersNotifier();
+	private final Animator myAnimator;
 
-  private final JUnitListenersNotifier myNotifier = new JUnitListenersNotifier();
-  private final Animator myAnimator;
+	public JUnitRunningModel(final TestProxy root, final JUnitConsoleProperties properties)
+	{
+		myRoot = root;
+		myProperties = properties;
+		myRoot.setEventsConsumer(myNotifier);
+		myProgress = new TestProgress(this);
+		Disposer.register(this, myProgress);
+		Disposer.register(this, myTreeListener);
+		Disposer.register(this, new Disposable()
+		{
+			@Override
+			public void dispose()
+			{
+				myNotifier.fireDisposed(JUnitRunningModel.this);
+			}
+		});
+		myAnimator = new Animator(this);
+	}
 
-  public JUnitRunningModel(final TestProxy root, final JUnitConsoleProperties properties) {
-    myRoot = root;
-    myProperties = properties;
-    myRoot.setEventsConsumer(myNotifier);
-    myProgress = new TestProgress(this);
-    Disposer.register(this, myProgress);
-    Disposer.register(this, myTreeListener);
-    Disposer.register(this, new Disposable() {
-      public void dispose() {
-        myNotifier.fireDisposed(JUnitRunningModel.this);
-      }
-    });
-    myAnimator = new Animator(this);
-  }
+	@Override
+	public TestTreeBuilder getTreeBuilder()
+	{
+		return myTreeBuilder;
+	}
 
-  public TestTreeBuilder getTreeBuilder() {
-    return myTreeBuilder;
-  }
+	public void attachToTree(final TestTreeView treeView)
+	{
+		myTreeBuilder = new TestTreeBuilder(treeView, this, myProperties);
+		Disposer.register(this, myTreeBuilder);
+		myAnimator.setModel(this);
+		myTreeView = treeView;
+		selectTest(getRoot());
+		myTreeListener.install();
+	}
 
-  public void attachToTree(final TestTreeView treeView) {
-    myTreeBuilder = new TestTreeBuilder(treeView, this, myProperties);
-    Disposer.register(this, myTreeBuilder);
-    myAnimator.setModel(this);
-    myTreeView = treeView;
-    selectTest(getRoot());
-    myTreeListener.install();
-  }
-  
-  public JTree getTree() {
-    return myTreeView;
-  }
+	public JTree getTree()
+	{
+		return myTreeView;
+	}
 
-  public void dispose() {
-  }
+	@Override
+	public void dispose()
+	{
+	}
 
-  public TestTreeView getTreeView() {
-    return (TestTreeView) myTreeBuilder.getTree();
-  }
+	@Override
+	public TestTreeView getTreeView()
+	{
+		return (TestTreeView) myTreeBuilder.getTree();
+	}
 
-  public boolean hasTestSuites() {
-    return myRoot.hasChildSuites();
-  }
+	@Override
+	public boolean hasTestSuites()
+	{
+		return myRoot.hasChildSuites();
+	}
 
-  public TestProgress getProgress() {
-    return myProgress;
-  }
+	public TestProgress getProgress()
+	{
+		return myProgress;
+	}
 
-  public TestProxy getRoot() {
-    return myRoot;
-  }
+	@Override
+	public TestProxy getRoot()
+	{
+		return myRoot;
+	}
 
-  public void selectAndNotify(final AbstractTestProxy testProxy) {
-    selectTest((TestProxy)testProxy);
-    myNotifier.fireTestSelected((TestProxy)testProxy);
-  }
+	@Override
+	public void selectAndNotify(final AbstractTestProxy testProxy)
+	{
+		selectTest((TestProxy) testProxy);
+		myNotifier.fireTestSelected((TestProxy) testProxy);
+	}
 
-  public Project getProject() {
-    return myProperties.getProject();
-  }
+	public Project getProject()
+	{
+		return myProperties.getProject();
+	}
 
-  public JUnitConsoleProperties getProperties() { return myProperties; }
+	@Override
+	public JUnitConsoleProperties getProperties()
+	{
+		return myProperties;
+	}
 
-  public void selectTest(final TestProxy test) {
-    if (test == null) return;
+	public void selectTest(final TestProxy test)
+	{
+		if(test == null)
+		{
+			return;
+		}
 
-    myTreeBuilder.select(test, null);
-  }
+		myTreeBuilder.select(test, null);
+	}
 
-  public void expandTest(final TestProxy test) {
-    if (test == null) return;
+	public void expandTest(final TestProxy test)
+	{
+		if(test == null)
+		{
+			return;
+		}
 
-    myTreeBuilder.expand(test, null);
-  }
+		myTreeBuilder.expand(test, null);
+	}
 
 
-  public void collapse(final TestProxy test) {
-    if (test == getRoot())
-      return;
-    final TreePath path = pathToTest(test, false);
-    if (path == null) return;
-    myTreeView.collapsePath(path);
-  }
+	public void collapse(final TestProxy test)
+	{
+		if(test == getRoot())
+		{
+			return;
+		}
+		final TreePath path = pathToTest(test, false);
+		if(path == null)
+		{
+			return;
+		}
+		myTreeView.collapsePath(path);
+	}
 
-  public JUnitListenersNotifier getNotifier() {
-    return myNotifier;
-  }
+	public JUnitListenersNotifier getNotifier()
+	{
+		return myNotifier;
+	}
 
-  public void setFilter(final Filter filter) {
-    final TestTreeStructure treeStructure = getStructure();
-    treeStructure.setFilter(filter);
-    myTreeBuilder.updateFromRoot();
-  }
+	@Override
+	public void setFilter(final Filter filter)
+	{
+		final TestTreeStructure treeStructure = getStructure();
+		treeStructure.setFilter(filter);
+		myTreeBuilder.queueUpdate();
+	}
 
-  public boolean isRunning() {
-    return myRoot.isInProgress();
-  }
+	@Override
+	public boolean isRunning()
+	{
+		return myRoot.isInProgress();
+	}
 
-  private TestTreeStructure getStructure() {
-    return (TestTreeStructure)myTreeBuilder.getTreeStructure();
-  }
+	private TestTreeStructure getStructure()
+	{
+		return (TestTreeStructure) myTreeBuilder.getTreeStructure();
+	}
 
-  public void addListener(final JUnitListener listener) {
-    myNotifier.addListener(listener);
-  }
+	public void addListener(final JUnitListener listener)
+	{
+		myNotifier.addListener(listener);
+	}
 
-  public void removeListener(final JUnitListener listener) {
-    myNotifier.removeListener(listener);
-  }
+	public void removeListener(final JUnitListener listener)
+	{
+		myNotifier.removeListener(listener);
+	}
 
-  public void onUIBuilt() {
-    //myNotifier.fireTestSelected(myRoot);
-  }
+	public void onUIBuilt()
+	{
+		//myNotifier.fireTestSelected(myRoot);
+	}
 
-  private TreePath pathToTest(final TestProxy test, final boolean expandIfCollapsed) {
-    final TestTreeBuilder treeBuilder = getTreeBuilder();
-    DefaultMutableTreeNode node = treeBuilder.getNodeForElement(test);
-    if (node == null && !expandIfCollapsed)
-      return null;
-    node = treeBuilder.ensureTestVisible(test);
-    if (node == null)
-      return null;
-    return TreeUtil.getPath((TreeNode) myTreeView.getModel().getRoot(), node);
-  }
+	private TreePath pathToTest(final TestProxy test, final boolean expandIfCollapsed)
+	{
+		final TestTreeBuilder treeBuilder = getTreeBuilder();
+		DefaultMutableTreeNode node = treeBuilder.getNodeForElement(test);
+		if(node == null && !expandIfCollapsed)
+		{
+			return null;
+		}
+		node = treeBuilder.ensureTestVisible(test);
+		if(node == null)
+		{
+			return null;
+		}
+		return TreeUtil.getPath((TreeNode) myTreeView.getModel().getRoot(), node);
+	}
 
-  public boolean hasInTree(final AbstractTestProxy test) {
-    return getStructure().getFilter().shouldAccept(test);
-  }
+	public boolean hasInTree(final AbstractTestProxy test)
+	{
+		return getStructure().getFilter().shouldAccept(test);
+	}
 
-  public JUnitConfiguration getConfiguration() {
-    return myProperties.getConfiguration();
-  }
+	public JUnitConfiguration getConfiguration()
+	{
+		return myProperties.getConfiguration();
+	}
 
-  private class MyTreeSelectionListener extends FocusAdapter implements TreeSelectionListener, Disposable {
+	private class MyTreeSelectionListener extends FocusAdapter implements TreeSelectionListener, Disposable
+	{
 
-    public void valueChanged(final TreeSelectionEvent e) {
-      final TestProxy test = TestProxyClient.from(e.getPath());
-      myNotifier.fireTestSelected(test);
-    }
+		@Override
+		public void valueChanged(final TreeSelectionEvent e)
+		{
+			final TestProxy test = TestProxyClient.from(e.getPath());
+			myNotifier.fireTestSelected(test);
+		}
 
-    public void focusGained(final FocusEvent e) {
-      ApplicationManager.getApplication().invokeLater(new Runnable() {
-            public void run() {
-              if (!myTreeBuilder.isDisposed()) {
-                myNotifier.fireTestSelected((TestProxy)getTreeView().getSelectedTest());
-              }
-            }
-          });
-    }
+		@Override
+		public void focusGained(final FocusEvent e)
+		{
+			ApplicationManager.getApplication().invokeLater(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					if(!myTreeBuilder.isDisposed())
+					{
+						myNotifier.fireTestSelected((TestProxy) getTreeView().getSelectedTest());
+					}
+				}
+			});
+		}
 
-    public void install() {
-      myTreeView.addTreeSelectionListener(this);
-      myTreeView.addFocusListener(this);
-    }
+		public void install()
+		{
+			myTreeView.addTreeSelectionListener(this);
+			myTreeView.addFocusListener(this);
+		}
 
-    public void dispose() {
-      if (myTreeView != null) {
-        myTreeView.removeTreeSelectionListener(this);
-        myTreeView.removeFocusListener(this);
-      }
-    }
-  }
+		@Override
+		public void dispose()
+		{
+			if(myTreeView != null)
+			{
+				myTreeView.removeTreeSelectionListener(this);
+				myTreeView.removeFocusListener(this);
+			}
+		}
+	}
 }
