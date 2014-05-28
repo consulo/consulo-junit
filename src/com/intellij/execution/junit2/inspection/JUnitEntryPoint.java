@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-/*
- * User: anna
- * Date: 28-May-2007
- */
 package com.intellij.execution.junit2.inspection;
 
+import org.jdom.Element;
+import org.jetbrains.annotations.NotNull;
 import com.intellij.codeInspection.InspectionsBundle;
 import com.intellij.codeInspection.reference.EntryPoint;
 import com.intellij.codeInspection.reference.RefElement;
@@ -34,70 +32,103 @@ import com.intellij.psi.PsiModifier;
 import com.intellij.psi.search.searches.ClassInheritorsSearch;
 import com.intellij.psi.util.PsiClassUtil;
 import com.intellij.util.CommonProcessors;
-import org.jdom.Element;
-import org.jetbrains.annotations.NotNull;
 
-public class JUnitEntryPoint extends EntryPoint {
-  public boolean ADD_JUNIT_TO_ENTRIES = true;
+/*
+ * User: anna
+ * Date: 28-May-2007
+ */
+public class JUnitEntryPoint extends EntryPoint
+{
+	public boolean ADD_JUNIT_TO_ENTRIES = true;
 
-  @NotNull
-  public String getDisplayName() {
-    return InspectionsBundle.message("inspection.dead.code.option2");
-  }
+	@Override
+	@NotNull
+	public String getDisplayName()
+	{
+		return InspectionsBundle.message("inspection.dead.code.option2");
+	}
 
-  public boolean isEntryPoint(RefElement refElement, PsiElement psiElement) {
-    return isEntryPoint(psiElement);
-  }
+	@Override
+	public boolean isEntryPoint(RefElement refElement, PsiElement psiElement)
+	{
+		return isEntryPoint(psiElement);
+	}
 
-  @Override
-  public boolean isEntryPoint(PsiElement psiElement) {
-    if (ADD_JUNIT_TO_ENTRIES) {
-      if (psiElement instanceof PsiClass) {
-        final PsiClass aClass = (PsiClass)psiElement;
-        if (JUnitUtil.isTestClass(aClass, false, true)) {
-          if (!PsiClassUtil.isRunnableClass(aClass, true, true)) {
-            final CommonProcessors.FindProcessor<PsiClass> findProcessor = new CommonProcessors.FindProcessor<PsiClass>() {
-              @Override
-              protected boolean accept(PsiClass psiClass) {
-                return !psiClass.hasModifierProperty(PsiModifier.ABSTRACT);
-              }
-            };
-            return !ClassInheritorsSearch.search(aClass).forEach(findProcessor) && findProcessor.isFound();
-          }
-          return true;
-        }
-      }
-      else if (psiElement instanceof PsiMethod) {
-        final PsiMethod method = (PsiMethod)psiElement;
-        if (method.isConstructor() && method.getParameterList().getParametersCount() == 0) {
-          return JUnitUtil.isTestClass(method.getContainingClass());
-        }
-        if (JUnitUtil.isTestMethodOrConfig(method)) return true;
-      }
-    }
-    return false;
-  }
+	@Override
+	public boolean isEntryPoint(PsiElement psiElement)
+	{
+		if(ADD_JUNIT_TO_ENTRIES)
+		{
+			if(psiElement instanceof PsiClass)
+			{
+				final PsiClass aClass = (PsiClass) psiElement;
+				if(JUnitUtil.isTestClass(aClass, false, true))
+				{
+					if(!PsiClassUtil.isRunnableClass(aClass, true, true))
+					{
+						final CommonProcessors.FindProcessor<PsiClass> findProcessor = new CommonProcessors.FindProcessor<PsiClass>()
+						{
+							@Override
+							protected boolean accept(PsiClass psiClass)
+							{
+								return !psiClass.hasModifierProperty(PsiModifier.ABSTRACT);
+							}
+						};
+						return !ClassInheritorsSearch.search(aClass).forEach(findProcessor) && findProcessor.isFound();
+					}
+					return true;
+				}
+			}
+			else if(psiElement instanceof PsiMethod)
+			{
+				final PsiMethod method = (PsiMethod) psiElement;
+				if(method.isConstructor() && method.getParameterList().getParametersCount() == 0)
+				{
+					return JUnitUtil.isTestClass(method.getContainingClass());
+				}
+				if(JUnitUtil.isTestMethodOrConfig(method))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
-  public boolean isSelected() {
-    return ADD_JUNIT_TO_ENTRIES;
-  }
+	@Override
+	public boolean isSelected()
+	{
+		return ADD_JUNIT_TO_ENTRIES;
+	}
 
-  public void setSelected(boolean selected) {
-    ADD_JUNIT_TO_ENTRIES = selected;
-  }
+	@Override
+	public void setSelected(boolean selected)
+	{
+		ADD_JUNIT_TO_ENTRIES = selected;
+	}
 
-  public void readExternal(Element element) throws InvalidDataException {
-    DefaultJDOMExternalizer.readExternal(this, element);
-  }
+	@Override
+	public void readExternal(Element element) throws InvalidDataException
+	{
+		DefaultJDOMExternalizer.readExternal(this, element);
+	}
 
-  public void writeExternal(Element element) throws WriteExternalException {
-    if (!ADD_JUNIT_TO_ENTRIES) {
-      DefaultJDOMExternalizer.writeExternal(this, element);
-    }
-  }
+	@Override
+	public void writeExternal(Element element) throws WriteExternalException
+	{
+		if(!ADD_JUNIT_TO_ENTRIES)
+		{
+			DefaultJDOMExternalizer.writeExternal(this, element);
+		}
+	}
 
-  @Override
-  public String[] getIgnoreAnnotations() {
-    return new String[]{"org.junit.Rule", "org.mockito.Mock", "org.junit.ClassRule"};
-  }
+	@Override
+	public String[] getIgnoreAnnotations()
+	{
+		return new String[]{
+				"org.junit.Rule",
+				"org.mockito.Mock",
+				"org.junit.ClassRule"
+		};
+	}
 }

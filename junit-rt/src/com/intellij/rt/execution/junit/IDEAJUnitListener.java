@@ -20,10 +20,13 @@
  */
 package com.intellij.rt.execution.junit;
 
-public interface IDEAJUnitListener {
-  String EP_NAME = "com.intellij.junitListener";
+import com.intellij.openapi.extensions.ExtensionPointName;
 
-  void testStarted(String className, String methodName);
-  void testFinished(String className, String methodName);
+public interface IDEAJUnitListener
+{
+	ExtensionPointName<IDEAJUnitListener> EP_NAME = ExtensionPointName.create("com.intellij.junitListener");
 
+	void testStarted(String className, String methodName);
+
+	void testFinished(String className, String methodName);
 }

@@ -274,9 +274,8 @@ public abstract class TestObject implements JavaCommandLine
 			ext.updateJavaParameters(myConfiguration, myJavaParameters, getRunnerSettings());
 		}
 
-		final Object[] listeners = Extensions.getExtensions(IDEAJUnitListener.EP_NAME);
 		final StringBuilder buf = new StringBuilder();
-		for(final Object listener : listeners)
+		for(final IDEAJUnitListener listener : IDEAJUnitListener.EP_NAME.getExtensions())
 		{
 			boolean enabled = true;
 			for(RunConfigurationExtension ext : Extensions.getExtensions(RunConfigurationExtension.EP_NAME))

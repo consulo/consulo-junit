@@ -25,14 +25,19 @@ import com.intellij.openapi.util.Condition;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 
-public class JUnitCantBeStaticExtension implements Condition<PsiElement> {
-  public boolean value(PsiElement member) {
-    if (member instanceof PsiMethod) {
-      PsiMethod method = (PsiMethod)member;
-      if (JUnitUtil.isTestMethodOrConfig(method)){
-        return true;
-      }
-    }
-    return false;
-  }
+public class JUnitCantBeStaticExtension implements Condition<PsiElement>
+{
+	@Override
+	public boolean value(PsiElement member)
+	{
+		if(member instanceof PsiMethod)
+		{
+			PsiMethod method = (PsiMethod) member;
+			if(JUnitUtil.isTestMethodOrConfig(method))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 }
