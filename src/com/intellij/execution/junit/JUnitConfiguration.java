@@ -30,6 +30,7 @@ import org.consulo.psi.PsiPackage;
 import org.jdom.Element;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
+import com.intellij.debugger.impl.GenericDebugRunnerConfiguration;
 import com.intellij.diagnostic.logging.LogConfigurationPanel;
 import com.intellij.execution.*;
 import com.intellij.execution.configuration.EnvironmentVariablesComponent;
@@ -60,7 +61,7 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.refactoring.listeners.RefactoringElementListener;
 
 public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigurationModule> implements CommonJavaRunConfigurationParameters,
-		RefactoringListenerProvider
+		RefactoringListenerProvider, GenericDebugRunnerConfiguration
 {
 	private static final Logger LOG = Logger.getInstance("#com.intellij.execution.junit.JUnitConfiguration");
 	public static final String DEFAULT_PACKAGE_NAME = ExecutionBundle.message("default.package.presentable.name");
