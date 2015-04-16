@@ -20,6 +20,7 @@
 	<description>Provides possibility to run JUnit 3.x and 4.x tests and view their results</description>
 	<version>SNAPSHOT</version>
 	<vendor>JetBrains</vendor>
+	<category>Test Frameworks</category>
 	<depends>org.consulo.java</depends>
 
 	<extensions defaultExtensionNs="org.consulo.java">
