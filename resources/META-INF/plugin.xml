@@ -18,7 +18,7 @@
 	<id>com.intellij.junit</id>
 	<name>JUnit</name>
 	<description>Provides possibility to run JUnit 3.x and 4.x tests and view their results</description>
-	<version>1.0</version>
+	<version>SNAPSHOT</version>
 	<vendor>JetBrains</vendor>
 	<depends>org.consulo.java</depends>
 
