@@ -16,36 +16,8 @@
 
 package com.intellij.execution.junit;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
-import org.consulo.java.module.extension.JavaModuleExtension;
-import org.jetbrains.annotations.NonNls;
-import org.jetbrains.annotations.NotNull;
-import com.intellij.execution.CantRunException;
-import com.intellij.execution.DefaultExecutionResult;
-import com.intellij.execution.ExecutionBundle;
-import com.intellij.execution.ExecutionException;
-import com.intellij.execution.ExecutionResult;
-import com.intellij.execution.Executor;
-import com.intellij.execution.JavaRunConfigurationExtensionManager;
-import com.intellij.execution.JavaTestPatcher;
-import com.intellij.execution.RunConfigurationExtension;
-import com.intellij.execution.configurations.CommandLineBuilder;
-import com.intellij.execution.configurations.GeneralCommandLine;
-import com.intellij.execution.configurations.JavaCommandLine;
-import com.intellij.execution.configurations.JavaParameters;
-import com.intellij.execution.configurations.RunConfigurationModule;
-import com.intellij.execution.configurations.RunnerSettings;
-import com.intellij.execution.configurations.RuntimeConfigurationError;
-import com.intellij.execution.configurations.RuntimeConfigurationException;
+import com.intellij.execution.*;
+import com.intellij.execution.configurations.*;
 import com.intellij.execution.junit2.TestProxy;
 import com.intellij.execution.junit2.segments.DeferredActionsQueue;
 import com.intellij.execution.junit2.segments.DeferredActionsQueueImpl;
@@ -62,13 +34,7 @@ import com.intellij.execution.process.ProcessAdapter;
 import com.intellij.execution.process.ProcessEvent;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.ProgramRunner;
-import com.intellij.execution.testframework.Printable;
-import com.intellij.execution.testframework.Printer;
-import com.intellij.execution.testframework.SourceScope;
-import com.intellij.execution.testframework.TestConsoleProperties;
-import com.intellij.execution.testframework.TestFrameworkRunningModel;
-import com.intellij.execution.testframework.TestSearchScope;
-import com.intellij.execution.testframework.TestsUIUtil;
+import com.intellij.execution.testframework.*;
 import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil;
 import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties;
 import com.intellij.execution.testframework.sm.runner.ui.SMTRunnerConsoleView;
@@ -104,6 +70,14 @@ import com.intellij.rt.execution.junit.JUnitStarter;
 import com.intellij.util.Function;
 import com.intellij.util.PathUtil;
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes;
+import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.NotNull;
+import org.mustbe.consulo.java.module.extension.JavaModuleExtension;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.*;
 
 public abstract class TestObject implements JavaCommandLine
 {

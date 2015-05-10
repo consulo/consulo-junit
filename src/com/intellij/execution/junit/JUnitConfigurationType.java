@@ -16,12 +16,6 @@
 
 package com.intellij.execution.junit;
 
-import javax.swing.Icon;
-
-import org.consulo.java.module.extension.JavaModuleExtension;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.mustbe.consulo.module.extension.ModuleExtensionHelper;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.configuration.ConfigurationFactoryEx;
 import com.intellij.execution.configurations.ConfigurationFactory;
@@ -32,6 +26,12 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.extensions.Extensions;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.containers.ContainerUtil;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.mustbe.consulo.java.module.extension.JavaModuleExtension;
+import org.mustbe.consulo.module.extension.ModuleExtensionHelper;
+
+import javax.swing.*;
 
 public class JUnitConfigurationType implements ConfigurationType
 {
