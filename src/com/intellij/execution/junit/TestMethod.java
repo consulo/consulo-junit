@@ -16,9 +16,18 @@
 
 package com.intellij.execution.junit;
 
+import org.jetbrains.annotations.NotNull;
 import com.intellij.codeInsight.AnnotationUtil;
-import com.intellij.execution.*;
-import com.intellij.execution.configurations.*;
+import com.intellij.execution.ExecutionBundle;
+import com.intellij.execution.ExecutionException;
+import com.intellij.execution.JavaExecutionUtil;
+import com.intellij.execution.ProgramRunnerUtil;
+import com.intellij.execution.PsiLocation;
+import com.intellij.execution.configurations.JavaRunConfigurationModule;
+import com.intellij.execution.configurations.RunConfigurationModule;
+import com.intellij.execution.configurations.RuntimeConfigurationError;
+import com.intellij.execution.configurations.RuntimeConfigurationException;
+import com.intellij.execution.configurations.RuntimeConfigurationWarning;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Comparing;
@@ -31,128 +40,174 @@ import com.intellij.refactoring.listeners.RefactoringElementAdapter;
 import com.intellij.refactoring.listeners.RefactoringElementListener;
 import com.intellij.refactoring.listeners.UndoRefactoringElementListener;
 import com.intellij.rt.execution.junit.JUnitStarter;
-import org.jetbrains.annotations.NotNull;
 
-class TestMethod extends TestObject {
-  public TestMethod(final Project project,
-                    final JUnitConfiguration configuration,
-                    ExecutionEnvironment environment) {
-    super(project, configuration, environment);
-  }
+class TestMethod extends TestObject
+{
+	public TestMethod(final JUnitConfiguration configuration, ExecutionEnvironment environment)
+	{
+		super(configuration, environment);
+	}
 
-  protected void initialize() throws ExecutionException {
-    defaultInitialize();
-    final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
-    RunConfigurationModule module = myConfiguration.getConfigurationModule();
-    configureModule(getJavaParameters(), module, data.getMainClassName());
-    addJUnit3Parameter(data, module.getProject());
-    getJavaParameters().getProgramParametersList().add(data.getMainClassName() + "," + data.getMethodName());
-  }
+	protected void initialize() throws ExecutionException
+	{
+		defaultInitialize();
+		final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
+		RunConfigurationModule module = myConfiguration.getConfigurationModule();
+		configureModule(getJavaParameters(), module, data.getMainClassName());
+		addJUnit3Parameter(data, module.getProject());
+		getJavaParameters().getProgramParametersList().add(data.getMainClassName() + "," + data.getMethodName());
+	}
 
-  protected void defaultInitialize() throws ExecutionException {
-    super.initialize();
-  }
+	protected void defaultInitialize() throws ExecutionException
+	{
+		super.initialize();
+	}
 
-  protected void addJUnit3Parameter(final JUnitConfiguration.Data data, Project project) {
-    final PsiClass psiClass = JavaExecutionUtil.findMainClass(project, data.getMainClassName(), GlobalSearchScope.allScope(project));
-    LOG.assertTrue(psiClass != null);
-    if (JUnitUtil.isJUnit4TestClass(psiClass)) {
-      return;
-    }
-    final String methodName = data.getMethodName();
-    final PsiMethod[] methods = psiClass.findMethodsByName(methodName, true);
-    for (PsiMethod method : methods) {
-      if (JUnitUtil.isTestAnnotated(method)) {
-        return;
-      }
-    }
-    myJavaParameters.getProgramParametersList().add(JUnitStarter.JUNIT3_PARAMETER);
-  }
+	protected void addJUnit3Parameter(final JUnitConfiguration.Data data, Project project)
+	{
+		final PsiClass psiClass = JavaExecutionUtil.findMainClass(project, data.getMainClassName(), GlobalSearchScope.allScope(project));
+		LOG.assertTrue(psiClass != null);
+		if(JUnitUtil.isJUnit4TestClass(psiClass))
+		{
+			return;
+		}
+		final String methodName = data.getMethodName();
+		final PsiMethod[] methods = psiClass.findMethodsByName(methodName, true);
+		for(PsiMethod method : methods)
+		{
+			if(JUnitUtil.isTestAnnotated(method))
+			{
+				return;
+			}
+		}
+		myJavaParameters.getProgramParametersList().add(JUnitStarter.JUNIT3_PARAMETER);
+	}
 
-  public String suggestActionName() {
-    return ProgramRunnerUtil.shortenName(myConfiguration.getPersistentData().METHOD_NAME, 2) + "()";
-  }
+	public String suggestActionName()
+	{
+		return ProgramRunnerUtil.shortenName(myConfiguration.getPersistentData().METHOD_NAME, 2) + "()";
+	}
 
-  public RefactoringElementListener getListener(final PsiElement element, final JUnitConfiguration configuration) {
-    if (element instanceof PsiMethod) {
-      final PsiMethod method = (PsiMethod)element;
-      if (!method.getName().equals(configuration.getPersistentData().getMethodName())) return null;
-      if (!method.getContainingClass().equals(configuration.myClass.getPsiElement())) return null;
-      class Listener extends RefactoringElementAdapter implements UndoRefactoringElementListener {
-        public void elementRenamedOrMoved(@NotNull final PsiElement newElement) {
-          final boolean generatedName = configuration.isGeneratedName();
-          configuration.getPersistentData().setTestMethod(PsiLocation.fromPsiElement((PsiMethod)newElement));
-          if (generatedName) configuration.setGeneratedName();
-        }
+	public RefactoringElementListener getListener(final PsiElement element, final JUnitConfiguration configuration)
+	{
+		if(element instanceof PsiMethod)
+		{
+			final PsiMethod method = (PsiMethod) element;
+			if(!method.getName().equals(configuration.getPersistentData().getMethodName()))
+			{
+				return null;
+			}
+			if(!method.getContainingClass().equals(configuration.myClass.getPsiElement()))
+			{
+				return null;
+			}
+			class Listener extends RefactoringElementAdapter implements UndoRefactoringElementListener
+			{
+				public void elementRenamedOrMoved(@NotNull final PsiElement newElement)
+				{
+					final boolean generatedName = configuration.isGeneratedName();
+					configuration.getPersistentData().setTestMethod(PsiLocation.fromPsiElement((PsiMethod) newElement));
+					if(generatedName)
+					{
+						configuration.setGeneratedName();
+					}
+				}
 
-        @Override
-        public void undoElementMovedOrRenamed(@NotNull PsiElement newElement, @NotNull String oldQualifiedName) {
-          final int methodIdx = oldQualifiedName.indexOf("#") + 1;
-          if (methodIdx <= 0 || methodIdx >= oldQualifiedName.length()) return;
-          final boolean generatedName = configuration.isGeneratedName();
-          configuration.getPersistentData().METHOD_NAME = oldQualifiedName.substring(methodIdx);
-          if (generatedName) configuration.setGeneratedName();
-        }
-      }
-      return new Listener();
-    }
-    else {
-      return RefactoringListeners.getClassOrPackageListener(element, configuration.myClass);
-    }
-  }
+				@Override
+				public void undoElementMovedOrRenamed(@NotNull PsiElement newElement, @NotNull String oldQualifiedName)
+				{
+					final int methodIdx = oldQualifiedName.indexOf("#") + 1;
+					if(methodIdx <= 0 || methodIdx >= oldQualifiedName.length())
+					{
+						return;
+					}
+					final boolean generatedName = configuration.isGeneratedName();
+					configuration.getPersistentData().METHOD_NAME = oldQualifiedName.substring(methodIdx);
+					if(generatedName)
+					{
+						configuration.setGeneratedName();
+					}
+				}
+			}
+			return new Listener();
+		}
+		else
+		{
+			return RefactoringListeners.getClassOrPackageListener(element, configuration.myClass);
+		}
+	}
 
 
-  public boolean isConfiguredByElement(final JUnitConfiguration configuration,
-                                       PsiClass testClass,
-                                       PsiMethod testMethod,
-                                       PsiJavaPackage testPackage) {
-    if (testMethod == null) return false;
-    if (testClass == null) return false;
-    final JUnitConfiguration.Data data = configuration.getPersistentData();
-    /*final PsiClass containingClass = testMethod.getContainingClass();
+	public boolean isConfiguredByElement(final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod,
+			PsiJavaPackage testPackage)
+	{
+		if(testMethod == null)
+		{
+			return false;
+		}
+		if(testClass == null)
+		{
+			return false;
+		}
+		final JUnitConfiguration.Data data = configuration.getPersistentData();
+	/*final PsiClass containingClass = testMethod.getContainingClass();
     if (testClass == null && (containingClass == null || !containingClass.hasModifierProperty(PsiModifier.ABSTRACT))) return false;
 
     if (containingClass != null && containingClass.hasModifierProperty(PsiModifier.ABSTRACT)) {
       return Comparing.equal(testMethod.getName(), data.getMethodName());
     }*/
-    return
-      Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), data.getMainClassName()) &&
-      Comparing.equal(testMethod.getName(), data.getMethodName());
-  }
+		return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), data.getMainClassName()) && Comparing.equal(testMethod.getName
+				(), data.getMethodName());
+	}
 
-  public void checkConfiguration() throws RuntimeConfigurationException {
-    super.checkConfiguration();
-    final JavaRunConfigurationModule configurationModule = myConfiguration.getConfigurationModule();
-    final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
-    final String testClass = data.getMainClassName();
-    final PsiClass psiClass = configurationModule.checkModuleAndClassName(testClass, ExecutionBundle.message("no.test.class.specified.error.text"));
+	public void checkConfiguration() throws RuntimeConfigurationException
+	{
+		super.checkConfiguration();
+		final JavaRunConfigurationModule configurationModule = myConfiguration.getConfigurationModule();
+		final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
+		final String testClass = data.getMainClassName();
+		final PsiClass psiClass = configurationModule.checkModuleAndClassName(testClass, ExecutionBundle.message("no.test.class.specified.error" +
+				".text"));
 
-    final String methodName = data.getMethodName();
-    if (methodName == null || methodName.trim().length() == 0) {
-      throw new RuntimeConfigurationError(ExecutionBundle.message("method.name.not.specified.error.message"));
-    }
-    final JUnitUtil.TestMethodFilter filter = new JUnitUtil.TestMethodFilter(psiClass);
-    boolean found = false;
-    boolean testAnnotated = false;
-    for (final PsiMethod method : psiClass.findMethodsByName(methodName, true)) {
-      if (filter.value(method)) found = true;
-      if (JUnitUtil.isTestAnnotated(method)) testAnnotated = true;
-    }
-    if (!found) {
-      throw new RuntimeConfigurationWarning(ExecutionBundle.message("test.method.doesnt.exist.error.message", methodName));
-    }
+		final String methodName = data.getMethodName();
+		if(methodName == null || methodName.trim().length() == 0)
+		{
+			throw new RuntimeConfigurationError(ExecutionBundle.message("method.name.not.specified.error.message"));
+		}
+		final JUnitUtil.TestMethodFilter filter = new JUnitUtil.TestMethodFilter(psiClass);
+		boolean found = false;
+		boolean testAnnotated = false;
+		for(final PsiMethod method : psiClass.findMethodsByName(methodName, true))
+		{
+			if(filter.value(method))
+			{
+				found = true;
+			}
+			if(JUnitUtil.isTestAnnotated(method))
+			{
+				testAnnotated = true;
+			}
+		}
+		if(!found)
+		{
+			throw new RuntimeConfigurationWarning(ExecutionBundle.message("test.method.doesnt.exist.error.message", methodName));
+		}
 
-    if (!AnnotationUtil.isAnnotated(psiClass, JUnitUtil.RUN_WITH, true) && !testAnnotated) {
-      try {
-        final PsiClass testCaseClass = JUnitUtil.getTestCaseClass(configurationModule.getModule());
-        if (!psiClass.isInheritor(testCaseClass, true)) {
-          throw new RuntimeConfigurationError(ExecutionBundle.message("class.isnt.inheritor.of.testcase.error.message", testClass));
-        }
-      }
-      catch (JUnitUtil.NoJUnitException e) {
-        throw new RuntimeConfigurationWarning(
-          ExecutionBundle.message("junit.jar.not.found.in.module.class.path.error.message", configurationModule.getModuleName()));
-      }
-    }
-  }
+		if(!AnnotationUtil.isAnnotated(psiClass, JUnitUtil.RUN_WITH, true) && !testAnnotated)
+		{
+			try
+			{
+				final PsiClass testCaseClass = JUnitUtil.getTestCaseClass(configurationModule.getModule());
+				if(!psiClass.isInheritor(testCaseClass, true))
+				{
+					throw new RuntimeConfigurationError(ExecutionBundle.message("class.isnt.inheritor.of.testcase.error.message", testClass));
+				}
+			}
+			catch(JUnitUtil.NoJUnitException e)
+			{
+				throw new RuntimeConfigurationWarning(ExecutionBundle.message("junit.jar.not.found.in.module.class.path.error.message",
+						configurationModule.getModuleName()));
+			}
+		}
+	}
 }

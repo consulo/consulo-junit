@@ -35,9 +35,11 @@ import com.intellij.diagnostic.logging.LogConfigurationPanel;
 import com.intellij.execution.*;
 import com.intellij.execution.configuration.EnvironmentVariablesComponent;
 import com.intellij.execution.configurations.*;
+import com.intellij.execution.executors.DefaultRunExecutor;
 import com.intellij.execution.junit2.configuration.JUnitConfigurable;
 import com.intellij.execution.junit2.info.MethodLocation;
 import com.intellij.execution.runners.ExecutionEnvironment;
+import com.intellij.execution.runners.ExecutionEnvironmentBuilder;
 import com.intellij.execution.testframework.TestSearchScope;
 import com.intellij.execution.util.JavaParametersUtil;
 import com.intellij.openapi.components.PathMacroManager;
@@ -106,7 +108,7 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 	@Override
 	public RunProfileState getState(@NotNull final Executor executor, @NotNull final ExecutionEnvironment env) throws ExecutionException
 	{
-		return TestObject.fromString(myData.TEST_OBJECT, getProject(), this, env);
+		return TestObject.fromString(myData.TEST_OBJECT, this, env);
 	}
 
 	@NotNull
@@ -128,7 +130,7 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 	@Override
 	public RefactoringElementListener getRefactoringElementListener(final PsiElement element)
 	{
-		final RefactoringElementListener listener = myData.getTestObject(getProject(), this).getListener(element, this);
+		final RefactoringElementListener listener = myData.getTestObject(this).getListener(element, this);
 		return RunConfigurationExtension.wrapRefactoringElementListener(element, this, listener);
 	}
 
@@ -141,7 +143,7 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 	@Override
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
-		myData.getTestObject(getProject(), this).checkConfiguration();
+		myData.getTestObject(this).checkConfiguration();
 		JavaRunConfigurationExtensionManager.checkConfigurationIsValid(this);
 	}
 
@@ -154,7 +156,7 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 		}
 		try
 		{
-			myData.getTestObject(getProject(), this).checkConfiguration();
+			myData.getTestObject(this).checkConfiguration();
 		}
 		catch(RuntimeConfigurationError e)
 		{
@@ -385,7 +387,7 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 
 	public TestObject getTestObject()
 	{
-		return myData.getTestObject(getProject(), this);
+		return myData.getTestObject(this);
 	}
 
 	@Override
@@ -736,10 +738,11 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 			myPattern = pattern;
 		}
 
-		public TestObject getTestObject(final Project project, final JUnitConfiguration configuration)
+		public TestObject getTestObject(@NotNull JUnitConfiguration configuration)
 		{
 			//TODO[dyoma]!
-			return TestObject.fromString(TEST_OBJECT, project, configuration, null);
+			return TestObject.fromString(TEST_OBJECT, configuration, ExecutionEnvironmentBuilder.create(DefaultRunExecutor.getRunExecutorInstance(),
+					configuration).build());
 		}
 
 		public Module setMainClass(final PsiClass testClass)

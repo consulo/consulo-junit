@@ -16,8 +16,36 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.execution.*;
-import com.intellij.execution.configurations.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.NotNull;
+import org.mustbe.consulo.java.module.extension.JavaModuleExtension;
+import com.intellij.execution.CantRunException;
+import com.intellij.execution.DefaultExecutionResult;
+import com.intellij.execution.ExecutionBundle;
+import com.intellij.execution.ExecutionException;
+import com.intellij.execution.ExecutionResult;
+import com.intellij.execution.Executor;
+import com.intellij.execution.JavaRunConfigurationExtensionManager;
+import com.intellij.execution.JavaTestPatcher;
+import com.intellij.execution.RunConfigurationExtension;
+import com.intellij.execution.configurations.CommandLineBuilder;
+import com.intellij.execution.configurations.GeneralCommandLine;
+import com.intellij.execution.configurations.JavaCommandLine;
+import com.intellij.execution.configurations.JavaParameters;
+import com.intellij.execution.configurations.RunConfigurationModule;
+import com.intellij.execution.configurations.RunnerSettings;
+import com.intellij.execution.configurations.RuntimeConfigurationError;
+import com.intellij.execution.configurations.RuntimeConfigurationException;
 import com.intellij.execution.junit2.TestProxy;
 import com.intellij.execution.junit2.segments.DeferredActionsQueue;
 import com.intellij.execution.junit2.segments.DeferredActionsQueueImpl;
@@ -34,7 +62,13 @@ import com.intellij.execution.process.ProcessAdapter;
 import com.intellij.execution.process.ProcessEvent;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.ProgramRunner;
-import com.intellij.execution.testframework.*;
+import com.intellij.execution.testframework.Printable;
+import com.intellij.execution.testframework.Printer;
+import com.intellij.execution.testframework.SourceScope;
+import com.intellij.execution.testframework.TestConsoleProperties;
+import com.intellij.execution.testframework.TestFrameworkRunningModel;
+import com.intellij.execution.testframework.TestSearchScope;
+import com.intellij.execution.testframework.TestsUIUtil;
 import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil;
 import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties;
 import com.intellij.execution.testframework.sm.runner.ui.SMTRunnerConsoleView;
@@ -49,7 +83,6 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.Extensions;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.projectRoots.JavaSdkType;
 import com.intellij.openapi.projectRoots.Sdk;
 import com.intellij.openapi.projectRoots.ex.JavaSdkUtil;
@@ -70,14 +103,6 @@ import com.intellij.rt.execution.junit.JUnitStarter;
 import com.intellij.util.Function;
 import com.intellij.util.PathUtil;
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes;
-import org.jetbrains.annotations.NonNls;
-import org.jetbrains.annotations.NotNull;
-import org.mustbe.consulo.java.module.extension.JavaModuleExtension;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.*;
 
 public abstract class TestObject implements JavaCommandLine
 {
@@ -88,35 +113,34 @@ public abstract class TestObject implements JavaCommandLine
 	private static final String JUNIT_TEST_FRAMEWORK_NAME = "JUnit";
 
 	protected JavaParameters myJavaParameters;
-	private final Project myProject;
 	protected final JUnitConfiguration myConfiguration;
 	protected final ExecutionEnvironment myEnvironment;
 	protected File myTempFile = null;
 	protected File myWorkingDirsFile = null;
 	public File myListenersFile;
 
-	public static TestObject fromString(
-			final String id, final Project project, final JUnitConfiguration configuration, ExecutionEnvironment environment)
+	public static TestObject fromString(@NotNull final String id, @NotNull final JUnitConfiguration configuration,
+			@NotNull ExecutionEnvironment environment)
 	{
 		if(JUnitConfiguration.TEST_METHOD.equals(id))
 		{
-			return new TestMethod(project, configuration, environment);
+			return new TestMethod(configuration, environment);
 		}
 		if(JUnitConfiguration.TEST_CLASS.equals(id))
 		{
-			return new TestClass(project, configuration, environment);
+			return new TestClass(configuration, environment);
 		}
 		if(JUnitConfiguration.TEST_PACKAGE.equals(id))
 		{
-			return new TestPackage(project, configuration, environment);
+			return new TestPackage(configuration, environment);
 		}
 		else if(JUnitConfiguration.TEST_DIRECTORY.equals(id))
 		{
-			return new TestDirectory(project, configuration, environment);
+			return new TestDirectory(configuration, environment);
 		}
 		if(JUnitConfiguration.TEST_PATTERN.equals(id))
 		{
-			return new TestsPattern(project, configuration, environment);
+			return new TestsPattern(configuration, environment);
 		}
 		return NOT_CONFIGURED;
 	}
@@ -127,9 +151,8 @@ public abstract class TestObject implements JavaCommandLine
 		return sourceScope != null ? sourceScope.getModulesToCompile() : Module.EMPTY_ARRAY;
 	}
 
-	protected TestObject(final Project project, final JUnitConfiguration configuration, ExecutionEnvironment environment)
+	protected TestObject(final JUnitConfiguration configuration, ExecutionEnvironment environment)
 	{
-		myProject = project;
 		myConfiguration = configuration;
 		myEnvironment = environment;
 	}
@@ -143,18 +166,21 @@ public abstract class TestObject implements JavaCommandLine
 
 	public abstract RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration);
 
-	public abstract boolean isConfiguredByElement(
-			JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiJavaPackage testPackage);
+	public abstract boolean isConfiguredByElement(JUnitConfiguration configuration,
+			PsiClass testClass,
+			PsiMethod testMethod,
+			PsiJavaPackage testPackage);
 
-	protected void configureModule(
-			final JavaParameters parameters, final RunConfigurationModule configurationModule, final String mainClassName) throws CantRunException
+	protected void configureModule(final JavaParameters parameters,
+			final RunConfigurationModule configurationModule,
+			final String mainClassName) throws CantRunException
 	{
 		int classPathType = JavaParametersUtil.getClasspathType(configurationModule, mainClassName, true);
 		JavaParametersUtil.configureModule(configurationModule, parameters, classPathType, myConfiguration.isAlternativeJrePathEnabled() ?
 				myConfiguration.getAlternativeJrePath() : null);
 	}
 
-	private static final TestObject NOT_CONFIGURED = new TestObject(null, null, null)
+	private static final TestObject NOT_CONFIGURED = new TestObject(null, null)
 	{
 		@Override
 		public RefactoringElementListener getListener(final PsiElement element, final JUnitConfiguration configuration)
@@ -169,8 +195,10 @@ public abstract class TestObject implements JavaCommandLine
 		}
 
 		@Override
-		public boolean isConfiguredByElement(
-				final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiJavaPackage testPackage)
+		public boolean isConfiguredByElement(final JUnitConfiguration configuration,
+				PsiClass testClass,
+				PsiMethod testMethod,
+				PsiJavaPackage testPackage)
 		{
 			return false;
 		}
@@ -409,8 +437,7 @@ public abstract class TestObject implements JavaCommandLine
 			}
 		});
 
-		final RerunFailedTestsAction rerunFailedTestsAction = new RerunFailedTestsAction(consoleView);
-		rerunFailedTestsAction.init(consoleProperties, myEnvironment);
+		final RerunFailedTestsAction rerunFailedTestsAction = new RerunFailedTestsAction(consoleView, consoleProperties);
 		rerunFailedTestsAction.setModelProvider(new Getter<TestFrameworkRunningModel>()
 		{
 			@Override
@@ -436,13 +463,13 @@ public abstract class TestObject implements JavaCommandLine
 				testConsoleProperties, myEnvironment, null);
 
 
-		Disposer.register(myProject, smtConsoleView);
+		Disposer.register(myEnvironment.getProject(), smtConsoleView);
 
 		final ConsoleView consoleView = smtConsoleView;
 		consoleView.attachToProcess(handler);
 
-		final RerunFailedTestsAction rerunFailedTestsAction = new RerunFailedTestsAction(consoleView);
-		rerunFailedTestsAction.init(testConsoleProperties, myEnvironment);
+		final RerunFailedTestsAction rerunFailedTestsAction = new RerunFailedTestsAction(consoleView, testConsoleProperties);
+		rerunFailedTestsAction.init(testConsoleProperties);
 		rerunFailedTestsAction.setModelProvider(new Getter<TestFrameworkRunningModel>()
 		{
 			@Override
@@ -469,13 +496,13 @@ public abstract class TestObject implements JavaCommandLine
 		{
 			comment = null;
 		}
-		TestsUIUtil.notifyByBalloon(myProject, started, model != null ? model.getRoot() : null, consoleProperties, comment);
+		TestsUIUtil.notifyByBalloon(myEnvironment.getProject(), started, model != null ? model.getRoot() : null, consoleProperties, comment);
 	}
 
 	protected JUnitProcessHandler createHandler(Executor executor) throws ExecutionException
 	{
 		appendForkInfo(executor);
-		return JUnitProcessHandler.runCommandLine(CommandLineBuilder.createFromJavaParameters(myJavaParameters, myProject, true));
+		return JUnitProcessHandler.runCommandLine(CommandLineBuilder.createFromJavaParameters(myJavaParameters, myEnvironment.getProject(), true));
 	}
 
 	private boolean forkPerModule()
@@ -550,8 +577,11 @@ public abstract class TestObject implements JavaCommandLine
 		}
 	}
 
-	protected <T> void addClassesListToJavaParameters(
-			Collection<? extends T> elements, Function<T, String> nameFunction, String packageName, boolean createTempFile, boolean junit4)
+	protected <T> void addClassesListToJavaParameters(Collection<? extends T> elements,
+			Function<T, String> nameFunction,
+			String packageName,
+			boolean createTempFile,
+			boolean junit4)
 	{
 		try
 		{
