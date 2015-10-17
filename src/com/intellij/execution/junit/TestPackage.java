@@ -549,7 +549,7 @@ public class TestPackage extends TestObject
 							.getRunExecutorInstance();
 					final ProgramRunner runner = RunnerRegistry.getInstance().getRunner(executor.getId(), myConfiguration);
 					assert runner != null;
-					runner.execute(new ExecutionEnvironmentBuilder(myEnvironment).setContentToReuse(null).build());
+					runner.execute(new ExecutionEnvironmentBuilder(myEnvironment).contentToReuse(null).build());
 					final Balloon balloon = myToolWindowManager.getToolWindowBalloon(myTestRunDebugId);
 					if(balloon != null)
 					{
