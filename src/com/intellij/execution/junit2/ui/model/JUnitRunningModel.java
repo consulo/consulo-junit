@@ -28,7 +28,8 @@ import javax.swing.tree.TreePath;
 
 import com.intellij.execution.junit.JUnitConfiguration;
 import com.intellij.execution.junit2.TestProxy;
-import com.intellij.execution.junit2.ui.Animator;
+import com.intellij.execution.junit2.events.StateChangedEvent;
+import com.intellij.execution.junit2.events.TestEvent;
 import com.intellij.execution.junit2.ui.TestProgress;
 import com.intellij.execution.junit2.ui.TestProxyClient;
 import com.intellij.execution.junit2.ui.properties.JUnitConsoleProperties;
@@ -36,10 +37,12 @@ import com.intellij.execution.testframework.AbstractTestProxy;
 import com.intellij.execution.testframework.Filter;
 import com.intellij.execution.testframework.TestFrameworkRunningModel;
 import com.intellij.execution.testframework.TestTreeView;
+import com.intellij.execution.testframework.ui.TestsProgressAnimator;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
+import com.intellij.rt.execution.junit.states.PoolOfTestStates;
 import com.intellij.util.ui.tree.TreeUtil;
 
 public class JUnitRunningModel implements TestFrameworkRunningModel
@@ -52,7 +55,7 @@ public class JUnitRunningModel implements TestFrameworkRunningModel
 	private TestTreeBuilder myTreeBuilder;
 
 	private final JUnitListenersNotifier myNotifier = new JUnitListenersNotifier();
-	private final Animator myAnimator;
+	private TestsProgressAnimator myAnimator;
 
 	public JUnitRunningModel(final TestProxy root, final JUnitConsoleProperties properties)
 	{
@@ -64,16 +67,13 @@ public class JUnitRunningModel implements TestFrameworkRunningModel
 		Disposer.register(this, myTreeListener);
 		Disposer.register(this, new Disposable()
 		{
-			@Override
 			public void dispose()
 			{
 				myNotifier.fireDisposed(JUnitRunningModel.this);
 			}
 		});
-		myAnimator = new Animator(this);
 	}
 
-	@Override
 	public TestTreeBuilder getTreeBuilder()
 	{
 		return myTreeBuilder;
@@ -83,7 +83,34 @@ public class JUnitRunningModel implements TestFrameworkRunningModel
 	{
 		myTreeBuilder = new TestTreeBuilder(treeView, this, myProperties);
 		Disposer.register(this, myTreeBuilder);
-		myAnimator.setModel(this);
+		myAnimator = new TestsProgressAnimator(myTreeBuilder);
+		addListener(new JUnitAdapter()
+		{
+			public void onTestChanged(final TestEvent event)
+			{
+				if(event instanceof StateChangedEvent)
+				{
+					final TestProxy test = event.getSource();
+					if(test.isLeaf() && test.getState().getMagnitude() == PoolOfTestStates.RUNNING_INDEX)
+					{
+						myAnimator.setCurrentTestCase(test);
+					}
+				}
+			}
+
+			public void onRunnerStateChanged(final StateEvent event)
+			{
+				if(!event.isRunning())
+				{
+					myAnimator.stopMovie();
+				}
+			}
+
+			public void doDispose()
+			{
+				dispose();
+			}
+		});
 		myTreeView = treeView;
 		selectTest(getRoot());
 		myTreeListener.install();
@@ -94,18 +121,15 @@ public class JUnitRunningModel implements TestFrameworkRunningModel
 		return myTreeView;
 	}
 
-	@Override
 	public void dispose()
 	{
 	}
 
-	@Override
 	public TestTreeView getTreeView()
 	{
 		return (TestTreeView) myTreeBuilder.getTree();
 	}
 
-	@Override
 	public boolean hasTestSuites()
 	{
 		return myRoot.hasChildSuites();
@@ -116,13 +140,11 @@ public class JUnitRunningModel implements TestFrameworkRunningModel
 		return myProgress;
 	}
 
-	@Override
 	public TestProxy getRoot()
 	{
 		return myRoot;
 	}
 
-	@Override
 	public void selectAndNotify(final AbstractTestProxy testProxy)
 	{
 		selectTest((TestProxy) testProxy);
@@ -134,7 +156,6 @@ public class JUnitRunningModel implements TestFrameworkRunningModel
 		return myProperties.getProject();
 	}
 
-	@Override
 	public JUnitConsoleProperties getProperties()
 	{
 		return myProperties;
@@ -180,15 +201,13 @@ public class JUnitRunningModel implements TestFrameworkRunningModel
 		return myNotifier;
 	}
 
-	@Override
 	public void setFilter(final Filter filter)
 	{
 		final TestTreeStructure treeStructure = getStructure();
 		treeStructure.setFilter(filter);
-		myTreeBuilder.queueUpdate();
+		myTreeBuilder.updateFromRoot();
 	}
 
-	@Override
 	public boolean isRunning()
 	{
 		return myRoot.isInProgress();
@@ -230,32 +249,24 @@ public class JUnitRunningModel implements TestFrameworkRunningModel
 		return TreeUtil.getPath((TreeNode) myTreeView.getModel().getRoot(), node);
 	}
 
-	public boolean hasInTree(final AbstractTestProxy test)
-	{
-		return getStructure().getFilter().shouldAccept(test);
-	}
-
 	public JUnitConfiguration getConfiguration()
 	{
-		return myProperties.getConfiguration();
+		return (JUnitConfiguration) myProperties.getConfiguration();
 	}
 
 	private class MyTreeSelectionListener extends FocusAdapter implements TreeSelectionListener, Disposable
 	{
 
-		@Override
 		public void valueChanged(final TreeSelectionEvent e)
 		{
 			final TestProxy test = TestProxyClient.from(e.getPath());
 			myNotifier.fireTestSelected(test);
 		}
 
-		@Override
 		public void focusGained(final FocusEvent e)
 		{
 			ApplicationManager.getApplication().invokeLater(new Runnable()
 			{
-				@Override
 				public void run()
 				{
 					if(!myTreeBuilder.isDisposed())
@@ -272,7 +283,6 @@ public class JUnitRunningModel implements TestFrameworkRunningModel
 			myTreeView.addFocusListener(this);
 		}
 
-		@Override
 		public void dispose()
 		{
 			if(myTreeView != null)

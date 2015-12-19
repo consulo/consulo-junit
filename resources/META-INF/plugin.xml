@@ -26,6 +26,9 @@
 	<extensions defaultExtensionNs="org.consulo.java">
 		<deadCode implementation="com.intellij.execution.junit2.inspection.JUnitEntryPoint"/>
 		<cantBeStatic implementation="com.intellij.execution.junit2.inspection.JUnitCantBeStaticExtension"/>
+
+		<testFramework implementation="com.intellij.execution.junit.JUnit3Framework"/>
+		<testFramework implementation="com.intellij.execution.junit.JUnit4Framework"/>
 	</extensions>
 
 	<extensions defaultExtensionNs="com.intellij">
@@ -35,8 +38,6 @@
 		<runConfigurationProducer implementation="com.intellij.execution.junit.PatternConfigurationProducer"/>
 		<runConfigurationProducer implementation="com.intellij.execution.junit.TestClassConfigurationProducer"/>
 		<runConfigurationProducer implementation="com.intellij.execution.junit.TestMethodConfigurationProducer"/>
-		<testFramework implementation="com.intellij.execution.junit.JUnit3Framework"/>
-		<testFramework implementation="com.intellij.execution.junit.JUnit4Framework"/>
 		<configurationType implementation="com.intellij.execution.junit.JUnitConfigurationType"/>
 		<library.dependencyScopeSuggester implementation="com.intellij.execution.junit.JUnitDependencyScopeSuggester"/>
 
@@ -62,12 +63,6 @@
 			<action class="com.intellij.execution.junit.ExcludeFromRunAction" text="Exclude from suite" id="excludeFromSuite"/>
 			<separator/>
 			<add-to-group relative-to-action="openAssertEqualsDiff" anchor="after" group-id="TestTreePopupMenu"/>
-		</group>
-		<group>
-			<separator/>
-			<action id="JUnitTesting.SelectInTree" class="com.intellij.execution.junit2.ui.actions.SelectInTreeAction" text="Select in Tree"
-					description="Navigate from tests statistics to tests tree"/>
-			<add-to-group anchor="last" group-id="TestStatisticsTablePopupMenu"/>
 		</group>
 		<group>
 			<action class="com.intellij.execution.junit.AddToTestsPatternAction" id="AddToISuite" text="Add to temp suite"/>

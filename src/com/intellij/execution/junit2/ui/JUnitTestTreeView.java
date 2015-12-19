@@ -16,35 +16,28 @@
 
 package com.intellij.execution.junit2.ui;
 
+import javax.swing.tree.TreePath;
+
+import org.jetbrains.annotations.NotNull;
 import com.intellij.execution.junit2.TestProxy;
 import com.intellij.execution.testframework.TestConsoleProperties;
 import com.intellij.execution.testframework.TestTreeView;
-import org.jetbrains.annotations.NotNull;
 
-import javax.swing.tree.TreePath;
-import javax.swing.tree.TreeSelectionModel;
+public class JUnitTestTreeView extends TestTreeView
+{
 
-public class JUnitTestTreeView extends TestTreeView {
+	protected TreeTestRenderer getRenderer(TestConsoleProperties properties)
+	{
+		return new TreeTestRenderer(properties);
+	}
 
-  protected TreeTestRenderer getRenderer(TestConsoleProperties properties) {
-    return new TreeTestRenderer(properties);
-  }
+	public TestProxy getSelectedTest(@NotNull final TreePath selectionPath)
+	{
+		return TestProxyClient.from(selectionPath.getLastPathComponent());
+	}
 
-  public TestProxy getSelectedTest(@NotNull final TreePath selectionPath) {
-    return TestProxyClient.from(selectionPath.getLastPathComponent());
-  }
-
-  public String convertValueToText(final Object value,
-                                   final boolean selected,
-                                   final boolean expanded,
-                                   final boolean leaf,
-                                   final int row,
-                                   final boolean hasFocus) {
-    return Formatters.printTest(TestProxyClient.from(value));
-  }
-
-  @Override
-  protected int getSelectionMode() {
-    return TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION;
-  }
+	public String convertValueToText(final Object value, final boolean selected, final boolean expanded, final boolean leaf, final int row, final boolean hasFocus)
+	{
+		return Formatters.printTest(TestProxyClient.from(value));
+	}
 }

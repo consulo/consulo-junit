@@ -623,7 +623,7 @@ public class JUnitConfigurable extends SettingsEditor<JUnitConfiguration> implem
 		@Override
 		protected void onClassChoosen(final PsiClass psiClass)
 		{
-			setPackage(JUnitUtil.getContainingPackage(psiClass));
+			setPackage((PsiJavaPackage) JUnitUtil.getContainingPackage(psiClass));
 		}
 
 		@Override

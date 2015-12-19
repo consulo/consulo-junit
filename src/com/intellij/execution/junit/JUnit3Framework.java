@@ -15,114 +15,154 @@
  */
 package com.intellij.execution.junit;
 
+import javax.swing.Icon;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.fileTemplates.FileTemplateDescriptor;
 import com.intellij.openapi.projectRoots.ex.JavaSdkUtil;
-import com.intellij.psi.*;
+import com.intellij.psi.JavaPsiFacade;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiElementFactory;
+import com.intellij.psi.PsiManager;
+import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiModifier;
 import com.intellij.psi.util.PsiUtil;
 import com.intellij.testIntegration.JavaTestFramework;
 import com.intellij.util.IncorrectOperationException;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
+public class JUnit3Framework extends JavaTestFramework
+{
+	@NotNull
+	public String getName()
+	{
+		return "JUnit3";
+	}
 
-public class JUnit3Framework extends JavaTestFramework {
-  @NotNull
-  public String getName() {
-    return "JUnit3";
-  }
+	@NotNull
+	@Override
+	public Icon getIcon()
+	{
+		return AllIcons.RunConfigurations.Junit;
+	}
 
-  @NotNull
-  @Override
-  public Icon getIcon() {
-    return AllIcons.RunConfigurations.Junit;
-  }
+	protected String getMarkerClassFQName()
+	{
+		return "junit.framework.TestCase";
+	}
 
-  protected String getMarkerClassFQName() {
-    return "junit.framework.TestCase";
-  }
+	@NotNull
+	public String getLibraryPath()
+	{
+		return JavaSdkUtil.getJunit3JarPath();
+	}
 
-  @NotNull
-  public String getLibraryPath() {
-    return JavaSdkUtil.getJunit3JarPath();
-  }
+	@Nullable
+	public String getDefaultSuperClass()
+	{
+		return "junit.framework.TestCase";
+	}
 
-  @Nullable
-  public String getDefaultSuperClass() {
-    return "junit.framework.TestCase";
-  }
+	public boolean isTestClass(PsiClass clazz, boolean canBePotential)
+	{
+		if(JUnitUtil.isJUnit3TestClass(clazz))
+		{
+			return true;
+		}
+		return JUnitUtil.findSuiteMethod(clazz) != null;
+	}
 
-  public boolean isTestClass(PsiClass clazz, boolean canBePotential) {
-    if (JUnitUtil.isJUnit3TestClass(clazz)) {
-      return true;
-    }
-    return JUnitUtil.findSuiteMethod(clazz) != null;
-  }
+	@Override
+	@Nullable
+	protected PsiMethod findSetUpMethod(@NotNull PsiClass clazz)
+	{
+		for(PsiMethod each : clazz.getMethods())
+		{
+			if(each.getName().equals("setUp"))
+			{
+				return each;
+			}
+		}
+		return null;
+	}
 
-  @Override
-  @Nullable
-  protected PsiMethod findSetUpMethod(@NotNull PsiClass clazz) {
-    for (PsiMethod each : clazz.getMethods()) {
-      if (each.getName().equals("setUp")) return each;
-    }
-    return null;
-  }
+	@Override
+	@Nullable
+	protected PsiMethod findTearDownMethod(@NotNull PsiClass clazz)
+	{
+		for(PsiMethod each : clazz.getMethods())
+		{
+			if(each.getName().equals("tearDown"))
+			{
+				return each;
+			}
+		}
+		return null;
+	}
 
-  @Override
-  @Nullable
-  protected PsiMethod findTearDownMethod(@NotNull PsiClass clazz) {
-    for (PsiMethod each : clazz.getMethods()) {
-      if (each.getName().equals("tearDown")) return each;
-    }
-    return null;
-  }
+	@Override
+	@Nullable
+	protected PsiMethod findOrCreateSetUpMethod(PsiClass clazz) throws IncorrectOperationException
+	{
+		final PsiManager manager = clazz.getManager();
+		final PsiElementFactory factory = JavaPsiFacade.getInstance(manager.getProject()).getElementFactory();
 
-  @Override
-  @Nullable
-  protected PsiMethod findOrCreateSetUpMethod(PsiClass clazz) throws IncorrectOperationException {
-    final PsiManager manager = clazz.getManager();
-    final PsiElementFactory factory = JavaPsiFacade.getInstance(manager.getProject()).getElementFactory();
+		final PsiMethod patternMethod = createSetUpPatternMethod(factory);
 
-    final PsiMethod patternMethod = createSetUpPatternMethod(factory);
+		final PsiClass baseClass = clazz.getSuperClass();
+		if(baseClass != null)
+		{
+			final PsiMethod baseMethod = baseClass.findMethodBySignature(patternMethod, false);
+			if(baseMethod != null && baseMethod.hasModifierProperty(PsiModifier.PUBLIC))
+			{
+				PsiUtil.setModifierProperty(patternMethod, PsiModifier.PROTECTED, false);
+				PsiUtil.setModifierProperty(patternMethod, PsiModifier.PUBLIC, true);
+			}
+		}
 
-    final PsiClass baseClass = clazz.getSuperClass();
-    if (baseClass != null) {
-      final PsiMethod baseMethod = baseClass.findMethodBySignature(patternMethod, false);
-      if (baseMethod != null && baseMethod.hasModifierProperty(PsiModifier.PUBLIC)) {
-        PsiUtil.setModifierProperty(patternMethod, PsiModifier.PROTECTED, false);
-        PsiUtil.setModifierProperty(patternMethod, PsiModifier.PUBLIC, true);
-      }
-    }
+		PsiMethod inClass = clazz.findMethodBySignature(patternMethod, false);
+		if(inClass == null)
+		{
+			PsiMethod testMethod = JUnitUtil.findFirstTestMethod(clazz);
+			if(testMethod != null)
+			{
+				return (PsiMethod) clazz.addBefore(patternMethod, testMethod);
+			}
+			return (PsiMethod) clazz.add(patternMethod);
+		}
+		else if(inClass.getBody() == null)
+		{
+			return (PsiMethod) inClass.replace(patternMethod);
+		}
+		return inClass;
+	}
 
-    PsiMethod inClass = clazz.findMethodBySignature(patternMethod, false);
-    if (inClass == null) {
-      PsiMethod testMethod = JUnitUtil.findFirstTestMethod(clazz);
-      if (testMethod != null) {
-        return (PsiMethod)clazz.addBefore(patternMethod, testMethod);
-      }
-      return (PsiMethod)clazz.add(patternMethod);
-    }
-    else if (inClass.getBody() == null) {
-      return (PsiMethod)inClass.replace(patternMethod);
-    }
-    return inClass;
-  }
+	@Override
+	public char getMnemonic()
+	{
+		return 'J';
+	}
 
-  public FileTemplateDescriptor getSetUpMethodFileTemplateDescriptor() {
-    return new FileTemplateDescriptor("JUnit3 SetUp Method.java");
-  }
+	public FileTemplateDescriptor getSetUpMethodFileTemplateDescriptor()
+	{
+		return new FileTemplateDescriptor("JUnit3 SetUp Method.java");
+	}
 
-  public FileTemplateDescriptor getTearDownMethodFileTemplateDescriptor() {
-    return new FileTemplateDescriptor("JUnit3 TearDown Method.java");
-  }
+	public FileTemplateDescriptor getTearDownMethodFileTemplateDescriptor()
+	{
+		return new FileTemplateDescriptor("JUnit3 TearDown Method.java");
+	}
 
-  public FileTemplateDescriptor getTestMethodFileTemplateDescriptor() {
-    return new FileTemplateDescriptor("JUnit3 Test Method.java");
-  }
+	public FileTemplateDescriptor getTestMethodFileTemplateDescriptor()
+	{
+		return new FileTemplateDescriptor("JUnit3 Test Method.java");
+	}
 
-  @Override
-  public boolean isTestMethod(PsiElement element) {
-    return element instanceof PsiMethod && JUnitUtil.getTestMethod(element) != null;
-  }
+	@Override
+	public boolean isTestMethod(PsiElement element)
+	{
+		return element instanceof PsiMethod && JUnitUtil.getTestMethod(element) != null;
+	}
 }
