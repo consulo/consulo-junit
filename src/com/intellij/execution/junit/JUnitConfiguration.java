@@ -135,12 +135,6 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 	}
 
 	@Override
-	public String getGeneratedName()
-	{
-		return myData.getGeneratedName(getConfigurationModule());
-	}
-
-	@Override
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
 		myData.getTestObject(this).checkConfiguration();
@@ -175,13 +169,6 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 	{
 		return new JUnitConfiguration(getName(), getProject(), myData.clone(), JUnitConfigurationType.getInstance().getConfigurationFactories()[0]);
 		// throw new RuntimeException("Should not call");
-	}
-
-	@Override
-	public boolean isGeneratedName()
-	{
-		final String name = getName();
-		return myData.isGeneratedName(name, getConfigurationModule());
 	}
 
 	@Override
@@ -305,12 +292,6 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 		{
 			setGeneratedName();
 		}
-	}
-
-	@Override
-	public void setGeneratedName()
-	{
-		setName(getGeneratedName());
 	}
 
 	public void beMethodConfiguration(final Location<PsiMethod> methodLocation)
