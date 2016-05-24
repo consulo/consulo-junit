@@ -174,7 +174,7 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 	@Override
 	public String suggestedName()
 	{
-		return getTestObject().suggestActionName();
+		return myData.getGeneratedName(getConfigurationModule());
 	}
 
 	@Override
@@ -621,23 +621,6 @@ public class JUnitConfiguration extends ModuleBasedConfiguration<JavaRunConfigur
 			TEST_OBJECT = TEST_METHOD;
 			return setMainClass(methodLocation instanceof MethodLocation ? ((MethodLocation) methodLocation).getContainingClass() : method
 					.getContainingClass());
-		}
-
-		public boolean isGeneratedName(final String name, final JavaRunConfigurationModule configurationModule)
-		{
-			if(TEST_OBJECT == null)
-			{
-				return true;
-			}
-			if((TEST_CLASS.equals(TEST_OBJECT) || TEST_METHOD.equals(TEST_OBJECT)) && getMainClassName().length() == 0)
-			{
-				return JavaExecutionUtil.isNewName(name);
-			}
-			if(TEST_METHOD.equals(TEST_OBJECT) && getMethodName().length() == 0)
-			{
-				return JavaExecutionUtil.isNewName(name);
-			}
-			return Comparing.equal(name, getGeneratedName(configurationModule));
 		}
 
 		public String getGeneratedName(final JavaRunConfigurationModule configurationModule)
