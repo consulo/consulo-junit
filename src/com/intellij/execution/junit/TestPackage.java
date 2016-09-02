@@ -29,7 +29,6 @@ import java.util.Set;
 
 import javax.swing.event.HyperlinkEvent;
 
-import org.consulo.psi.PsiPackage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import com.intellij.execution.CantRunException;
@@ -81,6 +80,7 @@ import com.intellij.psi.search.PackageScope;
 import com.intellij.refactoring.listeners.RefactoringElementListener;
 import com.intellij.ui.HyperlinkAdapter;
 import com.intellij.util.Function;
+import consulo.psi.PsiPackage;
 
 public class TestPackage extends TestObject
 {
