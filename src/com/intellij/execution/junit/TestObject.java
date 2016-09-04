@@ -28,7 +28,6 @@ import java.util.TreeMap;
 
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
-import org.mustbe.consulo.java.module.extension.JavaModuleExtension;
 import com.intellij.execution.CantRunException;
 import com.intellij.execution.DefaultExecutionResult;
 import com.intellij.execution.ExecutionBundle;
@@ -102,6 +101,7 @@ import com.intellij.rt.execution.junit.IDEAJUnitListener;
 import com.intellij.rt.execution.junit.JUnitStarter;
 import com.intellij.util.Function;
 import com.intellij.util.PathUtil;
+import consulo.java.module.extension.JavaModuleExtension;
 import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes;
 
 public abstract class TestObject implements JavaCommandLine

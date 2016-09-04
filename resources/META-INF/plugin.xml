@@ -21,9 +21,9 @@
 	<version>SNAPSHOT</version>
 	<vendor>JetBrains</vendor>
 	<category>Test Frameworks</category>
-	<depends>org.consulo.java</depends>
+	<depends>consulo.java</depends>
 
-	<extensions defaultExtensionNs="org.consulo.java">
+	<extensions defaultExtensionNs="consulo.java">
 		<deadCode implementation="com.intellij.execution.junit2.inspection.JUnitEntryPoint"/>
 		<cantBeStatic implementation="com.intellij.execution.junit2.inspection.JUnitCantBeStaticExtension"/>
 
