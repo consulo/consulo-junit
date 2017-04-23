@@ -79,6 +79,7 @@ import com.intellij.execution.util.ProgramParametersUtil;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.components.PathMacroUtil;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.extensions.Extensions;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
@@ -106,6 +107,8 @@ import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes;
 
 public abstract class TestObject implements JavaCommandLine
 {
+	private static final ExtensionPointName<IDEAJUnitListener> EP_NAME = ExtensionPointName.create("com.intellij.junitListener");
+
 	protected static final Logger LOG = Logger.getInstance("#com.intellij.execution.junit.TestObject");
 
 	private static final String MESSAGE = ExecutionBundle.message("configuration.not.speficied.message");
@@ -119,8 +122,7 @@ public abstract class TestObject implements JavaCommandLine
 	protected File myWorkingDirsFile = null;
 	public File myListenersFile;
 
-	public static TestObject fromString(@NotNull final String id, @NotNull final JUnitConfiguration configuration,
-			@NotNull ExecutionEnvironment environment)
+	public static TestObject fromString(@NotNull final String id, @NotNull final JUnitConfiguration configuration, @NotNull ExecutionEnvironment environment)
 	{
 		if(JUnitConfiguration.TEST_METHOD.equals(id))
 		{
@@ -166,18 +168,12 @@ public abstract class TestObject implements JavaCommandLine
 
 	public abstract RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration);
 
-	public abstract boolean isConfiguredByElement(JUnitConfiguration configuration,
-			PsiClass testClass,
-			PsiMethod testMethod,
-			PsiJavaPackage testPackage);
+	public abstract boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiJavaPackage testPackage);
 
-	protected void configureModule(final JavaParameters parameters,
-			final RunConfigurationModule configurationModule,
-			final String mainClassName) throws CantRunException
+	protected void configureModule(final JavaParameters parameters, final RunConfigurationModule configurationModule, final String mainClassName) throws CantRunException
 	{
 		int classPathType = JavaParametersUtil.getClasspathType(configurationModule, mainClassName, true);
-		JavaParametersUtil.configureModule(configurationModule, parameters, classPathType, myConfiguration.isAlternativeJrePathEnabled() ?
-				myConfiguration.getAlternativeJrePath() : null);
+		JavaParametersUtil.configureModule(configurationModule, parameters, classPathType, myConfiguration.isAlternativeJrePathEnabled() ? myConfiguration.getAlternativeJrePath() : null);
 	}
 
 	private static final TestObject NOT_CONFIGURED = new TestObject(null, null)
@@ -195,10 +191,7 @@ public abstract class TestObject implements JavaCommandLine
 		}
 
 		@Override
-		public boolean isConfiguredByElement(final JUnitConfiguration configuration,
-				PsiClass testClass,
-				PsiMethod testMethod,
-				PsiJavaPackage testPackage)
+		public boolean isConfiguredByElement(final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiJavaPackage testPackage)
 		{
 			return false;
 		}
@@ -225,8 +218,7 @@ public abstract class TestObject implements JavaCommandLine
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
 		JavaParametersUtil.checkAlternativeJRE(myConfiguration);
-		ProgramParametersUtil.checkWorkingDirectoryExist(myConfiguration, myConfiguration.getProject(), myConfiguration.getConfigurationModule()
-				.getModule());
+		ProgramParametersUtil.checkWorkingDirectoryExist(myConfiguration, myConfiguration.getProject(), myConfiguration.getConfigurationModule().getModule());
 	}
 
 	public SourceScope getSourceScope()
@@ -266,7 +258,7 @@ public abstract class TestObject implements JavaCommandLine
 		}
 
 		final StringBuilder buf = new StringBuilder();
-		for(final IDEAJUnitListener listener : IDEAJUnitListener.EP_NAME.getExtensions())
+		for(final IDEAJUnitListener listener : EP_NAME.getExtensions())
 		{
 			boolean enabled = true;
 			for(RunConfigurationExtension ext : Extensions.getExtensions(RunConfigurationExtension.EP_NAME))
@@ -454,13 +446,11 @@ public abstract class TestObject implements JavaCommandLine
 
 	private ExecutionResult useSmRunner(Executor executor, JUnitProcessHandler handler)
 	{
-		TestConsoleProperties testConsoleProperties = new SMTRunnerConsoleProperties((JUnitConfiguration) myEnvironment.getRunProfile(),
-				JUNIT_TEST_FRAMEWORK_NAME, executor);
+		TestConsoleProperties testConsoleProperties = new SMTRunnerConsoleProperties((JUnitConfiguration) myEnvironment.getRunProfile(), JUNIT_TEST_FRAMEWORK_NAME, executor);
 
 		testConsoleProperties.setIfUndefined(TestConsoleProperties.HIDE_PASSED_TESTS, false);
 
-		BaseTestsOutputConsoleView smtConsoleView = SMTestRunnerConnectionUtil.createConsoleWithCustomLocator(JUNIT_TEST_FRAMEWORK_NAME,
-				testConsoleProperties, myEnvironment, null);
+		BaseTestsOutputConsoleView smtConsoleView = SMTestRunnerConnectionUtil.createConsoleWithCustomLocator(JUNIT_TEST_FRAMEWORK_NAME, testConsoleProperties, myEnvironment, null);
 
 
 		Disposer.register(myEnvironment.getProject(), smtConsoleView);
@@ -508,9 +498,8 @@ public abstract class TestObject implements JavaCommandLine
 	private boolean forkPerModule()
 	{
 		final String workingDirectory = myConfiguration.getWorkingDirectory();
-		return JUnitConfiguration.TEST_PACKAGE.equals(myConfiguration.getPersistentData().TEST_OBJECT) &&
-				myConfiguration.getPersistentData().getScope() != TestSearchScope.SINGLE_MODULE &&
-				("$" + PathMacroUtil.MODULE_DIR_MACRO_NAME + "$").equals(workingDirectory);
+		return JUnitConfiguration.TEST_PACKAGE.equals(myConfiguration.getPersistentData().TEST_OBJECT) && myConfiguration.getPersistentData().getScope() != TestSearchScope.SINGLE_MODULE && ("$" +
+				PathMacroUtil.MODULE_DIR_MACRO_NAME + "$").equals(workingDirectory);
 	}
 
 	private void appendForkInfo(Executor executor) throws ExecutionException
@@ -519,9 +508,8 @@ public abstract class TestObject implements JavaCommandLine
 		if(Comparing.strEqual(forkMode, "none"))
 		{
 			final String workingDirectory = myConfiguration.getWorkingDirectory();
-			if(!JUnitConfiguration.TEST_PACKAGE.equals(myConfiguration.getPersistentData().TEST_OBJECT) ||
-					myConfiguration.getPersistentData().getScope() == TestSearchScope.SINGLE_MODULE ||
-					!("$" + PathMacroUtil.MODULE_DIR_MACRO_NAME + "$").equals(workingDirectory))
+			if(!JUnitConfiguration.TEST_PACKAGE.equals(myConfiguration.getPersistentData().TEST_OBJECT) || myConfiguration.getPersistentData().getScope() == TestSearchScope.SINGLE_MODULE || !("$" +
+					PathMacroUtil.MODULE_DIR_MACRO_NAME + "$").equals(workingDirectory))
 			{
 				return;
 			}
@@ -530,8 +518,7 @@ public abstract class TestObject implements JavaCommandLine
 		if(getRunnerSettings() != null)
 		{
 			final String actionName = executor.getActionName();
-			throw new CantRunException(actionName + " is disabled in fork mode.<br/>Please change fork mode to &lt;none&gt; to " + actionName
-					.toLowerCase() + ".");
+			throw new CantRunException(actionName + " is disabled in fork mode.<br/>Please change fork mode to &lt;none&gt; to " + actionName.toLowerCase() + ".");
 		}
 
 		final JavaParameters javaParameters = getJavaParameters();
@@ -577,11 +564,7 @@ public abstract class TestObject implements JavaCommandLine
 		}
 	}
 
-	protected <T> void addClassesListToJavaParameters(Collection<? extends T> elements,
-			Function<T, String> nameFunction,
-			String packageName,
-			boolean createTempFile,
-			boolean junit4)
+	protected <T> void addClassesListToJavaParameters(Collection<? extends T> elements, Function<T, String> nameFunction, String packageName, boolean createTempFile, boolean junit4)
 	{
 		try
 		{

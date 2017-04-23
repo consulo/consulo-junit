@@ -20,12 +20,8 @@
  */
 package com.intellij.rt.execution.junit;
 
-import com.intellij.openapi.extensions.ExtensionPointName;
-
 public interface IDEAJUnitListener
 {
-	ExtensionPointName<IDEAJUnitListener> EP_NAME = ExtensionPointName.create("com.intellij.junitListener");
-
 	void testStarted(String className, String methodName);
 
 	void testFinished(String className, String methodName);
