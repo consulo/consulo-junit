@@ -29,6 +29,13 @@
           <orderEntry type="module-extension-sdk" extension-id="consulo-plugin" />
           <orderEntry type="sourceFolder" />
           <orderEntry type="library" name="consulo-plugin: consulo.java" level="project" />
+          <orderEntry type="module-library" scope="PROVIDED">
+            <library>
+              <binaries>
+                <root url="jar://$MODULE_DIR$/lib/junit-4.12.jar!/" />
+              </binaries>
+            </library>
+          </orderEntry>
         </module-layer>
       </module>
     </modules>
