@@ -21,10 +21,11 @@ import com.intellij.execution.testframework.TestFrameworkRunningModel;
 import com.intellij.execution.testframework.TestTreeViewStructure;
 import com.intellij.ide.util.treeView.AbstractTreeStructure;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.util.Key;
 
 public class TestContext
 {
-	public static final com.intellij.openapi.util.Key<TestContext> DATA_KEY = com.intellij.openapi.util.Key.create("JUNIT_CONTEXT");
+	public static final Key<TestContext> DATA_KEY = Key.create("JUNIT_CONTEXT");
 
 	private final TestFrameworkRunningModel myModel;
 	private final AbstractTestProxy mySelection;
