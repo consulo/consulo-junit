@@ -100,14 +100,14 @@ public class PatternConfigurationProducer extends JUnitConfigurationProducer {
 
   private static PsiElement[] collectPatternElements(ConfigurationContext context, LinkedHashSet<String> classes) {
     final DataContext dataContext = context.getDataContext();
-    PsiElement[] elements = LangDataKeys.PSI_ELEMENT_ARRAY.getData(dataContext);
+    PsiElement[] elements = dataContext.getData(LangDataKeys.PSI_ELEMENT_ARRAY);
     if (elements != null) {
       for (PsiMember psiClass : collectTestMembers(elements)) {
         classes.add(getQName(psiClass));
       }
       return elements;
     } else {
-      final VirtualFile[] files = PlatformDataKeys.VIRTUAL_FILE_ARRAY.getData(dataContext);
+      final VirtualFile[] files = dataContext.getData(PlatformDataKeys.VIRTUAL_FILE_ARRAY);
       if (files != null) {
         final List<PsiFile> psiFiles = new ArrayList<PsiFile>();
         final PsiManager psiManager = PsiManager.getInstance(context.getProject());

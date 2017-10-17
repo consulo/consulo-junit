@@ -113,7 +113,7 @@ class StatisticsPanel extends JPanel implements DataProvider
 		BaseTableView.restore(myStorage, myTable);
 	}
 
-	public Object getData(final String dataId)
+	public Object getData(final com.intellij.openapi.util.Key<?> dataId)
 	{
 		if(myModel == null)
 		{
@@ -121,7 +121,7 @@ class StatisticsPanel extends JPanel implements DataProvider
 		}
 		final int selectedRow = myTable.getSelectedRow();
 		final TestProxy selectedTest = selectedRow == -1 ? null : myChildInfo.getTestAt(myTable.convertRowIndexToModel(selectedRow));
-		if(TestContext.DATA_KEY.is(dataId))
+		if(TestContext.DATA_KEY == dataId)
 		{
 			return new TestContext(myModel, selectedTest);
 		}

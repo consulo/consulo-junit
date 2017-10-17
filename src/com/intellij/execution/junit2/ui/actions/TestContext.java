@@ -25,7 +25,7 @@ import com.intellij.openapi.actionSystem.DataKey;
 
 public class TestContext
 {
-	public static final DataKey<TestContext> DATA_KEY = DataKey.create("JUNIT_CONTEXT");
+	public static final com.intellij.openapi.util.Key<TestContext> DATA_KEY = com.intellij.openapi.util.Key.create("JUNIT_CONTEXT");
 
 	private final TestFrameworkRunningModel myModel;
 	private final AbstractTestProxy mySelection;
@@ -59,6 +59,6 @@ public class TestContext
 
 	public static TestContext from(final AnActionEvent event)
 	{
-		return DATA_KEY.getData(event.getDataContext());
+		return event.getData(DATA_KEY);
 	}
 }

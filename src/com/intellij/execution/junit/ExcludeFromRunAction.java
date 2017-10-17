@@ -38,13 +38,13 @@ public class ExcludeFromRunAction extends AnAction{
   @Override
   public void actionPerformed(AnActionEvent e) {
     final DataContext dataContext = e.getDataContext();
-    final Project project = PlatformDataKeys.PROJECT.getData(dataContext);
+    final Project project = dataContext.getData(PlatformDataKeys.PROJECT);
     LOG.assertTrue(project != null);
-    final JUnitConfiguration configuration = (JUnitConfiguration)RunConfiguration.DATA_KEY.getData(dataContext);
+    final JUnitConfiguration configuration = (JUnitConfiguration)dataContext.getData(RunConfiguration.DATA_KEY);
     LOG.assertTrue(configuration != null);
     final GlobalSearchScope searchScope = configuration.getConfigurationModule().getSearchScope();
     final Set<String> patterns = configuration.getPersistentData().getPatterns();
-    final AbstractTestProxy testProxy = AbstractTestProxy.DATA_KEY.getData(dataContext);
+    final AbstractTestProxy testProxy = dataContext.getData(AbstractTestProxy.DATA_KEY);
     LOG.assertTrue(testProxy != null);
     patterns.remove(((PsiClass)testProxy.getLocation(project, searchScope).getPsiElement()).getQualifiedName());
   }
@@ -54,13 +54,13 @@ public class ExcludeFromRunAction extends AnAction{
     final Presentation presentation = e.getPresentation();
     presentation.setVisible(false);
     final DataContext dataContext = e.getDataContext();
-    final Project project = PlatformDataKeys.PROJECT.getData(dataContext);
+    final Project project = e.getProject();
     if (project != null) {
-      final RunConfiguration configuration = RunConfiguration.DATA_KEY.getData(dataContext);
+      final RunConfiguration configuration = dataContext.getData(RunConfiguration.DATA_KEY);
       if (configuration instanceof JUnitConfiguration) {
         final JUnitConfiguration.Data data = ((JUnitConfiguration)configuration).getPersistentData();
         if (data.TEST_OBJECT == JUnitConfiguration.TEST_PATTERN) {
-          final AbstractTestProxy testProxy = AbstractTestProxy.DATA_KEY.getData(dataContext);
+          final AbstractTestProxy testProxy = dataContext.getData(AbstractTestProxy.DATA_KEY);
           if (testProxy != null) {
             final Location location = testProxy.getLocation(project, ((JUnitConfiguration)configuration).getConfigurationModule().getSearchScope());
             if (location != null) {
