@@ -1,3 +1,5 @@
+/.consulo
+!/.consulo/codeStyleSettings.xml
 /out
-/.consulo/workspace.xml
-/dep
+/target
+target/
