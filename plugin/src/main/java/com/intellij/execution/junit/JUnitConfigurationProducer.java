@@ -16,64 +16,18 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.Location;
-import com.intellij.execution.RunManager;
-import com.intellij.execution.RunnerAndConfigurationSettings;
-import com.intellij.execution.actions.ConfigurationContext;
-import com.intellij.execution.actions.ConfigurationFromContext;
-import com.intellij.execution.configurations.RunConfiguration;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.util.Comparing;
-import com.intellij.psi.*;
+import com.intellij.execution.configurations.ConfigurationType;
+import com.intellij.execution.testframework.AbstractJavaTestConfigurationProducer;
 
-public abstract class JUnitConfigurationProducer extends JavaRunConfigurationProducerBase<JUnitConfiguration> implements Cloneable {
+public abstract class JUnitConfigurationProducer extends AbstractJavaTestConfigurationProducer<JUnitConfiguration> implements Cloneable
+{
+	public JUnitConfigurationProducer()
+	{
+		super(JUnitConfigurationType.getInstance());
+	}
 
-  public JUnitConfigurationProducer() {
-    super(JUnitConfigurationType.getInstance());
-  }
-
-  @Override
-  public boolean isPreferredConfiguration(ConfigurationFromContext self, ConfigurationFromContext other) {
-    return !other.isProducedBy(TestMethodConfigurationProducer.class);
-  }
-
-  @Override
-  public boolean isConfigurationFromContext(JUnitConfiguration unitConfiguration, ConfigurationContext context) {
-    if (PatternConfigurationProducer.isMultipleElementsSelected(context)) {
-      return false;
-    }
-    final RunConfiguration predefinedConfiguration = context.getOriginalConfiguration(JUnitConfigurationType.getInstance());
-    Location location = JavaExecutionUtil.stepIntoSingleClass(context.getLocation());
-    final PsiElement element = location.getPsiElement();
-    final PsiClass testClass = JUnitUtil.getTestClass(element);
-    final PsiMethod testMethod = JUnitUtil.getTestMethod(element, false);
-    final PsiJavaPackage testPackage;
-    if (element instanceof PsiJavaPackage) {
-      testPackage = (PsiJavaPackage)element;
-    } else if (element instanceof PsiDirectory){
-      testPackage = JavaDirectoryService.getInstance().getPackage(((PsiDirectory)element));
-    } else {
-      testPackage = null;
-    }
-    RunnerAndConfigurationSettings template = RunManager.getInstance(location.getProject())
-      .getConfigurationTemplate(getConfigurationFactory());
-    final Module predefinedModule =
-      ((JUnitConfiguration)template
-        .getConfiguration()).getConfigurationModule().getModule();
-    final String vmParameters = predefinedConfiguration instanceof JUnitConfiguration ? ((JUnitConfiguration)predefinedConfiguration).getVMParameters() : null;
-
-    if (vmParameters != null && !Comparing.strEqual(vmParameters, unitConfiguration.getVMParameters())) return false;
-    final TestObject testobject = unitConfiguration.getTestObject();
-    if (testobject != null) {
-      if (testobject.isConfiguredByElement(unitConfiguration, testClass, testMethod, testPackage)) {
-        final Module configurationModule = unitConfiguration.getConfigurationModule().getModule();
-        if (Comparing.equal(location.getModule(), configurationModule)) return true;
-        if (Comparing.equal(predefinedModule, configurationModule)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
+	protected JUnitConfigurationProducer(ConfigurationType configurationType)
+	{
+		super(configurationType);
+	}
 }

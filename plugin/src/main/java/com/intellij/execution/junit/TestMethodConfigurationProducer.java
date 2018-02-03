@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2009 JetBrains s.r.o.
+ * Copyright 2000-2015 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,76 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.intellij.execution.junit;
 
-import com.intellij.execution.JavaRunConfigurationExtensionManager;
-import com.intellij.execution.Location;
-import com.intellij.execution.PsiLocation;
 import com.intellij.execution.actions.ConfigurationContext;
-import com.intellij.execution.actions.ConfigurationFromContext;
-import com.intellij.execution.junit2.info.MethodLocation;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.project.Project;
+import com.intellij.execution.testframework.AbstractInClassConfigurationProducer;
 import com.intellij.openapi.util.Ref;
-import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
 
-import java.util.Iterator;
-import java.util.List;
+//to be delete in 2018
+@Deprecated
+public class TestMethodConfigurationProducer extends AbstractInClassConfigurationProducer<JUnitConfiguration>
+{
+	public TestMethodConfigurationProducer()
+	{
+		super(JUnitConfigurationType.getInstance());
+	}
 
-public class TestMethodConfigurationProducer extends JUnitConfigurationProducer {
-  @Override
-  protected boolean setupConfigurationFromContext(JUnitConfiguration configuration,
-                                                  ConfigurationContext context,
-                                                  Ref<PsiElement> sourceElement) {
-    if (PatternConfigurationProducer.isMultipleElementsSelected(context)) {
-      return false;
-    }
-    Location<PsiMethod> methodLocation = getTestMethod(context.getLocation());
-    if (methodLocation == null) return false;
-    sourceElement.set(methodLocation.getPsiElement());
-    setupConfigurationModule(context, configuration);
-    final Module originalModule = configuration.getConfigurationModule().getModule();
-    configuration.beMethodConfiguration(methodLocation);
-    configuration.restoreOriginalModule(originalModule);
-    JavaRunConfigurationExtensionManager.getInstance().extendCreatedConfiguration(configuration, context.getLocation());
-    return true;
-  }
+	@Override
+	protected boolean setupConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context, Ref<PsiElement> sourceElement)
+	{
+		return super.setupConfigurationFromContext(configuration, context, sourceElement);
+	}
 
-  private static Location<PsiMethod> getTestMethod(final Location<?> location) {
-    for (Iterator<Location<PsiMethod>> iterator = location.getAncestors(PsiMethod.class, false); iterator.hasNext();) {
-      final Location<PsiMethod> methodLocation = iterator.next();
-      if (JUnitUtil.isTestMethod(methodLocation, false)) return methodLocation;
-    }
-    return null;
-  }
-
-  @Override
-  public void onFirstRun(final ConfigurationFromContext fromContext, final ConfigurationContext context, final Runnable performRunnable) {
-    final PsiMethod psiMethod = (PsiMethod)fromContext.getSourceElement();
-    final PsiClass containingClass = psiMethod.getContainingClass();
-    final InheritorChooser inheritorChooser = new InheritorChooser() {
-      @Override
-      protected void runForClasses(List<PsiClass> classes, PsiMethod method, ConfigurationContext context, Runnable performRunnable) {
-        ((JUnitConfiguration)fromContext.getConfiguration()).bePatternConfiguration(classes, method);
-        super.runForClasses(classes, method, context, performRunnable);
-      }
-
-      @Override
-      protected void runForClass(PsiClass aClass,
-                                 PsiMethod psiMethod,
-                                 ConfigurationContext context,
-                                 Runnable performRunnable) {
-        final Project project = psiMethod.getProject();
-        final MethodLocation methodLocation = new MethodLocation(project, psiMethod, PsiLocation.fromPsiElement(aClass));
-        ((JUnitConfiguration)fromContext.getConfiguration()).beMethodConfiguration(methodLocation);
-        super.runForClass(aClass, psiMethod, context, performRunnable);
-      }
-    };
-    if (inheritorChooser.runMethodInAbstractClass(context, performRunnable, psiMethod, containingClass)) return;
-    super.onFirstRun(fromContext, context, performRunnable);
-  }
+	@Override
+	public boolean isConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context)
+	{
+		return super.isConfigurationFromContext(configuration, context);
+	}
 }
-

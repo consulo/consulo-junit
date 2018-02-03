@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2009 JetBrains s.r.o.
+ * Copyright 2000-2013 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,104 +16,176 @@
 
 package com.intellij.execution.junit;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
+import org.jetbrains.annotations.Nullable;
 import com.intellij.execution.configurations.ConfigurationUtil;
 import com.intellij.execution.testframework.SourceScope;
 import com.intellij.ide.util.ClassFilter;
-import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.compiler.CompilerManager;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Computable;
+import com.intellij.openapi.roots.ProjectRootManager;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiUtilCore;
-import org.jetbrains.annotations.NotNull;
+import consulo.roots.impl.ProductionResourceContentFolderTypeProvider;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
+public class TestClassFilter implements ClassFilter.ClassFilterWithScope
+{
+	private final
+	@Nullable
+	PsiClass myBase;
+	private final Project myProject;
+	private final GlobalSearchScope myScope;
 
-public class TestClassFilter implements ClassFilter.ClassFilterWithScope {
-  private final PsiClass myBase;
-  private final Project myProject;
-  private final GlobalSearchScope myScope;
+	private TestClassFilter(@Nullable PsiClass base, final GlobalSearchScope scope)
+	{
+		myBase = base;
+		myProject = scope.getProject();
+		myScope = scope;
+	}
 
-  public TestClassFilter(@NotNull PsiClass base, final GlobalSearchScope scope) {
-    myBase = base;
-    myProject = base.getProject();
-    myScope = scope;
-  }
+	public PsiManager getPsiManager()
+	{
+		return PsiManager.getInstance(myProject);
+	}
 
-  public PsiManager getPsiManager() { return PsiManager.getInstance(myProject); }
+	public Project getProject()
+	{
+		return myProject;
+	}
 
-  public Project getProject() { return myProject; }
+	public boolean isAccepted(final PsiClass aClass)
+	{
+		return ReadAction.compute(() ->
+		{
+			if(aClass.getQualifiedName() != null && (myBase != null && aClass.isInheritor(myBase, true) && ConfigurationUtil.PUBLIC_INSTANTIATABLE_CLASS.value(aClass) || JUnitUtil.isTestClass
+					(aClass)))
+			{
+				final CompilerManager compilerConfiguration = CompilerManager.getInstance(getProject());
+				final VirtualFile virtualFile = PsiUtilCore.getVirtualFile(aClass);
+				if(virtualFile == null)
+				{
+					return false;
+				}
+				return !compilerConfiguration.isExcludedFromCompilation(virtualFile) && !ProjectRootManager.getInstance(myProject).getFileIndex().isUnderContentFolderType(virtualFile,
+						ProductionResourceContentFolderTypeProvider.getInstance());
+			}
+			return false;
+		});
+	}
 
-  public boolean isAccepted(final PsiClass aClass) {
-    return ApplicationManager.getApplication().runReadAction(new Computable<Boolean>() {
-      @Override
-      public Boolean compute() {
-        return ConfigurationUtil.PUBLIC_INSTANTIATABLE_CLASS.value(aClass) &&
-               (aClass.isInheritor(myBase, true) || JUnitUtil.isTestClass(aClass))
-               && !CompilerManager.getInstance(aClass.getProject()).getInstance(getProject()).isExcludedFromCompilation(PsiUtilCore.getVirtualFile(aClass));
-      }
-    });
-  }
+	public TestClassFilter intersectionWith(final GlobalSearchScope scope)
+	{
+		return new TestClassFilter(myBase, myScope.intersectWith(scope));
+	}
 
-  public TestClassFilter intersectionWith(final GlobalSearchScope scope) {
-    return new TestClassFilter(myBase, myScope.intersectWith(scope));
-  }
+	public static TestClassFilter create(final SourceScope sourceScope, final Module module) throws JUnitUtil.NoJUnitException
+	{
+		final PsiClass testCase = getTestCase(sourceScope, module);
+		return new TestClassFilter(testCase, sourceScope.getGlobalSearchScope());
+	}
 
-  public static TestClassFilter create(final SourceScope sourceScope, Module module) throws JUnitUtil.NoJUnitException {
-    if (sourceScope == null) throw new JUnitUtil.NoJUnitException();
-    PsiClass testCase = module == null ? JUnitUtil.getTestCaseClass(sourceScope) : JUnitUtil.getTestCaseClass(module);
-    return new TestClassFilter(testCase, sourceScope.getGlobalSearchScope());
-  }
+	private static PsiClass getTestCase(final SourceScope sourceScope, final Module module) throws JUnitUtil.NoJUnitException
+	{
+		if(sourceScope == null)
+		{
+			throw new JUnitUtil.NoJUnitException();
+		}
+		final JUnitUtil.NoJUnitException[] ex = new JUnitUtil.NoJUnitException[1];
+		final PsiClass testCase = ReadAction.compute(() ->
+		{
+			try
+			{
+				return module == null ? JUnitUtil.getTestCaseClass(sourceScope) : JUnitUtil.getTestCaseClass(module);
+			}
+			catch(JUnitUtil.NoJUnitException e)
+			{
+				ex[0] = e;
+				return null;
+			}
+		});
+		if(ex[0] != null)
+		{
+			throw ex[0];
+		}
+		return testCase;
+	}
 
-  public static TestClassFilter create(final SourceScope sourceScope, Module module, final String pattern) throws JUnitUtil.NoJUnitException {
-    if (sourceScope == null) throw new JUnitUtil.NoJUnitException();
-    PsiClass testCase = module == null ? JUnitUtil.getTestCaseClass(sourceScope) : JUnitUtil.getTestCaseClass(module);
-    final String[] patterns = pattern.split("\\|\\|");
-    final List<Pattern> compilePatterns = new ArrayList<Pattern>();
-    for (String p : patterns) {
-      final Pattern compilePattern = getCompilePattern(p);
-      if (compilePattern != null) {
-        compilePatterns.add(compilePattern);
-      }
-    }
-    return new TestClassFilter(testCase, sourceScope.getGlobalSearchScope()){
-      @Override
-      public boolean isAccepted(final PsiClass aClass) {
-        if (super.isAccepted(aClass)) {
-          final String qualifiedName = ApplicationManager.getApplication().runReadAction(new Computable<String>() {
-            @Override
-            public String compute() {
-              return aClass.getQualifiedName();
-            }
-          });
-          for (Pattern compilePattern : compilePatterns) {
-            if (compilePattern.matcher(qualifiedName).matches()) {
-              return true;
-            }
-          }
-        }
-        return false;
-      }
-    };
-  }
+	public static TestClassFilter create(final SourceScope sourceScope, Module module, final String pattern) throws JUnitUtil.NoJUnitException
+	{
+		final PsiClass testCase = getTestCase(sourceScope, module);
+		Predicate<String> predicate = getClassNamePredicate(pattern);
+		return new TestClassFilter(testCase, sourceScope.getGlobalSearchScope())
+		{
+			@Override
+			public boolean isAccepted(final PsiClass aClass)
+			{
+				if(super.isAccepted(aClass))
+				{
+					final String qualifiedName = ReadAction.compute(() -> aClass.getQualifiedName());
+					return predicate.test(qualifiedName);
+				}
+				return false;
+			}
+		};
+	}
 
-  private static Pattern getCompilePattern(String pattern) {
-    Pattern compilePattern;
-    try {
-      compilePattern = Pattern.compile(pattern.trim());
-    }
-    catch (PatternSyntaxException e) {
-      compilePattern = null;
-    }
-    return compilePattern;
-  }
+	private static Pattern getCompilePattern(String pattern)
+	{
+		Pattern compilePattern;
+		try
+		{
+			compilePattern = Pattern.compile(pattern.trim());
+		}
+		catch(PatternSyntaxException e)
+		{
+			compilePattern = null;
+		}
+		return compilePattern;
+	}
 
-  public GlobalSearchScope getScope() { return myScope; }
-  public PsiClass getBase() { return myBase; }
+	public static Predicate<String> getClassNamePredicate(String pattern)
+	{
+		final String[] patterns = pattern.split("\\|\\|");
+		final List<Pattern> compilePatterns = new ArrayList<>();
+		for(String p : patterns)
+		{
+			final Pattern compilePattern = getCompilePattern(p);
+			if(compilePattern != null)
+			{
+				compilePatterns.add(compilePattern);
+			}
+		}
+		return qualifiedName ->
+		{
+			for(Pattern compilePattern : compilePatterns)
+			{
+				if(compilePattern.matcher(qualifiedName).matches())
+				{
+					return true;
+				}
+			}
+			return false;
+		};
+	}
+
+	public GlobalSearchScope getScope()
+	{
+		return myScope;
+	}
+
+	@Nullable
+	public PsiClass getBase()
+	{
+		return myBase;
+	}
 }

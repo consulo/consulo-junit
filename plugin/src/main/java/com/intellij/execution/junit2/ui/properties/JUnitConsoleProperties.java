@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2009 JetBrains s.r.o.
+ * Copyright 2000-2015 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,38 +13,75 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.intellij.execution.junit2.ui.properties;
 
+import javax.swing.JComponent;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import com.intellij.execution.Executor;
 import com.intellij.execution.junit.JUnitConfiguration;
+import com.intellij.execution.junit2.ui.actions.RerunFailedTestsAction;
 import com.intellij.execution.testframework.JavaAwareTestConsoleProperties;
+import com.intellij.execution.testframework.JavaTestLocator;
 import com.intellij.execution.testframework.SourceScope;
-import com.intellij.ide.util.PropertiesComponent;
+import com.intellij.execution.testframework.TestConsoleProperties;
+import com.intellij.execution.testframework.actions.AbstractRerunFailedTestsAction;
+import com.intellij.execution.testframework.sm.runner.SMTestLocator;
+import com.intellij.execution.ui.ConsoleView;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.util.config.Storage;
-import org.jetbrains.annotations.NonNls;
-import org.jetbrains.annotations.NotNull;
+import com.intellij.rt.execution.junit.RepeatCount;
 
-public class JUnitConsoleProperties extends JavaAwareTestConsoleProperties {
-  @NonNls private static final String GROUP_NAME = "JUnitSupport.";
+public class JUnitConsoleProperties extends JavaAwareTestConsoleProperties<JUnitConfiguration>
+{
+	public JUnitConsoleProperties(@NotNull JUnitConfiguration configuration, Executor executor)
+	{
+		super("JUnit", configuration, executor);
+	}
 
-  private final JUnitConfiguration myConfiguration;
+	@NotNull
+	@Override
+	protected GlobalSearchScope initScope()
+	{
+		final JUnitConfiguration.Data persistentData = getConfiguration().getPersistentData();
+		final String testObject = persistentData.TEST_OBJECT;
+		//ignore invisible setting
+		if(JUnitConfiguration.TEST_CATEGORY.equals(testObject) || JUnitConfiguration.TEST_PATTERN.equals(testObject) || JUnitConfiguration.TEST_PACKAGE.equals(testObject))
+		{
+			final SourceScope sourceScope = persistentData.getScope().getSourceScope(getConfiguration());
+			return sourceScope != null ? sourceScope.getGlobalSearchScope() : GlobalSearchScope.allScope(getProject());
+		}
+		else
+		{
+			return super.initScope();
+		}
+	}
 
-  public JUnitConsoleProperties(@NotNull JUnitConfiguration configuration, Executor executor) {
-    this(configuration, new Storage.PropertiesComponentStorage(GROUP_NAME, PropertiesComponent.getInstance()), executor);
-  }
+	@Override
+	public void appendAdditionalActions(DefaultActionGroup actionGroup, JComponent parent, TestConsoleProperties target)
+	{
+		super.appendAdditionalActions(actionGroup, parent, target);
+		actionGroup.add(createIncludeNonStartedInRerun(target));
+	}
 
-  public JUnitConsoleProperties(@NotNull JUnitConfiguration configuration, final Storage storage, Executor executor) {
-    super(storage, configuration.getProject(), executor);
-    myConfiguration = configuration;
-  }
+	@Override
+	public SMTestLocator getTestLocator()
+	{
+		return JavaTestLocator.INSTANCE;
+	}
 
-  public JUnitConfiguration getConfiguration() { return myConfiguration; }
+	@Nullable
+	@Override
+	public AbstractRerunFailedTestsAction createRerunFailedTestsAction(ConsoleView consoleView)
+	{
+		return new RerunFailedTestsAction(consoleView, this);
+	}
 
-  @Override
-  public GlobalSearchScope getScope() {
-    final SourceScope sourceScope = myConfiguration.getPersistentData().getScope().getSourceScope(myConfiguration);
-    return sourceScope != null ? sourceScope.getLibrariesScope() : GlobalSearchScope.allScope(getProject());
-  }
+	@Override
+	public boolean isUndefined()
+	{
+		final String mode = getConfiguration().getRepeatMode();
+		return RepeatCount.UNLIMITED.equals(mode) || RepeatCount.UNTIL_FAILURE.equals(mode);
+	}
 }

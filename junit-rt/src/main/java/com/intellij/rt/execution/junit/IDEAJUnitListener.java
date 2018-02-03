@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-/*
- * User: anna
- * Date: 31-Aug-2009
- */
 package com.intellij.rt.execution.junit;
 
-public interface IDEAJUnitListener
-{
-	void testStarted(String className, String methodName);
+public interface IDEAJUnitListener {
+  String EP_NAME = "com.intellij.junitListener";
 
-	void testFinished(String className, String methodName);
+  void testStarted(String className, String methodName);
+  void testFinished(String className, String methodName);
+
 }

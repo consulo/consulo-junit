@@ -18,56 +18,37 @@ package com.intellij.execution.junit;
 
 import gnu.trove.THashSet;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.io.File;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.function.Predicate;
 
-import javax.swing.event.HyperlinkEvent;
-
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 import com.intellij.execution.CantRunException;
 import com.intellij.execution.ConfigurationUtil;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.ExecutionException;
-import com.intellij.execution.Executor;
 import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.RunnerRegistry;
+import com.intellij.execution.TestClassCollector;
 import com.intellij.execution.configurations.RuntimeConfigurationException;
 import com.intellij.execution.configurations.RuntimeConfigurationWarning;
-import com.intellij.execution.executors.DefaultDebugExecutor;
-import com.intellij.execution.executors.DefaultRunExecutor;
-import com.intellij.execution.junit2.ui.model.JUnitRunningModel;
-import com.intellij.execution.junit2.ui.properties.JUnitConsoleProperties;
-import com.intellij.execution.process.ProcessAdapter;
-import com.intellij.execution.process.ProcessEvent;
 import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.runners.ExecutionEnvironmentBuilder;
-import com.intellij.execution.runners.ProgramRunner;
+import com.intellij.execution.testframework.SearchForTestsTask;
 import com.intellij.execution.testframework.SourceScope;
 import com.intellij.execution.testframework.TestSearchScope;
-import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleManager;
-import com.intellij.openapi.module.ModuleUtil;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.ProgressManager;
-import com.intellij.openapi.progress.Task;
-import com.intellij.openapi.progress.impl.BackgroundableProcessIndicator;
-import com.intellij.openapi.project.DumbModeAction;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.MessageType;
-import com.intellij.openapi.ui.popup.Balloon;
 import com.intellij.openapi.util.Comparing;
-import com.intellij.openapi.util.io.FileUtil;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.openapi.wm.ToolWindowId;
-import com.intellij.openapi.wm.ToolWindowManager;
+import com.intellij.openapi.util.Ref;
+import com.intellij.psi.CommonClassNames;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiDirectory;
@@ -77,106 +58,110 @@ import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.PackageScope;
+import com.intellij.psi.util.ClassUtil;
 import com.intellij.refactoring.listeners.RefactoringElementListener;
-import com.intellij.ui.HyperlinkAdapter;
-import com.intellij.util.Function;
+import com.intellij.rt.execution.junit.JUnitStarter;
+import consulo.java.execution.configurations.OwnJavaParameters;
 import consulo.psi.PsiPackage;
+import conuslo.junit.JUnitProperties;
 
 public class TestPackage extends TestObject
 {
-	protected BackgroundableProcessIndicator mySearchForTestsIndicator;
-	protected ServerSocket myServerSocket;
-	private boolean myFoundTests = true;
 
-	public TestPackage(final JUnitConfiguration configuration, ExecutionEnvironment environment)
+	public TestPackage(JUnitConfiguration configuration, ExecutionEnvironment environment)
 	{
 		super(configuration, environment);
 	}
 
-
+	@Nullable
+	@Override
 	public SourceScope getSourceScope()
 	{
-		final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
-		return data.getScope().getSourceScope(myConfiguration);
+		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		return data.getScope().getSourceScope(getConfiguration());
 	}
 
 	@Override
-	protected JUnitProcessHandler createHandler(Executor executor) throws ExecutionException
+	public SearchForTestsTask createSearchingForTestsTask()
 	{
-		final JUnitProcessHandler handler = super.createHandler(executor);
-		final SearchForTestsTask[] tasks = new SearchForTestsTask[1];
-		handler.addProcessListener(new ProcessAdapter()
+		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+
+		return new SearchForTestsTask(getConfiguration().getProject(), myServerSocket)
 		{
-			@Override
-			public void startNotified(ProcessEvent event)
-			{
-				super.startNotified(event);
-				tasks[0] = (SearchForTestsTask) findTests();
-			}
+			private final THashSet<PsiClass> myClasses = new THashSet<>();
 
 			@Override
-			public void processTerminated(ProcessEvent event)
+			protected void search()
 			{
-				handler.removeProcessListener(this);
-				if(mySearchForTestsIndicator != null && !mySearchForTestsIndicator.isCanceled())
+				myClasses.clear();
+				final SourceScope sourceScope = getSourceScope();
+				final Module module = getConfiguration().getConfigurationModule().getModule();
+				if(sourceScope != null && !JUnitStarter.JUNIT5_PARAMETER.equals(getRunner()))
 				{
-					if(tasks[0] != null)
+					DumbService instance = DumbService.getInstance(myProject);
+					try
 					{
-						tasks[0].finish();
+						instance.setAlternativeResolveEnabled(true);
+						final TestClassFilter classFilter = getClassFilter(data);
+						LOG.assertTrue(classFilter.getBase() != null);
+						long start = System.currentTimeMillis();
+						if(JUnitProperties.JUNIT4_SEARCH_4_TESTS_IN_CLASSPATH)
+						{
+							String packageName = getPackageName(data);
+							String[] classNames = TestClassCollector.collectClassFQNames(packageName, getRootPath(), getConfiguration(), TestPackage::createPredicate);
+							PsiManager manager = PsiManager.getInstance(myProject);
+							Arrays.stream(classNames).filter(className -> acceptClassName(className)) //check patterns
+									.map(name -> ReadAction.<PsiClass, RuntimeException>compute(() -> ClassUtil.findPsiClass(manager, name, null, true, classFilter.getScope()))).filter(Objects
+									::nonNull).forEach(myClasses::add);
+							LOG.info("Found tests in " + (System.currentTimeMillis() - start));
+						}
+						else
+						{
+							ConfigurationUtil.findAllTestClasses(classFilter, module, myClasses);
+						}
+					}
+					catch(CantRunException ignored)
+					{
+					}
+					finally
+					{
+						instance.setAlternativeResolveEnabled(false);
 					}
 				}
 			}
-		});
-		return handler;
-	}
 
-	public Task findTests()
-	{
-		final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
-		final TestClassFilter filter;
-		try
-		{
-			filter = getClassFilter(data);
-		}
-		catch(CantRunException e)
-		{
-			//should not happen
-			return null;
-		}
-
-		return findTestsWithProgress(new FindCallback()
-		{
-			public void found(@NotNull final Collection<PsiClass> classes, final boolean isJunit4)
+			@Override
+			protected void onFound()
 			{
+
 				try
 				{
-					addClassesListToJavaParameters(classes, new Function<PsiElement, String>()
-					{
-						@Nullable
-						public String fun(PsiElement element)
-						{
-							if(element instanceof PsiClass)
-							{
-								return JavaExecutionUtil.getRuntimeQualifiedName((PsiClass) element);
-							}
-							else if(element instanceof PsiMethod)
-							{
-								PsiMethod method = (PsiMethod) element;
-								return JavaExecutionUtil.getRuntimeQualifiedName(method.getContainingClass()) + "," + method.getName();
-							}
-							else
-							{
-								return null;
-							}
-						}
-					}, getPackageName(data), false, isJunit4);
+					addClassesListToJavaParameters(myClasses, psiClass -> psiClass != null ? JavaExecutionUtil.getRuntimeQualifiedName(psiClass) : null, getPackageName(data), createTempFiles(),
+							getJavaParameters());
 				}
-				catch(CantRunException e)
+				catch(ExecutionException ignored)
 				{
-					//can't be here
 				}
 			}
-		}, filter);
+		};
+	}
+
+	@Nullable
+	protected Path getRootPath()
+	{
+		Module module = getConfiguration().getConfigurationModule().getModule();
+		boolean chooseSingleModule = getConfiguration().getTestSearchScope() == TestSearchScope.SINGLE_MODULE;
+		return TestClassCollector.getRootPath(module, chooseSingleModule);
+	}
+
+	protected boolean acceptClassName(String className)
+	{
+		return true;
+	}
+
+	protected boolean createTempFiles()
+	{
+		return false;
 	}
 
 	protected String getPackageName(JUnitConfiguration.Data data) throws CantRunException
@@ -184,62 +169,33 @@ public class TestPackage extends TestObject
 		return getPackage(data).getQualifiedName();
 	}
 
-	protected void initialize() throws ExecutionException
+	@Override
+	protected OwnJavaParameters createJavaParameters() throws ExecutionException
 	{
-		super.initialize();
-		final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
-		getClassFilter(data);//check if junit found
-		configureClasspath();
+		final OwnJavaParameters javaParameters = super.createJavaParameters();
+		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		final Project project = getConfiguration().getProject();
+		final SourceScope sourceScope = data.getScope().getSourceScope(getConfiguration());
+		if(sourceScope == null || !JUnitStarter.JUNIT5_PARAMETER.equals(getRunner()))
+		{ //check for junit 5
+			JUnitUtil.checkTestCase(sourceScope, project);
+		}
+		createTempFiles(javaParameters);
 
-		try
-		{
-			myTempFile = FileUtil.createTempFile("idea_junit", ".tmp");
-			myTempFile.deleteOnExit();
-			myJavaParameters.getProgramParametersList().add("@" + myTempFile.getAbsolutePath());
-		}
-		catch(IOException e)
-		{
-			LOG.error(e);
-		}
-
-		try
-		{
-			myServerSocket = new ServerSocket(0, 0, InetAddress.getByName("127.0.0.1"));
-			myJavaParameters.getProgramParametersList().add("-socket" + myServerSocket.getLocalPort());
-		}
-		catch(IOException e)
-		{
-			LOG.error(e);
-		}
+		createServerSocket(javaParameters);
+		return javaParameters;
 	}
 
-	protected void configureClasspath() throws ExecutionException
+	@Override
+	protected boolean configureByModule(Module module)
 	{
-		final ExecutionException[] exception = new ExecutionException[1];
-		ApplicationManager.getApplication().runReadAction(new Runnable()
-		{
-			public void run()
-			{
-				try
-				{
-					myConfiguration.configureClasspath(myJavaParameters);
-				}
-				catch(CantRunException e)
-				{
-					exception[0] = e;
-				}
-			}
-		});
-		if(exception[0] != null)
-		{
-			throw exception[0];
-		}
+		return super.configureByModule(module) && getConfiguration().getPersistentData().getScope() != TestSearchScope.WHOLE_PROJECT;
 	}
 
 	protected TestClassFilter getClassFilter(final JUnitConfiguration.Data data) throws CantRunException
 	{
-		Module module = myConfiguration.getConfigurationModule().getModule();
-		if(myConfiguration.getPersistentData().getScope() == TestSearchScope.WHOLE_PROJECT)
+		Module module = getConfiguration().getConfigurationModule().getModule();
+		if(getConfiguration().getPersistentData().getScope() == TestSearchScope.WHOLE_PROJECT)
 		{
 			module = null;
 		}
@@ -249,16 +205,33 @@ public class TestPackage extends TestObject
 
 	protected GlobalSearchScope filterScope(final JUnitConfiguration.Data data) throws CantRunException
 	{
-		final PsiJavaPackage aPackage = getPackage(data);
-		return PackageScope.packageScope(aPackage, true);
+		final Ref<CantRunException> ref = new Ref<>();
+		final GlobalSearchScope aPackage = ReadAction.compute(() ->
+		{
+			try
+			{
+				return PackageScope.packageScope((PsiJavaPackage) getPackage(data), true);
+			}
+			catch(CantRunException e)
+			{
+				ref.set(e);
+				return null;
+			}
+		});
+		final CantRunException exception = ref.get();
+		if(exception != null)
+		{
+			throw exception;
+		}
+		return aPackage;
 	}
 
-	protected PsiJavaPackage getPackage(JUnitConfiguration.Data data) throws CantRunException
+	protected PsiPackage getPackage(JUnitConfiguration.Data data) throws CantRunException
 	{
-		final Project project = myConfiguration.getProject();
+		final Project project = getConfiguration().getProject();
 		final String packageName = data.getPackageName();
 		final PsiManager psiManager = PsiManager.getInstance(project);
-		final PsiJavaPackage aPackage = JavaPsiFacade.getInstance(psiManager.getProject()).findPackage(packageName);
+		final PsiPackage aPackage = JavaPsiFacade.getInstance(psiManager.getProject()).findPackage(packageName);
 		if(aPackage == null)
 		{
 			throw CantRunException.packageNotFound(packageName);
@@ -266,14 +239,10 @@ public class TestPackage extends TestObject
 		return aPackage;
 	}
 
+	@Override
 	public String suggestActionName()
 	{
-		final String configurationName = myConfiguration.getName();
-		if(!myConfiguration.isGeneratedName())
-		{
-			return "'" + configurationName + "'";
-		}
-		final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
+		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
 		if(data.getPackageName().trim().length() > 0)
 		{
 			return ExecutionBundle.message("test.in.scope.presentable.text", data.getPackageName());
@@ -281,286 +250,103 @@ public class TestPackage extends TestObject
 		return ExecutionBundle.message("all.tests.scope.presentable.text");
 	}
 
+	@Override
 	public RefactoringElementListener getListener(final PsiElement element, final JUnitConfiguration configuration)
 	{
-		if(!(element instanceof PsiJavaPackage))
+		if(!(element instanceof PsiPackage))
 		{
 			return null;
 		}
 		return RefactoringListeners.getListener((PsiJavaPackage) element, configuration.myPackage);
 	}
 
-	public boolean isConfiguredByElement(final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod,
-			PsiJavaPackage testPackage)
+	@Override
+	public boolean isConfiguredByElement(final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
 	{
 		return testPackage != null && Comparing.equal(testPackage.getQualifiedName(), configuration.getPersistentData().getPackageName());
 	}
 
+	@Override
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
 		super.checkConfiguration();
-		final String packageName = myConfiguration.getPersistentData().getPackageName();
-		final PsiPackage aPackage = JavaPsiFacade.getInstance(myConfiguration.getProject()).findPackage(packageName);
+		final String packageName = getConfiguration().getPersistentData().getPackageName();
+		final PsiPackage aPackage = JavaPsiFacade.getInstance(getConfiguration().getProject()).findPackage(packageName);
 		if(aPackage == null)
 		{
 			throw new RuntimeConfigurationWarning(ExecutionBundle.message("package.does.not.exist.error.message", packageName));
 		}
 		if(getSourceScope() == null)
 		{
-			myConfiguration.getConfigurationModule().checkForWarning();
+			getConfiguration().getConfigurationModule().checkForWarning();
 		}
 	}
 
-	private MySearchForTestsTask findTestsWithProgress(final FindCallback callback, final TestClassFilter classFilter)
+	@TestOnly
+	public File getWorkingDirsFile()
 	{
-		if(isSyncSearch())
+		return myWorkingDirsFile;
+	}
+
+	private static Predicate<Class<?>> createPredicate(ClassLoader classLoader)
+	{
+
+		Class<?> testCaseClass = loadClass(classLoader, "junit.framework.TestCase");
+
+		@SuppressWarnings("unchecked") Class<? extends Annotation> runWithAnnotationClass = (Class<? extends Annotation>) loadClass(classLoader, "org.junit.runner.RunWith");
+
+		@SuppressWarnings("unchecked") Class<? extends Annotation> testAnnotationClass = (Class<? extends Annotation>) loadClass(classLoader, "org.junit.Test");
+
+		return aClass ->
 		{
-			THashSet<PsiClass> classes = new THashSet<PsiClass>();
-			boolean isJUnit4 = ConfigurationUtil.findAllTestClasses(classFilter, classes);
-			callback.found(classes, isJUnit4);
+			//annotation
+			if(runWithAnnotationClass != null && aClass.isAnnotationPresent(runWithAnnotationClass))
+			{
+				return true;
+			}
+			//junit 3
+			if(testCaseClass != null && testCaseClass.isAssignableFrom(aClass))
+			{
+				return Arrays.stream(aClass.getConstructors()).anyMatch(constructor ->
+				{
+					Class<?>[] parameterTypes = constructor.getParameterTypes();
+					return parameterTypes.length == 0 || parameterTypes.length == 1 && CommonClassNames.JAVA_LANG_STRING.equals(parameterTypes[0].getName());
+				});
+			}
+			else
+			{
+				//junit 4 & suite
+				for(Method method : aClass.getMethods())
+				{
+					if(Modifier.isStatic(method.getModifiers()) && "suite".equals(method.getName()))
+					{
+						return true;
+					}
+					if(testAnnotationClass != null && method.isAnnotationPresent(testAnnotationClass))
+					{
+						return hasSingleConstructor(aClass);
+					}
+				}
+			}
+			return false;
+		};
+	}
+
+	private static Class<?> loadClass(ClassLoader classLoader, String className)
+	{
+		try
+		{
+			return Class.forName(className, true, classLoader);
+		}
+		catch(ClassNotFoundException e)
+		{
 			return null;
 		}
-
-		final THashSet<PsiClass> classes = new THashSet<PsiClass>();
-		final boolean[] isJunit4 = new boolean[1];
-		final MySearchForTestsTask task = new MySearchForTestsTask(classFilter, isJunit4, classes, callback);
-		mySearchForTestsIndicator = new BackgroundableProcessIndicator(task);
-		ProgressManager.getInstance().runProcessWithProgressAsynchronously(task, mySearchForTestsIndicator);
-		return task;
 	}
 
-	private static boolean isSyncSearch()
+	private static boolean hasSingleConstructor(Class<?> aClass)
 	{
-		return ApplicationManager.getApplication().isUnitTestMode();
-	}
-
-	@Override
-	protected void notifyByBalloon(JUnitRunningModel model, boolean started, final JUnitConsoleProperties consoleProperties)
-	{
-		if(myFoundTests)
-		{
-			super.notifyByBalloon(model, started, consoleProperties);
-		}
-		else
-		{
-			final String packageName = myConfiguration.getPackage();
-			if(packageName == null)
-			{
-				return;
-			}
-			final Project project = myConfiguration.getProject();
-			final PsiPackage aPackage = JavaPsiFacade.getInstance(project).findPackage(packageName);
-			if(aPackage == null)
-			{
-				return;
-			}
-			final Module module = myConfiguration.getConfigurationModule().getModule();
-			if(module == null)
-			{
-				return;
-			}
-			final Set<Module> modulesWithPackage = new HashSet<Module>();
-			final PsiDirectory[] directories = aPackage.getDirectories();
-			for(PsiDirectory directory : directories)
-			{
-				final Module currentModule = ModuleUtil.findModuleForFile(directory.getVirtualFile(), project);
-				if(module != currentModule && currentModule != null)
-				{
-					modulesWithPackage.add(currentModule);
-				}
-			}
-			if(!modulesWithPackage.isEmpty())
-			{
-				final String testRunDebugId = consoleProperties.isDebug() ? ToolWindowId.DEBUG : ToolWindowId.RUN;
-				final ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
-				final Function<Module, String> moduleNameRef = new Function<Module, String>()
-				{
-					@Override
-					public String fun(Module module)
-					{
-						final String moduleName = module.getName();
-						return "<a href=\"" + moduleName + "\">" + moduleName + "</a>";
-					}
-				};
-				String message = "Tests were not found in module \"" + module.getName() + "\".\n" +
-						"Use ";
-				if(modulesWithPackage.size() == 1)
-				{
-					message += "module \"" + moduleNameRef.fun(modulesWithPackage.iterator().next()) + "\" ";
-				}
-				else
-				{
-					message += "one of\n" + StringUtil.join(modulesWithPackage, moduleNameRef, "\n") + "\n";
-				}
-				message += "instead";
-				toolWindowManager.notifyByBalloon(testRunDebugId, MessageType.WARNING, message, null, new ResetConfigurationModuleAdapter(project,
-						consoleProperties, toolWindowManager, testRunDebugId));
-			}
-		}
-	}
-
-	public interface FindCallback
-	{
-		/**
-		 * Invoked in dispatch thread
-		 */
-		void found(@NotNull Collection<PsiClass> classes, final boolean isJunit4);
-	}
-
-	protected abstract class SearchForTestsTask extends Task.Backgroundable
-	{
-
-		protected Socket mySocket;
-
-		public SearchForTestsTask(@Nullable final Project project, @NotNull final String title, final boolean canBeCancelled)
-		{
-			super(project, title, canBeCancelled);
-		}
-
-
-		protected void finish()
-		{
-			DataOutputStream os = null;
-			try
-			{
-				if(mySocket == null || mySocket.isClosed())
-				{
-					return;
-				}
-				os = new DataOutputStream(mySocket.getOutputStream());
-				os.writeBoolean(true);
-			}
-			catch(Throwable e)
-			{
-				LOG.info(e);
-			}
-			finally
-			{
-				try
-				{
-					if(os != null)
-					{
-						os.close();
-					}
-				}
-				catch(Throwable e)
-				{
-					LOG.info(e);
-				}
-
-				try
-				{
-					if(!myServerSocket.isClosed())
-					{
-						myServerSocket.close();
-					}
-				}
-				catch(Throwable e)
-				{
-					LOG.info(e);
-				}
-			}
-		}
-
-		@Override
-		public void onCancel()
-		{
-			finish();
-		}
-
-		@Override
-		public DumbModeAction getDumbModeAction()
-		{
-			return DumbModeAction.WAIT;
-		}
-	}
-
-	private class MySearchForTestsTask extends SearchForTestsTask
-	{
-		private final TestClassFilter myClassFilter;
-		private final boolean[] myJunit4;
-		private final THashSet<PsiClass> myClasses;
-		private final FindCallback myCallback;
-
-		public MySearchForTestsTask(TestClassFilter classFilter, boolean[] junit4, THashSet<PsiClass> classes, FindCallback callback)
-		{
-			super(classFilter.getProject(), ExecutionBundle.message("seaching.test.progress.title"), true);
-			myClassFilter = classFilter;
-			myJunit4 = junit4;
-			myClasses = classes;
-			myCallback = callback;
-		}
-
-
-		public void run(@NotNull ProgressIndicator indicator)
-		{
-			try
-			{
-				mySocket = myServerSocket.accept();
-				myJunit4[0] = ConfigurationUtil.findAllTestClasses(myClassFilter, myClasses);
-				myFoundTests = !myClasses.isEmpty();
-			}
-			catch(IOException e)
-			{
-				LOG.info(e);
-			}
-			catch(Throwable e)
-			{
-				LOG.error(e);
-			}
-		}
-
-		@Override
-		public void onSuccess()
-		{
-			myCallback.found(myClasses, myJunit4[0]);
-			finish();
-		}
-	}
-
-	private class ResetConfigurationModuleAdapter extends HyperlinkAdapter
-	{
-		private final Project myProject;
-		private final JUnitConsoleProperties myConsoleProperties;
-		private final ToolWindowManager myToolWindowManager;
-		private final String myTestRunDebugId;
-
-		public ResetConfigurationModuleAdapter(final Project project,
-				final JUnitConsoleProperties consoleProperties,
-				final ToolWindowManager toolWindowManager,
-				final String testRunDebugId)
-		{
-			myProject = project;
-			myConsoleProperties = consoleProperties;
-			myToolWindowManager = toolWindowManager;
-			myTestRunDebugId = testRunDebugId;
-		}
-
-		@Override
-		protected void hyperlinkActivated(HyperlinkEvent e)
-		{
-			final Module moduleByName = ModuleManager.getInstance(myProject).findModuleByName(e.getDescription());
-			if(moduleByName != null)
-			{
-				myConfiguration.getConfigurationModule().setModule(moduleByName);
-				try
-				{
-					final Executor executor = myConsoleProperties.isDebug() ? DefaultDebugExecutor.getDebugExecutorInstance() : DefaultRunExecutor
-							.getRunExecutorInstance();
-					final ProgramRunner runner = RunnerRegistry.getInstance().getRunner(executor.getId(), myConfiguration);
-					assert runner != null;
-					runner.execute(new ExecutionEnvironmentBuilder(myEnvironment).contentToReuse(null).build());
-					final Balloon balloon = myToolWindowManager.getToolWindowBalloon(myTestRunDebugId);
-					if(balloon != null)
-					{
-						balloon.hide();
-					}
-				}
-				catch(ExecutionException e1)
-				{
-					LOG.error(e1);
-				}
-			}
-		}
+		Constructor<?>[] constructors = aClass.getConstructors();
+		return constructors.length == 1 && constructors[0].getParameterTypes().length == 0;
 	}
 }

@@ -37,7 +37,7 @@ public class RerunFailedTestsAction extends JavaRerunFailedTestsAction
 	protected MyRunProfile getRunProfile(@NotNull ExecutionEnvironment environment)
 	{
 		//noinspection ConstantConditions
-		final JUnitConfiguration configuration = (JUnitConfiguration) getModel().getProperties().getConfiguration();
+		final JUnitConfiguration configuration = (JUnitConfiguration) myConsoleProperties.getConfiguration();
 		final TestMethods testMethods = new TestMethods(configuration, environment, getFailedTests(configuration.getProject()));
 		return new MyRunProfile(configuration)
 		{

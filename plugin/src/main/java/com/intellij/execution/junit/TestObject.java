@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2011 JetBrains s.r.o.
+ * Copyright 2000-2016 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,111 +18,88 @@ package com.intellij.execution.junit;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.TreeMap;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import com.intellij.execution.CantRunException;
-import com.intellij.execution.DefaultExecutionResult;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.ExecutionException;
-import com.intellij.execution.ExecutionResult;
 import com.intellij.execution.Executor;
-import com.intellij.execution.JavaRunConfigurationExtensionManager;
-import com.intellij.execution.JavaTestPatcher;
-import com.intellij.execution.RunConfigurationExtension;
-import com.intellij.execution.configurations.CommandLineBuilder;
-import com.intellij.execution.configurations.GeneralCommandLine;
-import com.intellij.execution.configurations.JavaCommandLine;
-import com.intellij.execution.configurations.JavaParameters;
-import com.intellij.execution.configurations.RunConfigurationModule;
-import com.intellij.execution.configurations.RunnerSettings;
-import com.intellij.execution.configurations.RuntimeConfigurationError;
+import com.intellij.execution.JavaExecutionUtil;
+import com.intellij.execution.JavaTestFrameworkRunnableState;
+import com.intellij.execution.TestClassCollector;
+import com.intellij.execution.configurations.ParametersList;
 import com.intellij.execution.configurations.RuntimeConfigurationException;
-import com.intellij.execution.junit2.TestProxy;
-import com.intellij.execution.junit2.segments.DeferredActionsQueue;
-import com.intellij.execution.junit2.segments.DeferredActionsQueueImpl;
-import com.intellij.execution.junit2.segments.DispatchListener;
-import com.intellij.execution.junit2.segments.Extractor;
-import com.intellij.execution.junit2.ui.JUnitTreeConsoleView;
-import com.intellij.execution.junit2.ui.TestsPacketsReceiver;
-import com.intellij.execution.junit2.ui.actions.RerunFailedTestsAction;
-import com.intellij.execution.junit2.ui.model.CompletionEvent;
-import com.intellij.execution.junit2.ui.model.JUnitRunningModel;
-import com.intellij.execution.junit2.ui.model.RootTestInfo;
-import com.intellij.execution.junit2.ui.properties.JUnitConsoleProperties;
-import com.intellij.execution.process.ProcessAdapter;
-import com.intellij.execution.process.ProcessEvent;
+import com.intellij.execution.junit.testDiscovery.TestBySource;
+import com.intellij.execution.junit.testDiscovery.TestsByChanges;
+import com.intellij.execution.process.KillableColoredProcessHandler;
+import com.intellij.execution.process.OSProcessHandler;
+import com.intellij.execution.process.ProcessTerminatedListener;
 import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.runners.ProgramRunner;
-import com.intellij.execution.testframework.Printable;
-import com.intellij.execution.testframework.Printer;
+import com.intellij.execution.testframework.SearchForTestsTask;
 import com.intellij.execution.testframework.SourceScope;
-import com.intellij.execution.testframework.TestConsoleProperties;
-import com.intellij.execution.testframework.TestFrameworkRunningModel;
 import com.intellij.execution.testframework.TestSearchScope;
-import com.intellij.execution.testframework.TestsUIUtil;
-import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil;
-import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties;
-import com.intellij.execution.testframework.sm.runner.ui.SMTRunnerConsoleView;
-import com.intellij.execution.testframework.ui.BaseTestsOutputConsoleView;
-import com.intellij.execution.ui.ConsoleView;
-import com.intellij.execution.ui.ConsoleViewContentType;
 import com.intellij.execution.util.JavaParametersUtil;
 import com.intellij.execution.util.ProgramParametersUtil;
-import com.intellij.openapi.Disposable;
-import com.intellij.openapi.components.PathMacroUtil;
+import com.intellij.junit5.JUnit5IdeaTestRunner;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.extensions.ExtensionPointName;
-import com.intellij.openapi.extensions.Extensions;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
-import com.intellij.openapi.projectRoots.JavaSdkType;
-import com.intellij.openapi.projectRoots.Sdk;
-import com.intellij.openapi.projectRoots.ex.JavaSdkUtil;
-import com.intellij.openapi.util.Comparing;
-import com.intellij.openapi.util.Disposer;
-import com.intellij.openapi.util.Getter;
-import com.intellij.openapi.util.Key;
+import com.intellij.openapi.project.DumbService;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.util.io.FileUtil;
-import com.intellij.openapi.util.registry.Registry;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.CharsetToolkit;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiJavaPackage;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.search.GlobalSearchScopesCore;
+import com.intellij.psi.util.PsiUtilCore;
 import com.intellij.refactoring.listeners.RefactoringElementListener;
 import com.intellij.rt.execution.junit.IDEAJUnitListener;
 import com.intellij.rt.execution.junit.JUnitStarter;
+import com.intellij.rt.execution.junit.RepeatCount;
+import com.intellij.rt.execution.testFrameworks.ForkedDebuggerHelper;
 import com.intellij.util.Function;
+import com.intellij.util.ObjectUtil;
+import com.intellij.util.ObjectUtils;
 import com.intellij.util.PathUtil;
-import consulo.java.module.extension.JavaModuleExtension;
-import jetbrains.buildServer.messages.serviceMessages.ServiceMessageTypes;
+import com.intellij.util.PathsList;
+import com.siyeh.ig.junit.JUnitCommonClassNames;
+import consulo.java.execution.configurations.OwnJavaParameters;
+import consulo.psi.PsiPackage;
+import consulo.vfs.ArchiveFileSystem;
 
-public abstract class TestObject implements JavaCommandLine
+public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitConfiguration>
 {
-	private static final ExtensionPointName<IDEAJUnitListener> EP_NAME = ExtensionPointName.create("com.intellij.junitListener");
-
-	protected static final Logger LOG = Logger.getInstance("#com.intellij.execution.junit.TestObject");
+	protected static final Logger LOG = Logger.getInstance(TestObject.class);
 
 	private static final String MESSAGE = ExecutionBundle.message("configuration.not.speficied.message");
 	@NonNls
 	private static final String JUNIT_TEST_FRAMEWORK_NAME = "JUnit";
 
-	protected JavaParameters myJavaParameters;
-	protected final JUnitConfiguration myConfiguration;
-	protected final ExecutionEnvironment myEnvironment;
-	protected File myTempFile = null;
-	protected File myWorkingDirsFile = null;
-	public File myListenersFile;
+	private final JUnitConfiguration myConfiguration;
+	protected File myListenersFile;
 
-	public static TestObject fromString(@NotNull final String id, @NotNull final JUnitConfiguration configuration, @NotNull ExecutionEnvironment environment)
+	public static TestObject fromString(final String id, final JUnitConfiguration configuration, @NotNull ExecutionEnvironment environment)
 	{
 		if(JUnitConfiguration.TEST_METHOD.equals(id))
 		{
@@ -136,15 +113,32 @@ public abstract class TestObject implements JavaCommandLine
 		{
 			return new TestPackage(configuration, environment);
 		}
-		else if(JUnitConfiguration.TEST_DIRECTORY.equals(id))
+		if(JUnitConfiguration.TEST_DIRECTORY.equals(id))
 		{
 			return new TestDirectory(configuration, environment);
+		}
+		if(JUnitConfiguration.TEST_CATEGORY.equals(id))
+		{
+			return new TestCategory(configuration, environment);
 		}
 		if(JUnitConfiguration.TEST_PATTERN.equals(id))
 		{
 			return new TestsPattern(configuration, environment);
 		}
-		return NOT_CONFIGURED;
+		if(JUnitConfiguration.TEST_UNIQUE_ID.equals(id))
+		{
+			return new TestUniqueId(configuration, environment);
+		}
+		if(JUnitConfiguration.BY_SOURCE_POSITION.equals(id))
+		{
+			return new TestBySource(configuration, environment);
+		}
+		if(JUnitConfiguration.BY_SOURCE_CHANGES.equals(id))
+		{
+			return new TestsByChanges(configuration, environment);
+		}
+		LOG.info(MESSAGE + id);
+		return null;
 	}
 
 	public Module[] getModulesToCompile()
@@ -153,136 +147,67 @@ public abstract class TestObject implements JavaCommandLine
 		return sourceScope != null ? sourceScope.getModulesToCompile() : Module.EMPTY_ARRAY;
 	}
 
-	protected TestObject(final JUnitConfiguration configuration, ExecutionEnvironment environment)
+	protected TestObject(JUnitConfiguration configuration, ExecutionEnvironment environment)
 	{
+		super(environment);
 		myConfiguration = configuration;
-		myEnvironment = environment;
 	}
 
 	public abstract String suggestActionName();
 
-	public RunnerSettings getRunnerSettings()
-	{
-		return myEnvironment.getRunnerSettings();
-	}
-
 	public abstract RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration);
 
-	public abstract boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiJavaPackage testPackage);
-
-	protected void configureModule(final JavaParameters parameters, final RunConfigurationModule configurationModule, final String mainClassName) throws CantRunException
-	{
-		int classPathType = JavaParametersUtil.getClasspathType(configurationModule, mainClassName, true);
-		JavaParametersUtil.configureModule(configurationModule, parameters, classPathType, myConfiguration.isAlternativeJrePathEnabled() ? myConfiguration.getAlternativeJrePath() : null);
-	}
-
-	private static final TestObject NOT_CONFIGURED = new TestObject(null, null)
-	{
-		@Override
-		public RefactoringElementListener getListener(final PsiElement element, final JUnitConfiguration configuration)
-		{
-			return null;
-		}
-
-		@Override
-		public String suggestActionName()
-		{
-			throw new RuntimeException(String.valueOf(myConfiguration));
-		}
-
-		@Override
-		public boolean isConfiguredByElement(final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiJavaPackage testPackage)
-		{
-			return false;
-		}
-
-		@Override
-		public void checkConfiguration() throws RuntimeConfigurationException
-		{
-			throw new RuntimeConfigurationError(MESSAGE);
-		}
-
-		@Override
-		public JavaParameters getJavaParameters() throws ExecutionException
-		{
-			throw new ExecutionException(MESSAGE);
-		}
-
-		@Override
-		protected void initialize() throws ExecutionException
-		{
-			throw new ExecutionException(MESSAGE);
-		}
-	};
+	public abstract boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir);
 
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
-		JavaParametersUtil.checkAlternativeJRE(myConfiguration);
-		ProgramParametersUtil.checkWorkingDirectoryExist(myConfiguration, myConfiguration.getProject(), myConfiguration.getConfigurationModule().getModule());
+		JavaParametersUtil.checkAlternativeJRE(getConfiguration());
+		ProgramParametersUtil.checkWorkingDirectoryExist(getConfiguration(), getConfiguration().getProject(), getConfiguration().getConfigurationModule().getModule());
 	}
 
+	@Nullable
 	public SourceScope getSourceScope()
 	{
-		return SourceScope.modulesWithDependencies(myConfiguration.getModules());
+		return SourceScope.modules(getConfiguration().getModules());
 	}
 
-	protected void initialize() throws ExecutionException
+	@Override
+	protected void configureRTClasspath(OwnJavaParameters javaParameters) throws CantRunException
 	{
-		JavaParametersUtil.configureConfiguration(myJavaParameters, myConfiguration);
-		myJavaParameters.setMainClass(JUnitConfiguration.JUNIT_START_CLASS);
-		final Module module = myConfiguration.getConfigurationModule().getModule();
-		if(module == null)
-		{
-			throw new ExecutionException("No module");
-		}
-		if(myJavaParameters.getJdk() == null)
-		{
-			final Sdk sdk = ModuleUtilCore.getSdk(module, JavaModuleExtension.class);
-			if(sdk == null)
-			{
-				throw new ExecutionException("Sdk not found for module: " + module.getName());
-			}
-			myJavaParameters.setJdk(sdk);
-		}
+		javaParameters.getClassPath().add(PathUtil.getJarPathForClass(JUnitStarter.class));
 
-		myJavaParameters.getClassPath().add(JavaSdkUtil.getIdeaRtJarPath());
-		myJavaParameters.getClassPath().add(PathUtil.getJarPathForClass(JUnitStarter.class));
-		if(Registry.is("junit_sm_runner", false))
+		//include junit5 listeners for the case custom junit 5 engines would be detected on runtime
+		javaParameters.getClassPath().add(getJUnit5RtFile());
+
+		String preferredRunner = getRunner();
+		if(JUnitStarter.JUNIT5_PARAMETER.equals(preferredRunner))
 		{
-			myJavaParameters.getClassPath().add(PathUtil.getJarPathForClass(ServiceMessageTypes.class));
+			final Project project = getConfiguration().getProject();
+			GlobalSearchScope globalSearchScope = getScopeForJUnit(getConfiguration().getConfigurationModule().getModule(), project);
+			appendJUnit5LauncherClasses(javaParameters, project, globalSearchScope);
 		}
-		myJavaParameters.getProgramParametersList().add(JUnitStarter.IDE_VERSION + JUnitStarter.VERSION);
-		for(RunConfigurationExtension ext : Extensions.getExtensions(RunConfigurationExtension.EP_NAME))
-		{
-			ext.updateJavaParameters(myConfiguration, myJavaParameters, getRunnerSettings());
-		}
+	}
+
+	public static File getJUnit5RtFile()
+	{
+		return new File(PathUtil.getJarPathForClass(JUnit5IdeaTestRunner.class));
+	}
+
+	@Override
+	protected OwnJavaParameters createJavaParameters() throws ExecutionException
+	{
+		OwnJavaParameters javaParameters = super.createJavaParameters();
+		javaParameters.setMainClass(JUnitConfiguration.JUNIT_START_CLASS);
+		javaParameters.getProgramParametersList().add(JUnitStarter.IDE_VERSION + JUnitStarter.VERSION);
 
 		final StringBuilder buf = new StringBuilder();
-		for(final IDEAJUnitListener listener : EP_NAME.getExtensions())
-		{
-			boolean enabled = true;
-			for(RunConfigurationExtension ext : Extensions.getExtensions(RunConfigurationExtension.EP_NAME))
-			{
-				if(ext.isListenerDisabled(myConfiguration, listener, getRunnerSettings()))
-				{
-					enabled = false;
-					break;
-				}
-			}
-			if(enabled)
-			{
-				final Class classListener = listener.getClass();
-				buf.append(classListener.getName()).append("\n");
-				myJavaParameters.getClassPath().add(PathUtil.getJarPathForClass(classListener));
-			}
-		}
+		collectListeners(javaParameters, buf, IDEAJUnitListener.EP_NAME, "\n");
 		if(buf.length() > 0)
 		{
 			try
 			{
-				myListenersFile = FileUtil.createTempFile("junit_listeners_", "");
-				myListenersFile.deleteOnExit();
-				myJavaParameters.getProgramParametersList().add("@@" + myListenersFile.getPath());
+				myListenersFile = FileUtil.createTempFile("junit_listeners_", "", true);
+				javaParameters.getProgramParametersList().add("@@" + myListenersFile.getPath());
 				FileUtil.writeToFile(myListenersFile, buf.toString().getBytes(CharsetToolkit.UTF8_CHARSET));
 			}
 			catch(IOException e)
@@ -290,370 +215,237 @@ public abstract class TestObject implements JavaCommandLine
 				LOG.error(e);
 			}
 		}
+
+		String preferredRunner = getRunner();
+		if(preferredRunner != null)
+		{
+			javaParameters.getProgramParametersList().add(preferredRunner);
+		}
+
+		return javaParameters;
 	}
 
-	@Override
-	public JavaParameters getJavaParameters() throws ExecutionException
+	public static void appendJUnit5LauncherClasses(OwnJavaParameters javaParameters, Project project, GlobalSearchScope globalSearchScope) throws CantRunException
 	{
-		if(myJavaParameters == null)
+		final PathsList classPath = javaParameters.getClassPath();
+		JavaPsiFacade psiFacade = JavaPsiFacade.getInstance(project);
+		PsiClass classFromCommon = DumbService.getInstance(project).computeWithAlternativeResolveEnabled(() -> psiFacade.findClass("org.junit.platform.commons.JUnitException", globalSearchScope));
+		String launcherVersion = ObjectUtil.notNull(getVersion(classFromCommon), "1.0.0");
+		if(!hasPackageWithDirectories(psiFacade, "org.junit.platform.launcher", globalSearchScope))
 		{
-			myJavaParameters = new JavaParameters();
-			initialize();
-			final Module module = myConfiguration.getConfigurationModule().getModule();
-			for(JavaTestPatcher patcher : JavaTestPatcher.EP_NAME.getExtensions())
+			// FIXME [VISTALL] depedency to Jar Repositories in IDEA Java Impl, and we dont merge that
+			// downloadDependenciesWhenRequired(project, classPath, new RepositoryLibraryProperties("org.junit.platform", "junit-platform-launcher", launcherVersion));
+		}
+
+		//add standard engines only if no engine api is present
+		if(!hasPackageWithDirectories(psiFacade, "org.junit.platform.engine", globalSearchScope))
+		{
+
+			if(!hasPackageWithDirectories(psiFacade, "org.junit.jupiter.engine", globalSearchScope) && hasPackageWithDirectories(psiFacade, JUnitUtil.TEST5_PACKAGE_FQN, globalSearchScope))
 			{
-				patcher.patchJavaParameters(module, myJavaParameters);
+				PsiClass testAnnotation = DumbService.getInstance(project).computeWithAlternativeResolveEnabled(() -> psiFacade.findClass(JUnitUtil.TEST5_ANNOTATION, globalSearchScope));
+				String version = ObjectUtils.notNull(getVersion(testAnnotation), "5.0.0");
+				// FIXME [VISTALL] depedency to Jar Repositories in IDEA Java Impl, and we dont merge that
+				// downloadDependenciesWhenRequired(project, classPath, new RepositoryLibraryProperties("org.junit.jupiter", "junit-jupiter-engine", version));
+			}
+
+			if(!hasPackageWithDirectories(psiFacade, "org.junit.vintage", globalSearchScope) && hasPackageWithDirectories(psiFacade, "junit.framework", globalSearchScope))
+			{
+				String version = "4.12." + StringUtil.getShortName(launcherVersion);
+				// FIXME [VISTALL] depedency to Jar Repositories in IDEA Java Impl, and we dont merge that
+				// downloadDependenciesWhenRequired(project, classPath, new RepositoryLibraryProperties("org.junit.vintage", "junit-vintage-engine", version));
 			}
 		}
-		return myJavaParameters;
 	}
 
-	@Override
-	public ExecutionResult execute(final Executor executor, @NotNull final ProgramRunner runner) throws ExecutionException
+	private static String getVersion(PsiClass classFromCommon)
 	{
-		final boolean smRunner = Registry.is("junit_sm_runner", false);
-		if(smRunner)
+		VirtualFile virtualFile = PsiUtilCore.getVirtualFile(classFromCommon);
+		if(virtualFile == null)
 		{
-			myJavaParameters.getVMParametersList().add("-Didea.junit.sm_runner");
+			return null;
 		}
-		final JUnitProcessHandler handler = createHandler(executor);
-		final RunnerSettings runnerSettings = getRunnerSettings();
-		JavaRunConfigurationExtensionManager.getInstance().attachExtensionsToProcess(myConfiguration, handler, runnerSettings);
-		if(smRunner)
+		ProjectFileIndex index = ProjectFileIndex.getInstance(classFromCommon.getProject());
+		VirtualFile root = index.getClassRootForFile(virtualFile);
+		if(root != null && root.getFileSystem() instanceof ArchiveFileSystem)
 		{
-			return useSmRunner(executor, handler);
+			VirtualFile manifestFile = root.findFileByRelativePath(JarFile.MANIFEST_NAME);
+			if(manifestFile == null)
+			{
+				return null;
+			}
+
+			try (final InputStream inputStream = manifestFile.getInputStream())
+			{
+				return new Manifest(inputStream).getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+			}
+			catch(IOException e)
+			{
+				return null;
+			}
 		}
-		final TestProxy unboundOutputRoot = new TestProxy(new RootTestInfo());
-		final JUnitConsoleProperties consoleProperties = new JUnitConsoleProperties(myConfiguration, executor);
-		final JUnitTreeConsoleView consoleView = new JUnitTreeConsoleView(consoleProperties, myEnvironment, unboundOutputRoot);
-		consoleView.initUI();
-		consoleView.attachToProcess(handler);
-		unboundOutputRoot.setPrinter(consoleView.getPrinter());
-		Disposer.register(consoleView, unboundOutputRoot);
-		final TestsPacketsReceiver packetsReceiver = new TestsPacketsReceiver(consoleView, unboundOutputRoot)
-		{
-			@Override
-			public synchronized void notifyStart(TestProxy root)
-			{
-				if(!isRunning())
-				{
-					return;
-				}
-				super.notifyStart(root);
-				unboundOutputRoot.addChild(root);
-				if(myConfiguration.isSaveOutputToFile())
-				{
-					unboundOutputRoot.setOutputFilePath(myConfiguration.getOutputFilePath());
-				}
-				final JUnitRunningModel model = getModel();
-				if(model != null)
-				{
-					handler.getOut().setDispatchListener(model.getNotifier());
-					Disposer.register(model, new Disposable()
-					{
-						@Override
-						public void dispose()
-						{
-							handler.getOut().setDispatchListener(DispatchListener.DEAF);
-						}
-					});
-					consoleView.attachToModel(model);
-				}
-			}
-		};
-		Disposer.register(consoleView, packetsReceiver);
-
-		final DeferredActionsQueue queue = new DeferredActionsQueueImpl();
-		handler.getOut().setPacketDispatcher(packetsReceiver, queue);
-		handler.getErr().setPacketDispatcher(packetsReceiver, queue);
-
-		handler.addProcessListener(new ProcessAdapter()
-		{
-			private boolean myStarted = false;
-
-			@Override
-			public void startNotified(ProcessEvent event)
-			{
-				myStarted = true;
-			}
-
-			@Override
-			public void processTerminated(ProcessEvent event)
-			{
-				handler.removeProcessListener(this);
-				if(myTempFile != null)
-				{
-					FileUtil.delete(myTempFile);
-				}
-				if(myListenersFile != null)
-				{
-					FileUtil.delete(myListenersFile);
-				}
-				final Runnable runnable = new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						unboundOutputRoot.flush();
-						packetsReceiver.checkTerminated();
-						final JUnitRunningModel model = packetsReceiver.getModel();
-						notifyByBalloon(model, myStarted, consoleProperties);
-					}
-				};
-				handler.getOut().addRequest(runnable, queue);
-			}
-
-			@Override
-			public void onTextAvailable(final ProcessEvent event, final Key outputType)
-			{
-				final String text = event.getText();
-				final ConsoleViewContentType consoleViewType = ConsoleViewContentType.getConsoleViewType(outputType);
-				final Printable printable = new Printable()
-				{
-					@Override
-					public void printOn(final Printer printer)
-					{
-						printer.print(text, consoleViewType);
-					}
-				};
-				final Extractor extractor;
-				if(consoleViewType == ConsoleViewContentType.ERROR_OUTPUT || consoleViewType == ConsoleViewContentType.SYSTEM_OUTPUT)
-				{
-					extractor = handler.getErr();
-				}
-				else
-				{
-					extractor = handler.getOut();
-				}
-				extractor.getEventsDispatcher().processOutput(printable);
-			}
-		});
-
-		final RerunFailedTestsAction rerunFailedTestsAction = new RerunFailedTestsAction(consoleView, consoleProperties);
-		rerunFailedTestsAction.setModelProvider(new Getter<TestFrameworkRunningModel>()
-		{
-			@Override
-			public TestFrameworkRunningModel get()
-			{
-				return packetsReceiver.getModel();
-			}
-		});
-
-		final DefaultExecutionResult result = new DefaultExecutionResult(consoleView, handler);
-		result.setRestartActions(rerunFailedTestsAction);
-		return result;
+		return null;
 	}
 
-	private ExecutionResult useSmRunner(Executor executor, JUnitProcessHandler handler)
+	// FIXME [VISTALL] depedency to Jar Repositories in IDEA Java Impl, and we dont merge that
+	/*private static void downloadDependenciesWhenRequired(Project project, PathsList classPath, RepositoryLibraryProperties properties) throws CantRunException
 	{
-		TestConsoleProperties testConsoleProperties = new SMTRunnerConsoleProperties((JUnitConfiguration) myEnvironment.getRunProfile(), JUNIT_TEST_FRAMEWORK_NAME, executor);
-
-		testConsoleProperties.setIfUndefined(TestConsoleProperties.HIDE_PASSED_TESTS, false);
-
-		BaseTestsOutputConsoleView smtConsoleView = SMTestRunnerConnectionUtil.createConsoleWithCustomLocator(JUNIT_TEST_FRAMEWORK_NAME, testConsoleProperties, myEnvironment, null);
-
-
-		Disposer.register(myEnvironment.getProject(), smtConsoleView);
-
-		final ConsoleView consoleView = smtConsoleView;
-		consoleView.attachToProcess(handler);
-
-		final RerunFailedTestsAction rerunFailedTestsAction = new RerunFailedTestsAction(consoleView, testConsoleProperties);
-		rerunFailedTestsAction.init(testConsoleProperties);
-		rerunFailedTestsAction.setModelProvider(new Getter<TestFrameworkRunningModel>()
+		Collection<OrderRoot> roots = JarRepositoryManager.loadDependenciesModal(project, properties, false, false, null, null);
+		if(roots.isEmpty())
 		{
-			@Override
-			public TestFrameworkRunningModel get()
+			throw new CantRunException("Failed to resolve " + properties.getMavenId());
+		}
+		for(OrderRoot root : roots)
+		{
+			if(root.getType() == OrderRootType.CLASSES)
 			{
-				return ((SMTRunnerConsoleView) consoleView).getResultsViewer();
+				classPath.add(root.getFile());
 			}
-		});
+		}
+	}*/
 
-		final DefaultExecutionResult result = new DefaultExecutionResult(consoleView, handler);
-		result.setRestartActions(rerunFailedTestsAction);
-		return result;
-	}
-
-	protected void notifyByBalloon(JUnitRunningModel model, boolean started, JUnitConsoleProperties consoleProperties)
+	private static boolean hasPackageWithDirectories(JavaPsiFacade psiFacade, String packageQName, GlobalSearchScope globalSearchScope)
 	{
-		String comment;
-		if(model != null)
-		{
-			final CompletionEvent done = model.getProgress().getDone();
-			comment = done != null ? done.getComment() : null;
-		}
-		else
-		{
-			comment = null;
-		}
-		TestsUIUtil.notifyByBalloon(myEnvironment.getProject(), started, model != null ? model.getRoot() : null, consoleProperties, comment);
+		PsiPackage aPackage = psiFacade.findPackage(packageQName);
+		return aPackage != null && aPackage.getDirectories(globalSearchScope).length > 0;
 	}
 
-	protected JUnitProcessHandler createHandler(Executor executor) throws ExecutionException
+	private static GlobalSearchScope getScopeForJUnit(@Nullable Module module, Project project)
+	{
+		return module != null ? GlobalSearchScope.moduleRuntimeScope(module, true) : GlobalSearchScope.allScope(project);
+	}
+
+	public static GlobalSearchScope getScopeForJUnit(JUnitConfiguration configuration)
+	{
+		return getScopeForJUnit(configuration.getConfigurationModule().getModule(), configuration.getProject());
+	}
+
+	@NotNull
+	protected OSProcessHandler createHandler(Executor executor) throws ExecutionException
 	{
 		appendForkInfo(executor);
-		return JUnitProcessHandler.runCommandLine(CommandLineBuilder.createFromJavaParameters(myJavaParameters, myEnvironment.getProject(), true));
+		final String repeatMode = getConfiguration().getRepeatMode();
+		if(!RepeatCount.ONCE.equals(repeatMode))
+		{
+			final int repeatCount = getConfiguration().getRepeatCount();
+			final String countString = RepeatCount.N.equals(repeatMode) && repeatCount > 0 ? RepeatCount.getCountString(repeatCount) : repeatMode;
+			getJavaParameters().getProgramParametersList().add(countString);
+		}
+
+		final OSProcessHandler processHandler = new KillableColoredProcessHandler(createCommandLine());
+		ProcessTerminatedListener.attach(processHandler);
+		final SearchForTestsTask searchForTestsTask = createSearchingForTestsTask();
+		if(searchForTestsTask != null)
+		{
+			searchForTestsTask.attachTaskToProcess(processHandler);
+		}
+		return processHandler;
 	}
 
-	private boolean forkPerModule()
+	@Override
+	protected boolean isIdBasedTestTree()
 	{
-		final String workingDirectory = myConfiguration.getWorkingDirectory();
-		return JUnitConfiguration.TEST_PACKAGE.equals(myConfiguration.getPersistentData().TEST_OBJECT) && myConfiguration.getPersistentData().getScope() != TestSearchScope.SINGLE_MODULE && ("$" +
-				PathMacroUtil.MODULE_DIR_MACRO_NAME + "$").equals(workingDirectory);
+		return JUnitStarter.JUNIT5_PARAMETER.equals(getRunner());
 	}
 
-	private void appendForkInfo(Executor executor) throws ExecutionException
+	@NotNull
+	@Override
+	protected String getForkMode()
 	{
-		final String forkMode = myConfiguration.getForkMode();
-		if(Comparing.strEqual(forkMode, "none"))
-		{
-			final String workingDirectory = myConfiguration.getWorkingDirectory();
-			if(!JUnitConfiguration.TEST_PACKAGE.equals(myConfiguration.getPersistentData().TEST_OBJECT) || myConfiguration.getPersistentData().getScope() == TestSearchScope.SINGLE_MODULE || !("$" +
-					PathMacroUtil.MODULE_DIR_MACRO_NAME + "$").equals(workingDirectory))
-			{
-				return;
-			}
-		}
-
-		if(getRunnerSettings() != null)
-		{
-			final String actionName = executor.getActionName();
-			throw new CantRunException(actionName + " is disabled in fork mode.<br/>Please change fork mode to &lt;none&gt; to " + actionName.toLowerCase() + ".");
-		}
-
-		final JavaParameters javaParameters = getJavaParameters();
-		final Sdk jdk = javaParameters.getJdk();
-		if(jdk == null)
-		{
-			throw new ExecutionException(ExecutionBundle.message("run.configuration.error.no.jdk.specified"));
-		}
-
-		try
-		{
-			final File tempFile = FileUtil.createTempFile("command.line", "", true);
-			final PrintWriter writer = new PrintWriter(tempFile, CharsetToolkit.UTF8);
-			try
-			{
-				GeneralCommandLine generalCommandLine = new GeneralCommandLine();
-				((JavaSdkType) jdk.getSdkType()).setupCommandLine(generalCommandLine, jdk);
-
-				writer.println((generalCommandLine.getExePath()));
-
-				for(String o : generalCommandLine.getParametersList().getArray())
-				{
-					writer.println(o);
-				}
-
-				for(String vmParameter : javaParameters.getVMParametersList().getList())
-				{
-					writer.println(vmParameter);
-				}
-				writer.println("-classpath");
-				writer.println(javaParameters.getClassPath().getPathsString());
-			}
-			finally
-			{
-				writer.close();
-			}
-
-			myJavaParameters.getProgramParametersList().add("@@@" + forkMode + ',' + tempFile.getAbsolutePath());
-		}
-		catch(Exception e)
-		{
-			LOG.error(e);
-		}
+		return getConfiguration().getForkMode();
 	}
 
-	protected <T> void addClassesListToJavaParameters(Collection<? extends T> elements, Function<T, String> nameFunction, String packageName, boolean createTempFile, boolean junit4)
+	protected <T> void addClassesListToJavaParameters(Collection<? extends T> elements,
+			Function<T, String> nameFunction,
+			String packageName,
+			boolean createTempFile,
+			OwnJavaParameters javaParameters) throws CantRunException
 	{
 		try
 		{
 			if(createTempFile)
 			{
-				myTempFile = FileUtil.createTempFile("idea_junit", ".tmp");
-				myTempFile.deleteOnExit();
-				myJavaParameters.getProgramParametersList().add("@" + myTempFile.getAbsolutePath());
+				createTempFiles(javaParameters);
 			}
 
-			final Map<String, List<String>> perModule = forkPerModule() ? new TreeMap<String, List<String>>() : null;
-			final PrintWriter writer = new PrintWriter(myTempFile, CharsetToolkit.UTF8);
-			try
-			{
-				writer.println(packageName);
-				final List<String> testNames = new ArrayList<String>();
-				for(final T element : elements)
-				{
-					final String name = nameFunction.fun(element);
-					if(name == null)
-					{
-						LOG.error("invalid element " + element);
-						return;
-					}
+			final Map<Module, List<String>> perModule = forkPerModule() ? new TreeMap<>((o1, o2) -> StringUtil.compare(o1.getName(), o2.getName(), true)) : null;
 
-					if(perModule != null && element instanceof PsiElement)
+			final List<String> testNames = new ArrayList<>();
+
+			if(elements.isEmpty() && perModule != null)
+			{
+				final SourceScope sourceScope = getSourceScope();
+				Project project = getConfiguration().getProject();
+				if(sourceScope != null && packageName != null && JUnitStarter.JUNIT5_PARAMETER.equals(getRunner()))
+				{
+					final PsiPackage aPackage = JavaPsiFacade.getInstance(getConfiguration().getProject()).findPackage(packageName);
+					if(aPackage != null)
 					{
-						final Module module = ModuleUtilCore.findModuleForPsiElement((PsiElement) element);
-						if(module != null)
+						final TestSearchScope scope = getScope();
+						if(scope != null)
 						{
-							final String moduleDir = module.getModuleDirPath();
-							List<String> list = perModule.get(moduleDir);
-							if(list == null)
+							final GlobalSearchScope configurationSearchScope = GlobalSearchScopesCore.projectTestScope(project).intersectWith(sourceScope.getGlobalSearchScope());
+							final PsiDirectory[] directories = aPackage.getDirectories(configurationSearchScope);
+							for(PsiDirectory directory : directories)
 							{
-								list = new ArrayList<String>();
-								perModule.put(moduleDir, list);
+								Module module = ModuleUtilCore.findModuleForFile(directory.getVirtualFile(), project);
+								if(module != null)
+								{
+									perModule.put(module, Collections.emptyList());
+								}
 							}
-							list.add(name);
 						}
 					}
-					else
-					{
-						testNames.add(name);
-					}
 				}
-				if(perModule != null)
+			}
+
+			for(final T element : elements)
+			{
+				final String name = nameFunction.fun(element);
+				if(name == null)
 				{
-					for(List<String> perModuleClasses : perModule.values())
+					continue;
+				}
+
+				final PsiElement psiElement = retrievePsiElement(element);
+				if(perModule != null && psiElement != null)
+				{
+					final Module module = ModuleUtilCore.findModuleForPsiElement(psiElement);
+					if(module != null)
 					{
-						Collections.sort(perModuleClasses);
-						testNames.addAll(perModuleClasses);
+						List<String> list = perModule.get(module);
+						if(list == null)
+						{
+							list = new ArrayList<>();
+							perModule.put(module, list);
+						}
+						list.add(name);
 					}
 				}
 				else
 				{
-					Collections.sort(testNames); //sort tests in FQN order
-				}
-				for(String testName : testNames)
-				{
-					writer.println(testName);
+					testNames.add(name);
 				}
 			}
-			finally
+			final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+			if(perModule != null)
 			{
-				writer.close();
+				for(List<String> perModuleClasses : perModule.values())
+				{
+					Collections.sort(perModuleClasses);
+					testNames.addAll(perModuleClasses);
+				}
+			}
+			else if(JUnitConfiguration.TEST_PACKAGE.equals(data.TEST_OBJECT))
+			{
+				Collections.sort(testNames); //sort tests in FQN order
 			}
 
-			if(perModule != null && perModule.size() > 1)
-			{
-				final PrintWriter wWriter = new PrintWriter(myWorkingDirsFile, CharsetToolkit.UTF8);
-				try
-				{
-					wWriter.println(packageName);
-					for(String workingDir : perModule.keySet())
-					{
-						wWriter.println(workingDir);
-						final List<String> classNames = perModule.get(workingDir);
-						wWriter.println(classNames.size());
-						for(String className : classNames)
-						{
-							wWriter.println(className);
-						}
-					}
-				}
-				finally
-				{
-					wWriter.close();
-				}
-			}
+			final String category = JUnitConfiguration.TEST_CATEGORY.equals(data.TEST_OBJECT) ? data.getCategory() : "";
+			final String filters = JUnitConfiguration.TEST_PATTERN.equals(data.TEST_OBJECT) ? data.getPatternPresentation() : "";
+			JUnitStarter.printClassesList(testNames, packageName, category, filters, myTempFile);
+
+			writeClassesPerModule(packageName, javaParameters, perModule);
 		}
 		catch(IOException e)
 		{
@@ -661,8 +453,134 @@ public abstract class TestObject implements JavaCommandLine
 		}
 	}
 
-	public void clear()
+	protected PsiElement retrievePsiElement(Object element)
 	{
-		myJavaParameters = null;
+		return element instanceof PsiElement ? (PsiElement) element : null;
+	}
+
+	@Override
+	protected void deleteTempFiles()
+	{
+		super.deleteTempFiles();
+		if(myListenersFile != null)
+		{
+			FileUtil.delete(myListenersFile);
+		}
+	}
+
+	@NotNull
+	protected String getFrameworkName()
+	{
+		return JUNIT_TEST_FRAMEWORK_NAME;
+	}
+
+	@NotNull
+	protected String getFrameworkId()
+	{
+		return "junit";
+	}
+
+	protected void passTempFile(ParametersList parametersList, String tempFilePath)
+	{
+		parametersList.add("@" + tempFilePath);
+	}
+
+	@NotNull
+	public JUnitConfiguration getConfiguration()
+	{
+		return myConfiguration;
+	}
+
+	@Override
+	protected TestSearchScope getScope()
+	{
+		return getConfiguration().getPersistentData().getScope();
+	}
+
+	protected void passForkMode(String forkMode, File tempFile, OwnJavaParameters parameters) throws ExecutionException
+	{
+		parameters.getProgramParametersList().add("@@@" + forkMode + ',' + tempFile.getAbsolutePath());
+		if(getForkSocket() != null)
+		{
+			parameters.getProgramParametersList().add(ForkedDebuggerHelper.DEBUG_SOCKET + getForkSocket().getLocalPort());
+		}
+	}
+
+	private String myRunner;
+
+	protected String getRunner()
+	{
+		if(myRunner == null)
+		{
+			myRunner = getRunnerInner();
+		}
+		return myRunner;
+	}
+
+	private String getRunnerInner()
+	{
+		final GlobalSearchScope globalSearchScope = getScopeForJUnit(myConfiguration);
+		JUnitConfiguration.Data data = myConfiguration.getPersistentData();
+		Project project = myConfiguration.getProject();
+		boolean isMethodConfiguration = JUnitConfiguration.TEST_METHOD.equals(data.TEST_OBJECT);
+		boolean isClassConfiguration = JUnitConfiguration.TEST_CLASS.equals(data.TEST_OBJECT);
+		final PsiClass psiClass = isMethodConfiguration || isClassConfiguration ? JavaExecutionUtil.findMainClass(project, data.getMainClassName(), globalSearchScope) : null;
+		if(psiClass != null)
+		{
+			if(JUnitUtil.isJUnit5TestClass(psiClass, false))
+			{
+				return JUnitStarter.JUNIT5_PARAMETER;
+			}
+
+			if(isClassConfiguration || JUnitUtil.isJUnit4TestClass(psiClass))
+			{
+				return JUnitStarter.JUNIT4_PARAMETER;
+			}
+
+			final String methodName = data.getMethodName();
+			final PsiMethod[] methods = psiClass.findMethodsByName(methodName, true);
+			for(PsiMethod method : methods)
+			{
+				if(JUnitUtil.isTestAnnotated(method))
+				{
+					return JUnitStarter.JUNIT4_PARAMETER;
+				}
+			}
+			return JUnitStarter.JUNIT3_PARAMETER;
+		}
+		return JUnitUtil.isJUnit5(globalSearchScope, project) || isCustomJUnit5(globalSearchScope) ? JUnitStarter.JUNIT5_PARAMETER : null;
+	}
+
+	private boolean isCustomJUnit5(GlobalSearchScope globalSearchScope)
+	{
+		Project project = myConfiguration.getProject();
+		JavaPsiFacade psiFacade = JavaPsiFacade.getInstance(project);
+		if(DumbService.getInstance(project).computeWithAlternativeResolveEnabled(() ->
+		{
+			@Nullable PsiClass testEngine = ReadAction.compute(() -> psiFacade.findClass(JUnitCommonClassNames.ORG_JUNIT_PLATFORM_ENGINE_TEST_ENGINE, globalSearchScope));
+			return testEngine;
+		}) == null)
+		{
+			return false;
+		}
+
+		ClassLoader loader = TestClassCollector.createUsersClassLoader(myConfiguration);
+		try
+		{
+			ServiceLoader<?> serviceLoader = ServiceLoader.load(Class.forName(JUnitCommonClassNames.ORG_JUNIT_PLATFORM_ENGINE_TEST_ENGINE, false, loader), loader);
+			for(Object engine : serviceLoader)
+			{
+				String engineClassName = engine.getClass().getName();
+				if(!"org.junit.jupiter.engine.JupiterTestEngine".equals(engineClassName) && !"org.junit.vintage.engine.VintageTestEngine".equals(engineClassName))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+		catch(Throwable e)
+		{
+			return false;
+		}
 	}
 }

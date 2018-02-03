@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2009 JetBrains s.r.o.
+ * Copyright 2000-2013 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ import javax.swing.Icon;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import com.intellij.execution.configurations.ConfigurationType;
+import com.intellij.execution.junit2.info.MethodLocation;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.fileTemplates.FileTemplateDescriptor;
-import com.intellij.openapi.projectRoots.ex.JavaSdkUtil;
+import com.intellij.openapi.roots.ExternalLibraryDescriptor;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
@@ -41,6 +43,42 @@ public class JUnit3Framework extends JavaTestFramework
 		return "JUnit3";
 	}
 
+	@Override
+	public char getMnemonic()
+	{
+		return '3';
+	}
+
+	@Override
+	public FileTemplateDescriptor getTestClassFileTemplateDescriptor()
+	{
+		return new FileTemplateDescriptor("JUnit3 Test Class.java");
+	}
+
+	@Override
+	public boolean isSingleConfig()
+	{
+		return true;
+	}
+
+	@Override
+	public boolean isSuiteClass(PsiClass psiClass)
+	{
+		return JUnitUtil.findSuiteMethod(psiClass) != null;
+	}
+
+	@Override
+	public boolean isTestMethod(PsiMethod method, PsiClass myClass)
+	{
+		return JUnitUtil.isTestMethod(MethodLocation.elementInClass(method, myClass));
+	}
+
+	@Override
+	public boolean isMyConfigurationType(ConfigurationType type)
+	{
+		return type instanceof JUnitConfigurationType;
+	}
+
 	@NotNull
 	@Override
 	public Icon getIcon()
@@ -53,10 +91,11 @@ public class JUnit3Framework extends JavaTestFramework
 		return "junit.framework.TestCase";
 	}
 
-	@NotNull
-	public String getLibraryPath()
+	@Nullable
+	@Override
+	public ExternalLibraryDescriptor getFrameworkLibraryDescriptor()
 	{
-		return JavaSdkUtil.getJunit3JarPath();
+		return JUnitExternalLibraryDescriptor.JUNIT3;
 	}
 
 	@Nullable
@@ -78,6 +117,11 @@ public class JUnit3Framework extends JavaTestFramework
 	@Nullable
 	protected PsiMethod findSetUpMethod(@NotNull PsiClass clazz)
 	{
+		if(!JUnitUtil.isJUnit3TestClass(clazz))
+		{
+			return null;
+		}
+
 		for(PsiMethod each : clazz.getMethods())
 		{
 			if(each.getName().equals("setUp"))
@@ -92,6 +136,11 @@ public class JUnit3Framework extends JavaTestFramework
 	@Nullable
 	protected PsiMethod findTearDownMethod(@NotNull PsiClass clazz)
 	{
+		if(!JUnitUtil.isJUnit3TestClass(clazz))
+		{
+			return null;
+		}
+
 		for(PsiMethod each : clazz.getMethods())
 		{
 			if(each.getName().equals("tearDown"))
@@ -139,12 +188,6 @@ public class JUnit3Framework extends JavaTestFramework
 		return inClass;
 	}
 
-	@Override
-	public char getMnemonic()
-	{
-		return 'J';
-	}
-
 	public FileTemplateDescriptor getSetUpMethodFileTemplateDescriptor()
 	{
 		return new FileTemplateDescriptor("JUnit3 SetUp Method.java");
@@ -155,14 +198,15 @@ public class JUnit3Framework extends JavaTestFramework
 		return new FileTemplateDescriptor("JUnit3 TearDown Method.java");
 	}
 
+	@NotNull
 	public FileTemplateDescriptor getTestMethodFileTemplateDescriptor()
 	{
 		return new FileTemplateDescriptor("JUnit3 Test Method.java");
 	}
 
 	@Override
-	public boolean isTestMethod(PsiElement element)
+	public boolean isTestMethod(PsiElement element, boolean checkAbstract)
 	{
-		return element instanceof PsiMethod && JUnitUtil.getTestMethod(element) != null;
+		return element instanceof PsiMethod && JUnitUtil.getTestMethod(element, checkAbstract) != null;
 	}
 }

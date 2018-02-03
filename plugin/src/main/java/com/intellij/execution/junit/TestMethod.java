@@ -1,18 +1,4 @@
-/*
- * Copyright 2000-2009 JetBrains s.r.o.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2000-2017 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 
 package com.intellij.execution.junit;
 
@@ -24,70 +10,49 @@ import com.intellij.execution.JavaExecutionUtil;
 import com.intellij.execution.ProgramRunnerUtil;
 import com.intellij.execution.PsiLocation;
 import com.intellij.execution.configurations.JavaRunConfigurationModule;
-import com.intellij.execution.configurations.RunConfigurationModule;
 import com.intellij.execution.configurations.RuntimeConfigurationError;
 import com.intellij.execution.configurations.RuntimeConfigurationException;
 import com.intellij.execution.configurations.RuntimeConfigurationWarning;
 import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Comparing;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiJavaPackage;
 import com.intellij.psi.PsiMethod;
-import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.refactoring.listeners.RefactoringElementAdapter;
 import com.intellij.refactoring.listeners.RefactoringElementListener;
 import com.intellij.refactoring.listeners.UndoRefactoringElementListener;
-import com.intellij.rt.execution.junit.JUnitStarter;
+import consulo.java.execution.configurations.OwnJavaParameters;
+import consulo.psi.PsiPackage;
 
 class TestMethod extends TestObject
 {
-	public TestMethod(final JUnitConfiguration configuration, ExecutionEnvironment environment)
+	public TestMethod(JUnitConfiguration configuration, ExecutionEnvironment environment)
 	{
 		super(configuration, environment);
 	}
 
-	protected void initialize() throws ExecutionException
+	@Override
+	protected OwnJavaParameters createJavaParameters() throws ExecutionException
 	{
-		defaultInitialize();
-		final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
-		RunConfigurationModule module = myConfiguration.getConfigurationModule();
-		configureModule(getJavaParameters(), module, data.getMainClassName());
-		addJUnit3Parameter(data, module.getProject());
-		getJavaParameters().getProgramParametersList().add(data.getMainClassName() + "," + data.getMethodName());
+		final OwnJavaParameters javaParameters = createDefaultJavaParameters();
+		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		javaParameters.getProgramParametersList().add(data.getMainClassName() + "," + data.getMethodNameWithSignature());
+		return javaParameters;
 	}
 
-	protected void defaultInitialize() throws ExecutionException
+	protected OwnJavaParameters createDefaultJavaParameters() throws ExecutionException
 	{
-		super.initialize();
+		return super.createJavaParameters();
 	}
 
-	protected void addJUnit3Parameter(final JUnitConfiguration.Data data, Project project)
-	{
-		final PsiClass psiClass = JavaExecutionUtil.findMainClass(project, data.getMainClassName(), GlobalSearchScope.allScope(project));
-		LOG.assertTrue(psiClass != null);
-		if(JUnitUtil.isJUnit4TestClass(psiClass))
-		{
-			return;
-		}
-		final String methodName = data.getMethodName();
-		final PsiMethod[] methods = psiClass.findMethodsByName(methodName, true);
-		for(PsiMethod method : methods)
-		{
-			if(JUnitUtil.isTestAnnotated(method))
-			{
-				return;
-			}
-		}
-		myJavaParameters.getProgramParametersList().add(JUnitStarter.JUNIT3_PARAMETER);
-	}
-
+	@Override
 	public String suggestActionName()
 	{
-		return ProgramRunnerUtil.shortenName(myConfiguration.getPersistentData().METHOD_NAME, 2) + "()";
+		return ProgramRunnerUtil.shortenName(getConfiguration().getPersistentData().METHOD_NAME, 2) + "()";
 	}
 
+	@Override
 	public RefactoringElementListener getListener(final PsiElement element, final JUnitConfiguration configuration)
 	{
 		if(element instanceof PsiMethod)
@@ -97,12 +62,14 @@ class TestMethod extends TestObject
 			{
 				return null;
 			}
+			//noinspection ConstantConditions
 			if(!method.getContainingClass().equals(configuration.myClass.getPsiElement()))
 			{
 				return null;
 			}
 			class Listener extends RefactoringElementAdapter implements UndoRefactoringElementListener
 			{
+				@Override
 				public void elementRenamedOrMoved(@NotNull final PsiElement newElement)
 				{
 					final boolean generatedName = configuration.isGeneratedName();
@@ -138,8 +105,8 @@ class TestMethod extends TestObject
 	}
 
 
-	public boolean isConfiguredByElement(final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod,
-			PsiJavaPackage testPackage)
+	@Override
+	public boolean isConfiguredByElement(final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
 	{
 		if(testMethod == null)
 		{
@@ -156,20 +123,21 @@ class TestMethod extends TestObject
     if (containingClass != null && containingClass.hasModifierProperty(PsiModifier.ABSTRACT)) {
       return Comparing.equal(testMethod.getName(), data.getMethodName());
     }*/
-		return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), data.getMainClassName()) && Comparing.equal(testMethod.getName
-				(), data.getMethodName());
+		return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), data.getMainClassName()) && Comparing.equal(JUnitConfiguration.Data.getMethodPresentation(testMethod), data
+				.getMethodNameWithSignature());
 	}
 
+	@Override
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
 		super.checkConfiguration();
-		final JavaRunConfigurationModule configurationModule = myConfiguration.getConfigurationModule();
-		final JUnitConfiguration.Data data = myConfiguration.getPersistentData();
+		final JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
+		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
 		final String testClass = data.getMainClassName();
-		final PsiClass psiClass = configurationModule.checkModuleAndClassName(testClass, ExecutionBundle.message("no.test.class.specified.error" +
-				".text"));
+		final PsiClass psiClass = configurationModule.checkModuleAndClassName(testClass, ExecutionBundle.message("no.test.class.specified.error.text"));
 
 		final String methodName = data.getMethodName();
+		String methodNameWithSignature = data.getMethodNameWithSignature();
 		if(methodName == null || methodName.trim().length() == 0)
 		{
 			throw new RuntimeConfigurationError(ExecutionBundle.message("method.name.not.specified.error.message"));
@@ -179,7 +147,7 @@ class TestMethod extends TestObject
 		boolean testAnnotated = false;
 		for(final PsiMethod method : psiClass.findMethodsByName(methodName, true))
 		{
-			if(filter.value(method))
+			if(filter.value(method) && Comparing.equal(methodNameWithSignature, JUnitConfiguration.Data.getMethodPresentation(method)))
 			{
 				found = true;
 			}
@@ -193,7 +161,7 @@ class TestMethod extends TestObject
 			throw new RuntimeConfigurationWarning(ExecutionBundle.message("test.method.doesnt.exist.error.message", methodName));
 		}
 
-		if(!AnnotationUtil.isAnnotated(psiClass, JUnitUtil.RUN_WITH, true) && !testAnnotated)
+		if(!AnnotationUtil.isAnnotated(psiClass, JUnitUtil.RUN_WITH, AnnotationUtil.CHECK_HIERARCHY) && !testAnnotated)
 		{
 			try
 			{
@@ -205,8 +173,7 @@ class TestMethod extends TestObject
 			}
 			catch(JUnitUtil.NoJUnitException e)
 			{
-				throw new RuntimeConfigurationWarning(ExecutionBundle.message("junit.jar.not.found.in.module.class.path.error.message",
-						configurationModule.getModuleName()));
+				throw new RuntimeConfigurationWarning(ExecutionBundle.message("junit.jar.not.found.in.module.class.path.error.message", configurationModule.getModuleName()));
 			}
 		}
 	}

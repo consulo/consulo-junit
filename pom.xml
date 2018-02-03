@@ -43,6 +43,7 @@
 
 	<modules>
 		<module>junit-rt</module>
+		<module>junit5-rt</module>
 		<module>plugin</module>
 	</modules>
 </project>

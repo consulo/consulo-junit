@@ -15,9 +15,13 @@
  */
 package com.intellij.execution.junit;
 
+import java.nio.file.Path;
 import java.util.Collection;
 
+import org.jetbrains.annotations.Nullable;
 import com.intellij.execution.CantRunException;
+import com.intellij.execution.ExecutionBundle;
+import com.intellij.execution.TestClassCollector;
 import com.intellij.execution.configurations.RuntimeConfigurationError;
 import com.intellij.execution.configurations.RuntimeConfigurationException;
 import com.intellij.execution.configurations.RuntimeConfigurationWarning;
@@ -26,36 +30,35 @@ import com.intellij.execution.testframework.SourceScope;
 import com.intellij.execution.util.JavaParametersUtil;
 import com.intellij.execution.util.ProgramParametersUtil;
 import com.intellij.openapi.module.Module;
+import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.io.FileUtil;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.JavaDirectoryService;
+import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiJavaPackage;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.search.GlobalSearchScopes;
+import com.intellij.psi.search.GlobalSearchScopesCore;
+import consulo.psi.PsiPackage;
 
-/**
- * User: anna
- * Date: 4/21/11
- */
 class TestDirectory extends TestPackage
 {
-
 	public TestDirectory(JUnitConfiguration configuration, ExecutionEnvironment environment)
 	{
 		super(configuration, environment);
 	}
 
+	@Nullable
 	@Override
 	public SourceScope getSourceScope()
 	{
-		final String dirName = myConfiguration.getPersistentData().getDirName();
+		final String dirName = getConfiguration().getPersistentData().getDirName();
 		final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
-		final GlobalSearchScope globalSearchScope = file == null ? GlobalSearchScope.EMPTY_SCOPE : GlobalSearchScopes.directoryScope(myEnvironment
-				.getProject(), file, true);
+		final GlobalSearchScope globalSearchScope = file == null ? GlobalSearchScope.EMPTY_SCOPE : GlobalSearchScopesCore.directoryScope(getConfiguration().getProject(), file, true);
 		return new SourceScope()
 		{
 			@Override
@@ -67,33 +70,54 @@ class TestDirectory extends TestPackage
 			@Override
 			public Project getProject()
 			{
-				return myEnvironment.getProject();
+				return getConfiguration().getProject();
 			}
 
 			@Override
 			public GlobalSearchScope getLibrariesScope()
 			{
-				final Module module = myConfiguration.getConfigurationModule().getModule();
-				LOG.assertTrue(module != null);
-				return GlobalSearchScope.moduleWithLibrariesScope(module);
+				final Module module = getConfiguration().getConfigurationModule().getModule();
+				return module != null ? GlobalSearchScope.moduleWithLibrariesScope(module) : GlobalSearchScope.allScope(getConfiguration().getProject());
 			}
 
 			@Override
 			public Module[] getModulesToCompile()
 			{
-				final Collection<Module> validModules = myConfiguration.getValidModules();
+				final Collection<Module> validModules = getConfiguration().getValidModules();
 				return validModules.toArray(new Module[validModules.size()]);
 			}
 		};
 	}
 
+	@Nullable
+	@Override
+	protected Path getRootPath()
+	{
+		final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(getConfiguration().getPersistentData().getDirName()));
+		if(file == null)
+		{
+			return null;
+		}
+		Module dirModule = ModuleUtilCore.findModuleForFile(file, getConfiguration().getProject());
+		if(dirModule == null)
+		{
+			return null;
+		}
+		return TestClassCollector.getRootPath(dirModule, true);
+	}
+
+	@Override
+	protected boolean configureByModule(Module module)
+	{
+		return module != null;
+	}
+
 	@Override
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
-		JavaParametersUtil.checkAlternativeJRE(myConfiguration);
-		ProgramParametersUtil.checkWorkingDirectoryExist(myConfiguration, myConfiguration.getProject(), myConfiguration.getConfigurationModule()
-				.getModule());
-		final String dirName = myConfiguration.getPersistentData().getDirName();
+		JavaParametersUtil.checkAlternativeJRE(getConfiguration());
+		ProgramParametersUtil.checkWorkingDirectoryExist(getConfiguration(), getConfiguration().getProject(), getConfiguration().getConfigurationModule().getModule());
+		final String dirName = getConfiguration().getPersistentData().getDirName();
 		if(dirName == null || dirName.isEmpty())
 		{
 			throw new RuntimeConfigurationError("Directory is not specified");
@@ -103,7 +127,7 @@ class TestDirectory extends TestPackage
 		{
 			throw new RuntimeConfigurationWarning("Directory \'" + dirName + "\' is not found");
 		}
-		final Module module = myConfiguration.getConfigurationModule().getModule();
+		final Module module = getConfiguration().getConfigurationModule().getModule();
 		if(module == null)
 		{
 			throw new RuntimeConfigurationError("Module to choose classpath from is not specified");
@@ -111,7 +135,19 @@ class TestDirectory extends TestPackage
 	}
 
 	@Override
-	protected PsiJavaPackage getPackage(JUnitConfiguration.Data data) throws CantRunException
+	protected GlobalSearchScope filterScope(JUnitConfiguration.Data data) throws CantRunException
+	{
+		return GlobalSearchScope.allScope(getConfiguration().getProject());
+	}
+
+	@Override
+	protected String getPackageName(JUnitConfiguration.Data data) throws CantRunException
+	{
+		return "";
+	}
+
+	@Override
+	protected PsiPackage getPackage(JUnitConfiguration.Data data) throws CantRunException
 	{
 		final String dirName = data.getDirName();
 		final VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
@@ -119,16 +155,32 @@ class TestDirectory extends TestPackage
 		{
 			throw new CantRunException("Directory \'" + dirName + "\' is not found");
 		}
-		final PsiDirectory directory = PsiManager.getInstance(myEnvironment.getProject()).findDirectory(file);
+		final PsiDirectory directory = PsiManager.getInstance(getConfiguration().getProject()).findDirectory(file);
 		if(directory == null)
 		{
 			throw new CantRunException("Directory \'" + dirName + "\' is not found");
 		}
-		final PsiJavaPackage aPackage = JavaDirectoryService.getInstance().getPackage(directory);
-		if(aPackage == null)
+		return null;
+	}
+
+	@Override
+	public String suggestActionName()
+	{
+		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		final String dirName = data.getDirName();
+		return dirName.isEmpty() ? ExecutionBundle.message("all.tests.scope.presentable.text") : ExecutionBundle.message("test.in.scope.presentable.text", StringUtil.getShortName(dirName, '/'));
+	}
+
+	@Override
+	public boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
+	{
+		if(JUnitConfiguration.TEST_DIRECTORY.equals(configuration.getPersistentData().TEST_OBJECT) && testDir != null)
 		{
-			throw new CantRunException("Package not found in directory");
+			if(Comparing.strEqual(FileUtil.toSystemIndependentName(configuration.getPersistentData().getDirName()), testDir.getVirtualFile().getPath()))
+			{
+				return true;
+			}
 		}
-		return aPackage;
+		return false;
 	}
 }
