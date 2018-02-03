@@ -17,7 +17,7 @@
 <idea-plugin>
 	<id>com.intellij.junit</id>
 	<name>JUnit</name>
-	<description>Provides possibility to run JUnit 3.x and 4.x tests and view their results</description>
+	<description></description>
 	<version>SNAPSHOT</version>
 	<vendor>JetBrains</vendor>
 	<category>Test Frameworks</category>
@@ -44,7 +44,6 @@
 		<configurationType implementation="com.intellij.execution.junit.JUnitConfigurationType"/>
 		<library.dependencyScopeSuggester implementation="com.intellij.execution.junit.JUnitDependencyScopeSuggester"/>
 
-		<projectService serviceImplementation="com.intellij.execution.testDiscovery.JavaAutoRunManager"/>
 		<stacktrace.fold substring="at org.junit.internal.runners."/>
 		<stacktrace.fold substring="at org.junit.runners."/>
 		<stacktrace.fold substring="at org.junit.runner.JUnitCore."/>
