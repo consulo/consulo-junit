@@ -15,7 +15,7 @@
  */
 package com.intellij.junit4;
 
-import com.intellij.execution.TestDiscoveryListener;
+import com.intellij.rt.execution.TestDiscoveryListener;
 import com.intellij.rt.execution.junit.IDEAJUnitListenerEx;
 
 public class JUnitTestDiscoveryListener extends TestDiscoveryListener implements IDEAJUnitListenerEx {
