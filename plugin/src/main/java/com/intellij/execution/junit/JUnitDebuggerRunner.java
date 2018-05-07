@@ -15,7 +15,8 @@
  */
 package com.intellij.execution.junit;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
+
 import com.intellij.execution.JavaTestFrameworkDebuggerRunner;
 import com.intellij.execution.configurations.RunProfile;
 
@@ -25,19 +26,19 @@ import com.intellij.execution.configurations.RunProfile;
 public class JUnitDebuggerRunner extends JavaTestFrameworkDebuggerRunner
 {
 	@Override
-	protected boolean validForProfile(@NotNull RunProfile profile)
+	protected boolean validForProfile(@Nonnull RunProfile profile)
 	{
 		return profile instanceof JUnitConfiguration;
 	}
 
-	@NotNull
+	@Nonnull
 	@Override
 	protected String getThreadName()
 	{
 		return "junit";
 	}
 
-	@NotNull
+	@Nonnull
 	@Override
 	public String getRunnerId()
 	{

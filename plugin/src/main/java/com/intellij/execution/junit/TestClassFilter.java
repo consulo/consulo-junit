@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
 import com.intellij.execution.configurations.ConfigurationUtil;
 import com.intellij.execution.testframework.SourceScope;
 import com.intellij.ide.util.ClassFilter;

@@ -2,7 +2,8 @@
 
 package com.intellij.execution.junit;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
+
 import com.intellij.codeInsight.AnnotationUtil;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.ExecutionException;
@@ -70,7 +71,7 @@ class TestMethod extends TestObject
 			class Listener extends RefactoringElementAdapter implements UndoRefactoringElementListener
 			{
 				@Override
-				public void elementRenamedOrMoved(@NotNull final PsiElement newElement)
+				public void elementRenamedOrMoved(@Nonnull final PsiElement newElement)
 				{
 					final boolean generatedName = configuration.isGeneratedName();
 					configuration.getPersistentData().setTestMethod(PsiLocation.fromPsiElement((PsiMethod) newElement));
@@ -81,7 +82,7 @@ class TestMethod extends TestObject
 				}
 
 				@Override
-				public void undoElementMovedOrRenamed(@NotNull PsiElement newElement, @NotNull String oldQualifiedName)
+				public void undoElementMovedOrRenamed(@Nonnull PsiElement newElement, @Nonnull String oldQualifiedName)
 				{
 					final int methodIdx = oldQualifiedName.indexOf("#") + 1;
 					if(methodIdx <= 0 || methodIdx >= oldQualifiedName.length())

@@ -16,8 +16,9 @@
 
 package com.intellij.execution.junit2.inspection;
 
+import javax.annotation.Nonnull;
+
 import org.jdom.Element;
-import org.jetbrains.annotations.NotNull;
 import com.intellij.codeInspection.InspectionsBundle;
 import com.intellij.codeInspection.reference.EntryPoint;
 import com.intellij.codeInspection.reference.RefElement;
@@ -42,7 +43,7 @@ public class JUnitEntryPoint extends EntryPoint
 	public boolean ADD_JUNIT_TO_ENTRIES = true;
 
 	@Override
-	@NotNull
+	@Nonnull
 	public String getDisplayName()
 	{
 		return InspectionsBundle.message("inspection.dead.code.option2");

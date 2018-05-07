@@ -37,7 +37,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.text.Document;
 import javax.swing.text.PlainDocument;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
 import com.intellij.application.options.ModuleDescriptionsComboBox;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.MethodBrowser;
@@ -355,7 +355,7 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 		}
 	}
 
-	public void applyEditorTo(@NotNull final JUnitConfiguration configuration)
+	public void applyEditorTo(@Nonnull final JUnitConfiguration configuration)
 	{
 		configuration.setRepeatMode((String) myRepeatCb.getSelectedItem());
 		try
@@ -391,7 +391,7 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 		configuration.setShortenCommandLine((ShortenCommandLine) myShortenClasspathModeCombo.getComponent().getSelectedItem());
 	}
 
-	public void resetEditorFrom(@NotNull final JUnitConfiguration configuration)
+	public void resetEditorFrom(@Nonnull final JUnitConfiguration configuration)
 	{
 		final int count = configuration.getRepeatCount();
 		myRepeatCountField.setText(String.valueOf(count));
@@ -728,7 +728,7 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 		((LabeledComponent<EditorTextFieldWithBrowseButton>) getTestLocation(JUnitConfigurationModel.ALL_IN_PACKAGE)).getComponent().setText(aPackage.getQualifiedName());
 	}
 
-	@NotNull
+	@Nonnull
 	public JComponent createEditor()
 	{
 		return myWholePanel;

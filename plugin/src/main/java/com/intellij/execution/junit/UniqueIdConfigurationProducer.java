@@ -5,7 +5,8 @@ package com.intellij.execution.junit;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
+
 import com.intellij.execution.actions.ConfigurationContext;
 import com.intellij.execution.actions.ConfigurationFromContext;
 import com.intellij.execution.configurations.RunConfiguration;
@@ -59,7 +60,7 @@ public class UniqueIdConfigurationProducer extends JUnitConfigurationProducer
 
 	//prefer to method
 	@Override
-	public boolean shouldReplace(@NotNull ConfigurationFromContext self, @NotNull ConfigurationFromContext other)
+	public boolean shouldReplace(@Nonnull ConfigurationFromContext self, @Nonnull ConfigurationFromContext other)
 	{
 		return self.isProducedBy(UniqueIdConfigurationProducer.class) && (other.isProducedBy(TestInClassConfigurationProducer.class) || other.isProducedBy(PatternConfigurationProducer.class));
 	}

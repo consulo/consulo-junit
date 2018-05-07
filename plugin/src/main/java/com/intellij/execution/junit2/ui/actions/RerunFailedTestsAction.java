@@ -15,7 +15,8 @@
  */
 package com.intellij.execution.junit2.ui.actions;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
+
 import com.intellij.execution.Executor;
 import com.intellij.execution.actions.JavaRerunFailedTestsAction;
 import com.intellij.execution.configurations.RunProfileState;
@@ -28,13 +29,13 @@ import com.intellij.openapi.ui.ComponentContainer;
 
 public class RerunFailedTestsAction extends JavaRerunFailedTestsAction
 {
-	public RerunFailedTestsAction(@NotNull ComponentContainer componentContainer, @NotNull TestConsoleProperties consoleProperties)
+	public RerunFailedTestsAction(@Nonnull ComponentContainer componentContainer, @Nonnull TestConsoleProperties consoleProperties)
 	{
 		super(componentContainer, consoleProperties);
 	}
 
 	@Override
-	protected MyRunProfile getRunProfile(@NotNull ExecutionEnvironment environment)
+	protected MyRunProfile getRunProfile(@Nonnull ExecutionEnvironment environment)
 	{
 		//noinspection ConstantConditions
 		final JUnitConfiguration configuration = (JUnitConfiguration) myConsoleProperties.getConfiguration();
@@ -42,14 +43,14 @@ public class RerunFailedTestsAction extends JavaRerunFailedTestsAction
 		return new MyRunProfile(configuration)
 		{
 			@Override
-			@NotNull
+			@Nonnull
 			public Module[] getModules()
 			{
 				return testMethods.getModulesToCompile();
 			}
 
 			@Override
-			public RunProfileState getState(@NotNull Executor executor, @NotNull ExecutionEnvironment env)
+			public RunProfileState getState(@Nonnull Executor executor, @Nonnull ExecutionEnvironment env)
 			{
 				testMethods.clear();
 				return testMethods;

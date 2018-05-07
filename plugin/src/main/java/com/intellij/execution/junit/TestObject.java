@@ -30,9 +30,11 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
+import javax.annotation.Nonnull;
+
 import org.jetbrains.annotations.NonNls;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+
+import javax.annotation.Nullable;
 import com.intellij.execution.CantRunException;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.ExecutionException;
@@ -99,7 +101,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 	private final JUnitConfiguration myConfiguration;
 	protected File myListenersFile;
 
-	public static TestObject fromString(final String id, final JUnitConfiguration configuration, @NotNull ExecutionEnvironment environment)
+	public static TestObject fromString(final String id, final JUnitConfiguration configuration, @Nonnull ExecutionEnvironment environment)
 	{
 		if(JUnitConfiguration.TEST_METHOD.equals(id))
 		{
@@ -320,7 +322,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 		return getScopeForJUnit(configuration.getConfigurationModule().getModule(), configuration.getProject());
 	}
 
-	@NotNull
+	@Nonnull
 	protected OSProcessHandler createHandler(Executor executor) throws ExecutionException
 	{
 		appendForkInfo(executor);
@@ -348,7 +350,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 		return JUnitStarter.JUNIT5_PARAMETER.equals(getRunner());
 	}
 
-	@NotNull
+	@Nonnull
 	@Override
 	protected String getForkMode()
 	{
@@ -468,13 +470,13 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 		}
 	}
 
-	@NotNull
+	@Nonnull
 	protected String getFrameworkName()
 	{
 		return JUNIT_TEST_FRAMEWORK_NAME;
 	}
 
-	@NotNull
+	@Nonnull
 	protected String getFrameworkId()
 	{
 		return "junit";
@@ -485,7 +487,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 		parametersList.add("@" + tempFilePath);
 	}
 
-	@NotNull
+	@Nonnull
 	public JUnitConfiguration getConfiguration()
 	{
 		return myConfiguration;

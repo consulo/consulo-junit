@@ -3,8 +3,8 @@ package com.intellij.execution.junit;
 
 import javax.swing.Icon;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.intellij.CommonBundle;
 import com.intellij.codeInsight.AnnotationUtil;
 import com.intellij.codeInsight.intention.AddAnnotationFix;
@@ -27,13 +27,13 @@ import com.intellij.util.IncorrectOperationException;
 
 public class JUnit5Framework extends JavaTestFramework
 {
-	@NotNull
+	@Nonnull
 	public String getName()
 	{
 		return "JUnit5";
 	}
 
-	@NotNull
+	@Nonnull
 	@Override
 	public Icon getIcon()
 	{
@@ -69,7 +69,7 @@ public class JUnit5Framework extends JavaTestFramework
 
 	@Nullable
 	@Override
-	protected PsiMethod findSetUpMethod(@NotNull PsiClass clazz)
+	protected PsiMethod findSetUpMethod(@Nonnull PsiClass clazz)
 	{
 		for(PsiMethod each : clazz.getMethods())
 		{
@@ -83,7 +83,7 @@ public class JUnit5Framework extends JavaTestFramework
 
 	@Nullable
 	@Override
-	protected PsiMethod findTearDownMethod(@NotNull PsiClass clazz)
+	protected PsiMethod findTearDownMethod(@Nonnull PsiClass clazz)
 	{
 		for(PsiMethod each : clazz.getMethods())
 		{
@@ -179,7 +179,7 @@ public class JUnit5Framework extends JavaTestFramework
 		return new FileTemplateDescriptor("JUnit5 TearDown Method.java");
 	}
 
-	@NotNull
+	@Nonnull
 	public FileTemplateDescriptor getTestMethodFileTemplateDescriptor()
 	{
 		return new FileTemplateDescriptor("JUnit5 Test Method.java");

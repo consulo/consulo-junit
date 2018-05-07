@@ -15,10 +15,10 @@
  */
 package com.intellij.execution.junit2.ui.properties;
 
+import javax.annotation.Nonnull;
 import javax.swing.JComponent;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
 import com.intellij.execution.Executor;
 import com.intellij.execution.junit.JUnitConfiguration;
 import com.intellij.execution.junit2.ui.actions.RerunFailedTestsAction;
@@ -35,12 +35,12 @@ import com.intellij.rt.execution.junit.RepeatCount;
 
 public class JUnitConsoleProperties extends JavaAwareTestConsoleProperties<JUnitConfiguration>
 {
-	public JUnitConsoleProperties(@NotNull JUnitConfiguration configuration, Executor executor)
+	public JUnitConsoleProperties(@Nonnull JUnitConfiguration configuration, Executor executor)
 	{
 		super("JUnit", configuration, executor);
 	}
 
-	@NotNull
+	@Nonnull
 	@Override
 	protected GlobalSearchScope initScope()
 	{

@@ -16,10 +16,9 @@
 
 package com.intellij.execution.junit;
 
-import javax.swing.Icon;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.configuration.ConfigurationFactoryEx;
 import com.intellij.execution.configurations.ConfigurationFactory;
@@ -32,6 +31,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.util.containers.ContainerUtil;
 import consulo.java.module.extension.JavaModuleExtension;
 import consulo.module.extension.ModuleExtensionHelper;
+import consulo.ui.image.Image;
 
 public class JUnitConfigurationType implements ConfigurationType
 {
@@ -48,13 +48,13 @@ public class JUnitConfigurationType implements ConfigurationType
 			}
 
 			@Override
-			public void onNewConfigurationCreated(@NotNull RunConfiguration configuration)
+			public void onNewConfigurationCreated(@Nonnull RunConfiguration configuration)
 			{
 				((ModuleBasedConfiguration) configuration).onNewConfigurationCreated();
 			}
 
 			@Override
-			public boolean isApplicable(@NotNull Project project)
+			public boolean isApplicable(@Nonnull Project project)
 			{
 				return ModuleExtensionHelper.getInstance(project).hasModuleExtension(JavaModuleExtension.class);
 			}
@@ -74,7 +74,7 @@ public class JUnitConfigurationType implements ConfigurationType
 	}
 
 	@Override
-	public Icon getIcon()
+	public Image getIcon()
 	{
 		return AllIcons.RunConfigurations.Junit;
 	}
@@ -86,7 +86,7 @@ public class JUnitConfigurationType implements ConfigurationType
 	}
 
 	@Override
-	@NotNull
+	@Nonnull
 	public String getId()
 	{
 		return "JUnit";

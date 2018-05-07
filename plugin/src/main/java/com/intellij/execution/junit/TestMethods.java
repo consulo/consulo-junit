@@ -18,8 +18,9 @@ package com.intellij.execution.junit;
 
 import java.util.Collection;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.JavaExecutionUtil;
 import com.intellij.execution.Location;
@@ -47,7 +48,7 @@ public class TestMethods extends TestMethod
 
 	private final Collection<AbstractTestProxy> myFailedTests;
 
-	public TestMethods(@NotNull JUnitConfiguration configuration, @NotNull ExecutionEnvironment environment, @NotNull Collection<AbstractTestProxy> failedTests)
+	public TestMethods(@Nonnull JUnitConfiguration configuration, @Nonnull ExecutionEnvironment environment, @Nonnull Collection<AbstractTestProxy> failedTests)
 	{
 		super(configuration, environment);
 

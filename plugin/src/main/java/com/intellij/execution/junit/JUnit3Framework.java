@@ -15,10 +15,10 @@
  */
 package com.intellij.execution.junit;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.swing.Icon;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import com.intellij.execution.configurations.ConfigurationType;
 import com.intellij.execution.junit2.info.MethodLocation;
 import com.intellij.icons.AllIcons;
@@ -37,7 +37,7 @@ import com.intellij.util.IncorrectOperationException;
 
 public class JUnit3Framework extends JavaTestFramework
 {
-	@NotNull
+	@Nonnull
 	public String getName()
 	{
 		return "JUnit3";
@@ -79,7 +79,7 @@ public class JUnit3Framework extends JavaTestFramework
 		return type instanceof JUnitConfigurationType;
 	}
 
-	@NotNull
+	@Nonnull
 	@Override
 	public Icon getIcon()
 	{
@@ -115,7 +115,7 @@ public class JUnit3Framework extends JavaTestFramework
 
 	@Override
 	@Nullable
-	protected PsiMethod findSetUpMethod(@NotNull PsiClass clazz)
+	protected PsiMethod findSetUpMethod(@Nonnull PsiClass clazz)
 	{
 		if(!JUnitUtil.isJUnit3TestClass(clazz))
 		{
@@ -134,7 +134,7 @@ public class JUnit3Framework extends JavaTestFramework
 
 	@Override
 	@Nullable
-	protected PsiMethod findTearDownMethod(@NotNull PsiClass clazz)
+	protected PsiMethod findTearDownMethod(@Nonnull PsiClass clazz)
 	{
 		if(!JUnitUtil.isJUnit3TestClass(clazz))
 		{
@@ -198,7 +198,7 @@ public class JUnit3Framework extends JavaTestFramework
 		return new FileTemplateDescriptor("JUnit3 TearDown Method.java");
 	}
 
-	@NotNull
+	@Nonnull
 	public FileTemplateDescriptor getTestMethodFileTemplateDescriptor()
 	{
 		return new FileTemplateDescriptor("JUnit3 Test Method.java");

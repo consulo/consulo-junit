@@ -3,7 +3,8 @@ package com.intellij.execution.junit;
 
 import java.util.Arrays;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
+
 import com.intellij.codeInsight.TestFrameworks;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.JavaExecutionUtil;
@@ -93,7 +94,7 @@ public class TestUniqueId extends TestObject
 		return null;
 	}
 
-	@NotNull
+	@Nonnull
 	@Override
 	protected String getForkMode()
 	{

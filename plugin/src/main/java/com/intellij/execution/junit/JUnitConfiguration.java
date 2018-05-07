@@ -13,9 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+
 import org.jdom.Element;
 import org.jetbrains.annotations.NonNls;
-import org.jetbrains.annotations.NotNull;
 import com.intellij.codeInsight.MetaAnnotationUtil;
 import com.intellij.diagnostic.logging.LogConfigurationPanel;
 import com.intellij.execution.*;
@@ -124,7 +125,7 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 	final RefactoringListeners.Accessor<PsiClass> myClass = new RefactoringListeners.Accessor<PsiClass>()
 	{
 		@Override
-		public void setName(@NotNull final String qualifiedName)
+		public void setName(@Nonnull final String qualifiedName)
 		{
 			final boolean generatedName = isGeneratedName();
 			myData.MAIN_CLASS_NAME = qualifiedName;
@@ -152,7 +153,7 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 	final RefactoringListeners.Accessor<PsiClass> myCategory = new RefactoringListeners.Accessor<PsiClass>()
 	{
 		@Override
-		public void setName(@NotNull final String qualifiedName)
+		public void setName(@Nonnull final String qualifiedName)
 		{
 			setCategory(qualifiedName);
 		}
@@ -184,13 +185,13 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 	}
 
 	@Override
-	public TestObject getState(@NotNull final Executor executor, @NotNull final ExecutionEnvironment env) throws ExecutionException
+	public TestObject getState(@Nonnull final Executor executor, @Nonnull final ExecutionEnvironment env) throws ExecutionException
 	{
 		return TestObject.fromString(myData.TEST_OBJECT, this, env);
 	}
 
 	@Override
-	@NotNull
+	@Nonnull
 	public SettingsEditor<? extends RunConfiguration> getConfigurationEditor()
 	{
 		SettingsEditorGroup<JUnitConfiguration> group = new SettingsEditorGroup<>();
@@ -304,14 +305,14 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 	}
 
 	@Override
-	@NotNull
+	@Nonnull
 	public Map<String, String> getEnvs()
 	{
 		return myData.getEnvs();
 	}
 
 	@Override
-	public void setEnvs(@NotNull Map<String, String> envs)
+	public void setEnvs(@Nonnull Map<String, String> envs)
 	{
 		myData.setEnvs(envs);
 	}
@@ -440,7 +441,7 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 	}
 
 	@Override
-	@NotNull
+	@Nonnull
 	public Module[] getModules()
 	{
 		if(TEST_PACKAGE.equals(myData.TEST_OBJECT) && getPersistentData().getScope() == TestSearchScope.WHOLE_PROJECT)
@@ -456,7 +457,7 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 	}
 
 	@Override
-	public void readExternal(@NotNull final Element element) throws InvalidDataException
+	public void readExternal(@Nonnull final Element element) throws InvalidDataException
 	{
 		super.readExternal(element);
 		JavaRunConfigurationExtensionManager.getInstance().readExternal(this, element);
@@ -523,7 +524,7 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 	}
 
 	@Override
-	public void writeExternal(@NotNull final Element element) throws WriteExternalException
+	public void writeExternal(@Nonnull final Element element) throws WriteExternalException
 	{
 		super.writeExternal(element);
 		JavaRunConfigurationExtensionManager.getInstance().writeExternal(this, element);
@@ -586,7 +587,7 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 		return myData.FORK_MODE;
 	}
 
-	public void setForkMode(@NotNull String forkMode)
+	public void setForkMode(@Nonnull String forkMode)
 	{
 		myData.FORK_MODE = forkMode;
 	}
@@ -655,7 +656,7 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 		return new JUnitConsoleProperties(this, executor);
 	}
 
-	@NotNull
+	@Nonnull
 	@Override
 	public String getFrameworkPrefix()
 	{
@@ -936,7 +937,7 @@ public class JUnitConfiguration extends JavaTestConfigurationBase
 			return StringUtil.join(enabledTests, "||");
 		}
 
-		public TestObject getTestObject(@NotNull JUnitConfiguration configuration)
+		public TestObject getTestObject(@Nonnull JUnitConfiguration configuration)
 		{
 			final ExecutionEnvironment environment = ExecutionEnvironmentBuilder.create(DefaultRunExecutor.getRunExecutorInstance(), configuration).build();
 			final TestObject testObject = TestObject.fromString(TEST_OBJECT, configuration, environment);

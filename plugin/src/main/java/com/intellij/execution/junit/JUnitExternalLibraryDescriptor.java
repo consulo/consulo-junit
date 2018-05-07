@@ -18,7 +18,7 @@ package com.intellij.execution.junit;
 import java.util.Collections;
 import java.util.List;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
 import com.intellij.openapi.roots.ExternalLibraryDescriptor;
 
 /**
@@ -28,7 +28,7 @@ public abstract class JUnitExternalLibraryDescriptor extends ExternalLibraryDesc
 {
 	public static final ExternalLibraryDescriptor JUNIT3 = new JUnitExternalLibraryDescriptor("3")
 	{
-		@NotNull
+		@Nonnull
 		@Override
 		public List<String> getLibraryClassesRoots()
 		{
@@ -37,7 +37,7 @@ public abstract class JUnitExternalLibraryDescriptor extends ExternalLibraryDesc
 	};
 	public static final ExternalLibraryDescriptor JUNIT4 = new JUnitExternalLibraryDescriptor("4")
 	{
-		@NotNull
+		@Nonnull
 		@Override
 		public List<String> getLibraryClassesRoots()
 		{
@@ -46,7 +46,7 @@ public abstract class JUnitExternalLibraryDescriptor extends ExternalLibraryDesc
 	};
 	public static final ExternalLibraryDescriptor JUNIT5 = new JUnitExternalLibraryDescriptor("org.junit.jupiter", "junit-jupiter-api", "5.0")
 	{
-		@NotNull
+		@Nonnull
 		@Override
 		public List<String> getLibraryClassesRoots()
 		{

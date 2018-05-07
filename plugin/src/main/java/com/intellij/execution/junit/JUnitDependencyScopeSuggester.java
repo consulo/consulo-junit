@@ -17,8 +17,8 @@ package com.intellij.execution.junit;
 
 import java.util.Collections;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import com.intellij.openapi.roots.DependencyScope;
 import com.intellij.openapi.roots.LibraryDependencyScopeSuggester;
 import com.intellij.openapi.roots.OrderRootType;
@@ -40,7 +40,7 @@ public class JUnitDependencyScopeSuggester extends LibraryDependencyScopeSuggest
 
 	@Nullable
 	@Override
-	public DependencyScope getDefaultDependencyScope(@NotNull Library library)
+	public DependencyScope getDefaultDependencyScope(@Nonnull Library library)
 	{
 		VirtualFile[] files = library.getFiles(OrderRootType.CLASSES);
 		if(files.length == 0)

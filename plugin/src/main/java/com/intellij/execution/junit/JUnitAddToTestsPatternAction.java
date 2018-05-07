@@ -18,7 +18,8 @@ package com.intellij.execution.junit;
 
 import java.util.Set;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
+
 import com.intellij.execution.actions.AbstractAddToTestsPatternAction;
 import com.intellij.execution.actions.RunConfigurationProducer;
 import com.intellij.execution.configurations.ConfigurationType;
@@ -26,14 +27,14 @@ import com.intellij.execution.configurations.ConfigurationType;
 public class JUnitAddToTestsPatternAction extends AbstractAddToTestsPatternAction<JUnitConfiguration>
 {
 	@Override
-	@NotNull
+	@Nonnull
 	protected PatternConfigurationProducer getPatternBasedProducer()
 	{
 		return RunConfigurationProducer.getInstance(PatternConfigurationProducer.class);
 	}
 
 	@Override
-	@NotNull
+	@Nonnull
 	protected ConfigurationType getConfigurationType()
 	{
 		return JUnitConfigurationType.getInstance();

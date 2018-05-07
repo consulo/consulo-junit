@@ -15,7 +15,8 @@
  */
 package com.intellij.execution.junit;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
+
 import com.intellij.execution.actions.ConfigurationContext;
 import com.intellij.execution.actions.ConfigurationFromContext;
 import com.intellij.execution.testframework.AbstractInClassConfigurationProducer;
@@ -38,7 +39,7 @@ public class TestInClassConfigurationProducer extends JUnitConfigurationProducer
 	}
 
 	@Override
-	public void onFirstRun(@NotNull ConfigurationFromContext configuration, @NotNull ConfigurationContext fromContext, @NotNull Runnable performRunnable)
+	public void onFirstRun(@Nonnull ConfigurationFromContext configuration, @Nonnull ConfigurationContext fromContext, @Nonnull Runnable performRunnable)
 	{
 		myDelegate.onFirstRun(configuration, fromContext, performRunnable);
 	}

@@ -16,7 +16,7 @@
 
 package com.intellij.execution.junit;
 
-import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nonnull;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.JavaExecutionUtil;
@@ -49,7 +49,7 @@ class TestClass extends TestObject
 		return javaParameters;
 	}
 
-	@NotNull
+	@Nonnull
 	@Override
 	protected String getForkMode()
 	{
