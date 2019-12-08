@@ -15,16 +15,16 @@
  */
 package com.intellij.execution.junit;
 
-import java.util.Collections;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import com.intellij.openapi.roots.DependencyScope;
 import com.intellij.openapi.roots.LibraryDependencyScopeSuggester;
-import com.intellij.openapi.roots.OrderRootType;
 import com.intellij.openapi.roots.libraries.Library;
 import com.intellij.openapi.roots.libraries.LibraryUtil;
 import com.intellij.openapi.vfs.VirtualFile;
+import consulo.roots.types.BinariesOrderRootType;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.Collections;
 
 /**
  * @author nik
@@ -42,7 +42,7 @@ public class JUnitDependencyScopeSuggester extends LibraryDependencyScopeSuggest
 	@Override
 	public DependencyScope getDefaultDependencyScope(@Nonnull Library library)
 	{
-		VirtualFile[] files = library.getFiles(OrderRootType.CLASSES);
+		VirtualFile[] files = library.getFiles(BinariesOrderRootType.getInstance());
 		if(files.length == 0)
 		{
 			return null;

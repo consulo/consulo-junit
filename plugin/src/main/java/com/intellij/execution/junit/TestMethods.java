@@ -16,11 +16,6 @@
 
 package com.intellij.execution.junit;
 
-import java.util.Collection;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.JavaExecutionUtil;
 import com.intellij.execution.Location;
@@ -33,7 +28,6 @@ import com.intellij.execution.testframework.SourceScope;
 import com.intellij.execution.testframework.TestSearchScope;
 import com.intellij.execution.testframework.sm.runner.SMTestProxy;
 import com.intellij.idea.ActionsBundle;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiClass;
@@ -42,10 +36,12 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
 import consulo.java.execution.configurations.OwnJavaParameters;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.Collection;
+
 public class TestMethods extends TestMethod
 {
-	private static final Logger LOG = Logger.getInstance(TestMethods.class);
-
 	private final Collection<AbstractTestProxy> myFailedTests;
 
 	public TestMethods(@Nonnull JUnitConfiguration configuration, @Nonnull ExecutionEnvironment environment, @Nonnull Collection<AbstractTestProxy> failedTests)

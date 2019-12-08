@@ -8,5 +8,5 @@ import consulo.platform.Platform;
  */
 public interface JUnitProperties
 {
-	boolean JUNIT4_SEARCH_4_TESTS_IN_CLASSPATH = Boolean.valueOf(Platform.current().getEnvironmentVariable("junit4.search.4.tests.in.classpath"));
+	boolean JUNIT4_SEARCH_4_TESTS_IN_CLASSPATH = Boolean.valueOf(Platform.current().jvm().getRuntimeProperty("junit4.search.4.tests.in.classpath"));
 }

@@ -16,9 +16,6 @@
 
 package com.intellij.execution.junit;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.configuration.ConfigurationFactoryEx;
 import com.intellij.execution.configurations.ConfigurationFactory;
@@ -26,12 +23,12 @@ import com.intellij.execution.configurations.ConfigurationType;
 import com.intellij.execution.configurations.ModuleBasedConfiguration;
 import com.intellij.execution.configurations.RunConfiguration;
 import com.intellij.icons.AllIcons;
-import com.intellij.openapi.extensions.Extensions;
 import com.intellij.openapi.project.Project;
-import com.intellij.util.containers.ContainerUtil;
 import consulo.java.module.extension.JavaModuleExtension;
 import consulo.module.extension.ModuleExtensionHelper;
 import consulo.ui.image.Image;
+
+import javax.annotation.Nonnull;
 
 public class JUnitConfigurationType implements ConfigurationType
 {
@@ -92,9 +89,9 @@ public class JUnitConfigurationType implements ConfigurationType
 		return "JUnit";
 	}
 
-	@Nullable
+	@Nonnull
 	public static JUnitConfigurationType getInstance()
 	{
-		return ContainerUtil.findInstance(Extensions.getExtensions(CONFIGURATION_TYPE_EP), JUnitConfigurationType.class);
+		return CONFIGURATION_TYPE_EP.findExtensionOrFail(JUnitConfigurationType.class);
 	}
 }
