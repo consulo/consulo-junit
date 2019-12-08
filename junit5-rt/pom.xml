@@ -47,6 +47,13 @@
 	<dependencies>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
+			<artifactId>consulo.java-java.rt</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>${project.groupId}</groupId>
 			<artifactId>com.intellij.junit-junit.rt</artifactId>
 			<version>${project.version}</version>
 		</dependency>

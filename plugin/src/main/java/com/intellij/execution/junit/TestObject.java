@@ -16,32 +16,7 @@
 
 package com.intellij.execution.junit;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.TreeMap;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
-
-import javax.annotation.Nonnull;
-
-import org.jetbrains.annotations.NonNls;
-
-import javax.annotation.Nullable;
-import com.intellij.execution.CantRunException;
-import com.intellij.execution.ExecutionBundle;
-import com.intellij.execution.ExecutionException;
-import com.intellij.execution.Executor;
-import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.JavaTestFrameworkRunnableState;
-import com.intellij.execution.TestClassCollector;
+import com.intellij.execution.*;
 import com.intellij.execution.configurations.ParametersList;
 import com.intellij.execution.configurations.RuntimeConfigurationException;
 import com.intellij.execution.junit.testDiscovery.TestBySource;
@@ -67,11 +42,7 @@ import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.CharsetToolkit;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.JavaPsiFacade;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
+import com.intellij.psi.*;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.GlobalSearchScopesCore;
 import com.intellij.psi.util.PsiUtilCore;
@@ -79,16 +50,22 @@ import com.intellij.refactoring.listeners.RefactoringElementListener;
 import com.intellij.rt.execution.junit.IDEAJUnitListener;
 import com.intellij.rt.execution.junit.JUnitStarter;
 import com.intellij.rt.execution.junit.RepeatCount;
-import com.intellij.rt.execution.testFrameworks.ForkedDebuggerHelper;
-import com.intellij.util.Function;
-import com.intellij.util.ObjectUtil;
-import com.intellij.util.ObjectUtils;
-import com.intellij.util.PathUtil;
-import com.intellij.util.PathsList;
+import com.intellij.util.*;
 import com.siyeh.ig.junit.JUnitCommonClassNames;
 import consulo.java.execution.configurations.OwnJavaParameters;
 import consulo.psi.PsiPackage;
 import consulo.vfs.ArchiveFileSystem;
+import org.jetbrains.annotations.NonNls;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitConfiguration>
 {
@@ -504,7 +481,8 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 		parameters.getProgramParametersList().add("@@@" + forkMode + ',' + tempFile.getAbsolutePath());
 		if(getForkSocket() != null)
 		{
-			parameters.getProgramParametersList().add(ForkedDebuggerHelper.DEBUG_SOCKET + getForkSocket().getLocalPort());
+			// see ForkedDebuggerHelper
+			parameters.getProgramParametersList().add("-debugSocket" + getForkSocket().getLocalPort());
 		}
 	}
 
