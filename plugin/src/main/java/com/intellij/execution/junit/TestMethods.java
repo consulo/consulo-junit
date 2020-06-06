@@ -16,6 +16,11 @@
 
 package com.intellij.execution.junit;
 
+import java.util.Collection;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.JavaExecutionUtil;
 import com.intellij.execution.Location;
@@ -36,10 +41,6 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
 import consulo.java.execution.configurations.OwnJavaParameters;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.Collection;
-
 public class TestMethods extends TestMethod
 {
 	private final Collection<AbstractTestProxy> myFailedTests;
@@ -59,7 +60,7 @@ public class TestMethods extends TestMethod
 		final RunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
 		final Project project = configurationModule.getProject();
 		final Module module = configurationModule.getModule();
-		final GlobalSearchScope searchScope = module != null ? module.getModuleRuntimeScope(true) : GlobalSearchScope.allScope(project);
+		final GlobalSearchScope searchScope = module != null ? GlobalSearchScope.moduleRuntimeScope(module, true) : GlobalSearchScope.allScope(project);
 		addClassesListToJavaParameters(myFailedTests, testInfo -> testInfo != null ? getTestPresentation(testInfo, project, searchScope) : null, data.getPackageName(), true, javaParameters);
 
 		return javaParameters;

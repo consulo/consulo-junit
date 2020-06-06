@@ -120,7 +120,7 @@ public class ConfigurationUtil
 		if(testAnnotation != null)
 		{
 			//allScope is used to find all abstract test cases which probably have inheritors in the current 'scope'
-			GlobalSearchScope allScope = module == null ? GlobalSearchScope.allScope(project) : module.getModuleRuntimeScope(true);
+			GlobalSearchScope allScope = module == null ? GlobalSearchScope.allScope(project) : GlobalSearchScope.moduleRuntimeScope(module, true);
 			ClassesWithAnnotatedMembersSearch.search(testAnnotation, allScope).forEach(annotated ->
 			{
 				AccessToken token = ReadAction.start();
