@@ -16,28 +16,6 @@
 
 package com.intellij.execution.junit2.configuration;
 
-import gnu.trove.TIntArrayList;
-
-import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Arrays;
-import java.util.List;
-
-import javax.swing.ButtonGroup;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JTextField;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.text.Document;
-import javax.swing.text.PlainDocument;
-
-import javax.annotation.Nonnull;
 import com.intellij.application.options.ModuleDescriptionsComboBox;
 import com.intellij.execution.ExecutionBundle;
 import com.intellij.execution.MethodBrowser;
@@ -50,12 +28,7 @@ import com.intellij.execution.junit.TestClassFilter;
 import com.intellij.execution.testDiscovery.TestDiscoveryExtension;
 import com.intellij.execution.testframework.SourceScope;
 import com.intellij.execution.testframework.TestSearchScope;
-import com.intellij.execution.ui.ClassBrowser;
-import com.intellij.execution.ui.CommonJavaParametersPanel;
-import com.intellij.execution.ui.ConfigurationModuleSelector;
-import com.intellij.execution.ui.DefaultJreSelector;
-import com.intellij.execution.ui.JrePathEditor;
-import com.intellij.execution.ui.ShortenCommandLineModeCombo;
+import com.intellij.execution.ui.*;
 import com.intellij.ide.util.ClassFilter;
 import com.intellij.ide.util.PackageChooserDialog;
 import com.intellij.openapi.fileChooser.FileChooser;
@@ -82,26 +55,35 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.rt.execution.junit.RepeatCount;
-import com.intellij.ui.EditorTextField;
-import com.intellij.ui.EditorTextFieldWithBrowseButton;
-import com.intellij.ui.InsertPathAction;
-import com.intellij.ui.ListCellRendererWrapper;
-import com.intellij.ui.PanelWithAnchor;
-import com.intellij.ui.RawCommandLineEditor;
+import com.intellij.ui.*;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.util.IconUtil;
 import com.intellij.util.ui.UIUtil;
 import consulo.psi.PsiPackage;
+import consulo.util.collection.primitive.ints.IntList;
+import consulo.util.collection.primitive.ints.IntLists;
+
+import javax.annotation.Nonnull;
+import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.text.Document;
+import javax.swing.text.PlainDocument;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Arrays;
+import java.util.List;
 
 public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEditor<T> implements PanelWithAnchor
 {
-	private static final List<TIntArrayList> ourEnabledFields = Arrays.asList(new TIntArrayList(new int[]{0}), new TIntArrayList(new int[]{1}), new TIntArrayList(new int[]{
+	private static final List<IntList> ourEnabledFields = Arrays.asList(IntLists.newArrayList(new int[]{0}), IntLists.newArrayList(new int[]{1}), IntLists.newArrayList(new int[]{
 			1,
 			2
-	}), new TIntArrayList(new int[]{3}), new TIntArrayList(new int[]{4}), new TIntArrayList(new int[]{5}), new TIntArrayList(new int[]{
+	}), IntLists.newArrayList(new int[]{3}), IntLists.newArrayList(new int[]{4}), IntLists.newArrayList(new int[]{5}), IntLists.newArrayList(new int[]{
 			1,
 			2
-	}), new TIntArrayList(new int[]{6}));
+	}), IntLists.newArrayList(new int[]{6}));
 	private static final String[] FORK_MODE_ALL = {
 			JUnitConfiguration.FORK_NONE,
 			JUnitConfiguration.FORK_METHOD,
@@ -683,7 +665,7 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 	public void onTypeChanged(final int newType)
 	{
 		myTypeChooser.setSelectedItem(newType);
-		final TIntArrayList enabledFields = ourEnabledFields.get(newType);
+		final IntList enabledFields = ourEnabledFields.get(newType);
 		for(int i = 0; i < myTestLocations.length; i++)
 		{
 			getTestLocation(i).setEnabled(enabledFields.contains(i));

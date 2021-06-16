@@ -16,26 +16,7 @@
 
 package com.intellij.execution.junit;
 
-import gnu.trove.THashSet;
-
-import java.io.File;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.function.Predicate;
-
-import javax.annotation.Nullable;
-import org.jetbrains.annotations.TestOnly;
-import com.intellij.execution.CantRunException;
-import com.intellij.execution.ConfigurationUtil;
-import com.intellij.execution.ExecutionBundle;
-import com.intellij.execution.ExecutionException;
-import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.TestClassCollector;
+import com.intellij.execution.*;
 import com.intellij.execution.configurations.RuntimeConfigurationException;
 import com.intellij.execution.configurations.RuntimeConfigurationWarning;
 import com.intellij.execution.runners.ExecutionEnvironment;
@@ -48,14 +29,7 @@ import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.Ref;
-import com.intellij.psi.CommonClassNames;
-import com.intellij.psi.JavaPsiFacade;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiJavaPackage;
-import com.intellij.psi.PsiManager;
-import com.intellij.psi.PsiMethod;
+import com.intellij.psi.*;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.PackageScope;
 import com.intellij.psi.util.ClassUtil;
@@ -64,6 +38,20 @@ import com.intellij.rt.execution.junit.JUnitStarter;
 import consulo.java.execution.configurations.OwnJavaParameters;
 import consulo.psi.PsiPackage;
 import conuslo.junit.JUnitProperties;
+import org.jetbrains.annotations.TestOnly;
+
+import javax.annotation.Nullable;
+import java.io.File;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
 
 public class TestPackage extends TestObject
 {
@@ -88,7 +76,7 @@ public class TestPackage extends TestObject
 
 		return new SearchForTestsTask(getConfiguration().getProject(), myServerSocket)
 		{
-			private final THashSet<PsiClass> myClasses = new THashSet<>();
+			private final Set<PsiClass> myClasses = new HashSet<>();
 
 			@Override
 			protected void search()
