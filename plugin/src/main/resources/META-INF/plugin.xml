@@ -76,7 +76,7 @@
 	</extensions>
 
 	<extensionPoints>
-		<extensionPoint qualifiedName="com.intellij.junitListener" interface="com.intellij.rt.execution.junit.IDEAJUnitListener"/>
+		<extensionPoint name="com.intellij.junit.listener" interface="com.intellij.rt.execution.junit.IDEAJUnitListener"/>
 	</extensionPoints>
 
 	<actions>
