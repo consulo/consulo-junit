@@ -76,8 +76,12 @@
 	</extensions>
 
 	<extensionPoints>
-		<extensionPoint name="com.intellij.junit.listener" interface="com.intellij.rt.execution.junit.IDEAJUnitListener"/>
+		<extensionPoint name="listener" interface="com.intellij.rt.execution.junit.IDEAJUnitListener"/>
 	</extensionPoints>
+
+	<extensions defaultExtensionNs="com.intellij.junit">
+		<listener implementation="com.intellij.junit4.JUnitTestDiscoveryListener"/>
+	</extensions>
 
 	<actions>
 		<group>
