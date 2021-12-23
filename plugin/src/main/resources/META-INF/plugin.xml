@@ -14,7 +14,7 @@
   ~ limitations under the License.
   -->
 
-<consulo-plugin>
+<consulo-plugin url="https://github.com/consulo/consulo-junit">
 	<id>com.intellij.junit</id>
 	<name>JUnit</name>
 	<description></description>
