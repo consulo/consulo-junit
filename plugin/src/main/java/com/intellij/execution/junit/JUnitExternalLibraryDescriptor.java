@@ -15,11 +15,11 @@
  */
 package com.intellij.execution.junit;
 
-import java.util.Collections;
-import java.util.List;
+import com.intellij.java.language.projectRoots.roots.ExternalLibraryDescriptor;
 
 import javax.annotation.Nonnull;
-import com.intellij.openapi.roots.ExternalLibraryDescriptor;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author nik

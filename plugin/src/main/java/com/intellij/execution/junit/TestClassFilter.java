@@ -16,27 +16,28 @@
 
 package com.intellij.execution.junit;
 
+import com.intellij.java.execution.configurations.ConfigurationUtil;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.util.ClassFilter;
+import consulo.application.ReadAction;
+import consulo.compiler.CompilerManager;
+import consulo.execution.test.SourceScope;
+import consulo.language.content.ProductionResourceContentFolderTypeProvider;
+import consulo.language.psi.PsiManager;
+import consulo.language.psi.PsiUtilCore;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.module.Module;
+import consulo.module.content.ProjectRootManager;
+import consulo.project.Project;
+import consulo.virtualFileSystem.VirtualFile;
+
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
-import javax.annotation.Nullable;
-import com.intellij.execution.configurations.ConfigurationUtil;
-import com.intellij.execution.testframework.SourceScope;
-import com.intellij.ide.util.ClassFilter;
-import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.compiler.CompilerManager;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectRootManager;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiManager;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.util.PsiUtilCore;
-import consulo.roots.impl.ProductionResourceContentFolderTypeProvider;
 
 public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 {
@@ -67,7 +68,7 @@ public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 	{
 		return ReadAction.compute(() ->
 		{
-			if(aClass.getQualifiedName() != null && (myBase != null && aClass.isInheritor(myBase, true) && ConfigurationUtil.PUBLIC_INSTANTIATABLE_CLASS.value(aClass) || JUnitUtil.isTestClass
+			if(aClass.getQualifiedName() != null && (myBase != null && aClass.isInheritor(myBase, true) && ConfigurationUtil.PUBLIC_INSTANTIATABLE_CLASS.test(aClass) || JUnitUtil.isTestClass
 					(aClass)))
 			{
 				final CompilerManager compilerConfiguration = CompilerManager.getInstance(getProject());

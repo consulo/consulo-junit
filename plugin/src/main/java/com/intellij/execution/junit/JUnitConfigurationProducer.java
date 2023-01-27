@@ -16,8 +16,8 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.execution.configurations.ConfigurationType;
-import com.intellij.execution.testframework.AbstractJavaTestConfigurationProducer;
+import com.intellij.java.execution.impl.testframework.AbstractJavaTestConfigurationProducer;
+import consulo.execution.configuration.ConfigurationType;
 
 public abstract class JUnitConfigurationProducer extends AbstractJavaTestConfigurationProducer<JUnitConfiguration> implements Cloneable
 {

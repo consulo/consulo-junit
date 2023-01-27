@@ -17,7 +17,7 @@
 <consulo-plugin url="https://github.com/consulo/consulo-junit">
 	<id>com.intellij.junit</id>
 	<name>JUnit</name>
-	<description></description>
+	<description/>
 	<version>SNAPSHOT</version>
 	<vendor>JetBrains</vendor>
 	<category>Test Frameworks</category>
@@ -25,63 +25,6 @@
 	<tags>
 		<tag>test.framework</tag>
 	</tags>
-
-	<extensions defaultExtensionNs="consulo.java">
-		<deadCode implementation="com.intellij.execution.junit2.inspection.JUnitEntryPoint"/>
-		<cantBeStatic implementation="com.intellij.execution.junit2.inspection.JUnitCantBeStaticExtension"/>
-
-		<testFramework implementation="com.intellij.execution.junit.JUnit3Framework"/>
-		<testFramework implementation="com.intellij.execution.junit.JUnit4Framework"/>
-		<testFramework implementation="com.intellij.execution.junit.JUnit5Framework"/>
-	</extensions>
-
-	<extensions defaultExtensionNs="com.intellij">
-		<programRunner implementation="com.intellij.execution.junit.JUnitDebuggerRunner"/>
-
-		<runConfigurationProducer implementation="com.intellij.execution.junit.AllInDirectoryConfigurationProducer"/>
-		<runConfigurationProducer implementation="com.intellij.execution.junit.AllInPackageConfigurationProducer"/>
-		<runConfigurationProducer implementation="com.intellij.execution.junit.PatternConfigurationProducer"/>
-		<runConfigurationProducer implementation="com.intellij.execution.junit.TestInClassConfigurationProducer"/>
-		<runConfigurationProducer implementation="com.intellij.execution.junit.UniqueIdConfigurationProducer"/>
-
-		<configurationType implementation="com.intellij.execution.junit.JUnitConfigurationType"/>
-		<library.dependencyScopeSuggester implementation="com.intellij.execution.junit.JUnitDependencyScopeSuggester"/>
-
-		<stacktrace.fold substring="at org.junit.internal.runners."/>
-		<stacktrace.fold substring="at org.junit.runners."/>
-		<stacktrace.fold substring="at org.junit.runner.JUnitCore."/>
-		<stacktrace.fold substring="at org.junit.Assert.fail("/>
-		<stacktrace.fold substring="at org.junit.Assert.failNotSame("/>
-		<stacktrace.fold substring="at org.junit.Assert.failSame("/>
-		<stacktrace.fold substring="at junit.framework.Assert.assert"/>
-		<stacktrace.fold substring="at junit.framework.Assert.fail("/>
-		<stacktrace.fold substring="at junit.framework.Assert.failNotSame("/>
-		<stacktrace.fold substring="at junit.framework.Assert.failSame("/>
-		<stacktrace.fold substring="at org.junit.Assert.internalArrayEquals("/>
-		<stacktrace.fold substring="at org.junit.internal.ComparisonCriteria.arrayEquals("/>
-		<stacktrace.fold substring="at org.junit.Assert.assert"/>
-		<stacktrace.fold substring="at com.intellij.junit3."/>
-		<stacktrace.fold substring="at com.intellij.junit4."/>
-		<stacktrace.fold substring="at com.intellij.junit5."/>
-		<stacktrace.fold substring="at junit.framework.TestSuite.run"/>
-		<stacktrace.fold substring="at junit.framework.TestCase.run"/>
-		<stacktrace.fold substring="at junit.framework.TestResult"/>
-		<stacktrace.fold substring="at org.junit.jupiter.api.AssertionUtils.fail("/>
-		<stacktrace.fold substring="at org.junit.jupiter.api.AssertEquals.failNotEqual("/>
-		<stacktrace.fold substring="at org.junit.jupiter.api.AssertEquals.assertEquals("/>
-		<stacktrace.fold substring="at org.junit.jupiter.api.Assertions.assertEquals("/>
-		<stacktrace.fold substring="at org.junit.platform."/>
-		<stacktrace.fold substring="at org.junit.jupiter."/>
-		<stacktrace.fold substring="at org.junit.vintage."/>
-	</extensions>
-
-	<extensionPoints>
-		<extensionPoint name="listener" interface="com.intellij.rt.execution.junit.IDEAJUnitListener"/>
-	</extensionPoints>
-
-	<extensions defaultExtensionNs="com.intellij.junit">
-		<listener implementation="com.intellij.junit4.JUnitTestDiscoveryListener"/>
-	</extensions>
 
 	<actions>
 		<group>

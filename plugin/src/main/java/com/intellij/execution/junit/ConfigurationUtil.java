@@ -14,33 +14,28 @@
  * limitations under the License.
  */
 
-package com.intellij.execution;
+package com.intellij.execution.junit;
 
-import java.util.Set;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.indexing.search.searches.ClassInheritorsSearch;
+import com.intellij.java.indexing.search.searches.ClassesWithAnnotatedMembersSearch;
+import com.intellij.java.language.psi.*;
+import com.intellij.java.language.psi.search.PsiShortNamesCache;
+import consulo.application.AccessToken;
+import consulo.application.ApplicationManager;
+import consulo.application.ReadAction;
+import consulo.application.util.ReadActionProcessor;
+import consulo.language.psi.PsiManager;
+import consulo.language.psi.PsiUtilCore;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.module.Module;
+import consulo.project.Project;
+import consulo.util.lang.ref.Ref;
+import consulo.virtualFileSystem.VirtualFile;
 
 import javax.annotation.Nullable;
-import com.intellij.execution.junit.JUnitUtil;
-import com.intellij.execution.junit.TestClassFilter;
-import com.intellij.openapi.application.AccessToken;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.application.ReadActionProcessor;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Ref;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.JavaPsiFacade;
-import com.intellij.psi.PsiAnonymousClass;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiManager;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.PsiModifier;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.search.PsiShortNamesCache;
-import com.intellij.psi.search.searches.ClassInheritorsSearch;
-import com.intellij.psi.search.searches.ClassesWithAnnotatedMembersSearch;
-import com.intellij.psi.util.PsiUtilCore;
-import com.intellij.util.containers.ContainerUtil;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ConfigurationUtil
 {
@@ -100,7 +95,7 @@ public class ConfigurationUtil
 			});
 		}
 
-		Set<PsiClass> processed = ContainerUtil.newHashSet();
+		Set<PsiClass> processed = new HashSet<>();
 		boolean hasJunit4 = addAnnotatedMethodsAnSubclasses(scope, testClassFilter, module, found, processed, JUnitUtil.TEST_ANNOTATION, manager.getProject());
 		hasJunit4 |= addAnnotatedMethodsAnSubclasses(scope, testClassFilter, module, found, processed, JUnitUtil.RUN_WITH, manager.getProject());
 		return hasJunit4;

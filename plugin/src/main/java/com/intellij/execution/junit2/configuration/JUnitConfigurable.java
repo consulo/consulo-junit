@@ -16,52 +16,52 @@
 
 package com.intellij.execution.junit2.configuration;
 
-import com.intellij.application.options.ModuleDescriptionsComboBox;
-import com.intellij.execution.ExecutionBundle;
-import com.intellij.execution.MethodBrowser;
-import com.intellij.execution.ShortenCommandLine;
-import com.intellij.execution.configuration.BrowseModuleValueActionListener;
 import com.intellij.execution.junit.JUnitConfiguration;
 import com.intellij.execution.junit.JUnitConfigurationType;
-import com.intellij.execution.junit.JUnitUtil;
 import com.intellij.execution.junit.TestClassFilter;
-import com.intellij.execution.testDiscovery.TestDiscoveryExtension;
-import com.intellij.execution.testframework.SourceScope;
-import com.intellij.execution.testframework.TestSearchScope;
-import com.intellij.execution.ui.*;
-import com.intellij.ide.util.ClassFilter;
-import com.intellij.ide.util.PackageChooserDialog;
-import com.intellij.openapi.fileChooser.FileChooser;
-import com.intellij.openapi.fileChooser.FileChooserDescriptor;
-import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
-import com.intellij.openapi.fileChooser.FileChooserFactory;
-import com.intellij.openapi.fileTypes.PlainTextLanguage;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.options.SettingsEditor;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.ComponentWithBrowseButton;
-import com.intellij.openapi.ui.LabeledComponent;
-import com.intellij.openapi.ui.TextFieldWithBrowseButton;
-import com.intellij.openapi.ui.ex.MessagesEx;
-import com.intellij.openapi.util.Condition;
-import com.intellij.openapi.util.io.FileUtil;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.openapi.vcs.changes.ChangeListManager;
-import com.intellij.openapi.vcs.changes.LocalChangeList;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.JavaCodeFragment;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.java.execution.ShortenCommandLine;
+import com.intellij.java.execution.impl.MethodBrowser;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.execution.impl.testDiscovery.TestDiscoveryExtension;
+import com.intellij.java.execution.impl.ui.*;
+import com.intellij.java.language.impl.codeInsight.PackageChooserDialog;
+import com.intellij.java.language.impl.ui.EditorTextFieldWithBrowseButton;
+import com.intellij.java.language.psi.JavaCodeFragment;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import com.intellij.java.language.util.ClassFilter;
 import com.intellij.rt.execution.junit.RepeatCount;
-import com.intellij.ui.*;
-import com.intellij.ui.components.JBLabel;
-import com.intellij.util.IconUtil;
-import com.intellij.util.ui.UIUtil;
-import consulo.psi.PsiPackage;
+import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.intellij.uiDesigner.core.Spacer;
+import consulo.execution.ExecutionBundle;
+import consulo.execution.configuration.ui.SettingsEditor;
+import consulo.execution.test.SourceScope;
+import consulo.execution.test.TestSearchScope;
+import consulo.execution.ui.awt.BrowseModuleValueActionListener;
+import consulo.execution.ui.awt.RawCommandLineEditor;
+import consulo.fileChooser.FileChooserDescriptor;
+import consulo.fileChooser.FileChooserDescriptorFactory;
+import consulo.fileChooser.FileChooserFactory;
+import consulo.fileChooser.IdeaFileChooser;
+import consulo.language.editor.ui.awt.EditorTextField;
+import consulo.language.plain.PlainTextLanguage;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiPackage;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.module.Module;
+import consulo.module.ui.awt.ModuleDescriptionsComboBox;
+import consulo.platform.base.icon.PlatformIconGroup;
+import consulo.project.Project;
+import consulo.ui.ex.awt.*;
 import consulo.util.collection.primitive.ints.IntList;
 import consulo.util.collection.primitive.ints.IntLists;
+import consulo.util.io.FileUtil;
+import consulo.util.lang.StringUtil;
+import consulo.util.lang.function.Condition;
+import consulo.versionControlSystem.change.ChangeListManager;
+import consulo.versionControlSystem.change.LocalChangeList;
+import consulo.virtualFileSystem.VirtualFile;
 
 import javax.annotation.Nonnull;
 import javax.swing.*;
@@ -74,6 +74,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ResourceBundle;
 
 public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEditor<T> implements PanelWithAnchor
 {
@@ -130,6 +131,7 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 	{
 		myProject = project;
 		myModel = new JUnitConfigurationModel(project);
+		$$$setupUI$$$();
 		myModuleSelector = new ConfigurationModuleSelector(project, getModulesComponent());
 		myJrePathEditor.setDefaultJreSelector(DefaultJreSelector.fromModuleDependencies(getModulesComponent(), false));
 		myCommonJavaParameters.setModuleContext(myModuleSelector.getModule());
@@ -169,7 +171,7 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 					@Override
 					protected String showDialog()
 					{
-						final VirtualFile virtualFile = FileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null);
+						final VirtualFile virtualFile = IdeaFileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null);
 						if(virtualFile != null)
 						{
 							return FileUtil.toSystemDependentName(virtualFile.getPath());
@@ -253,7 +255,7 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 		final JPanel panel = myPattern.getComponent();
 		panel.setLayout(new BorderLayout());
 		myPatternTextField = new TextFieldWithBrowseButton();
-		myPatternTextField.setButtonIcon(IconUtil.getAddIcon());
+		myPatternTextField.setButtonIcon(PlatformIconGroup.generalAdd());
 		panel.add(myPatternTextField, BorderLayout.CENTER);
 		myTestLocations[JUnitConfigurationModel.PATTERN] = myPattern;
 
@@ -857,5 +859,261 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 		{
 			((LabeledComponent<EditorTextFieldWithBrowseButton>) getTestLocation(JUnitConfigurationModel.CATEGORY)).getComponent().setText(psiClass.getQualifiedName());
 		}
+	}
+
+	/**
+	 * Method generated by Consulo GUI Designer
+	 * >>> IMPORTANT!! <<<
+	 * DO NOT edit this method OR call it in your code!
+	 *
+	 * @noinspection ALL
+	 */
+	private void $$$setupUI$$$()
+	{
+		createUIComponents();
+		myWholePanel = new JPanel();
+		myWholePanel.setLayout(new GridLayoutManager(4, 2, new Insets(0, 0, 0, 0), -1, -1));
+		final JPanel panel1 = new JPanel();
+		panel1.setLayout(new GridBagLayout());
+		myWholePanel.add(panel1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_NORTH, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myTestLabel = new JBLabel();
+		myTestLabel.setHorizontalAlignment(2);
+		myTestLabel.setHorizontalTextPosition(2);
+		myTestLabel.setIconTextGap(4);
+		this.$$$loadLabelText$$$(myTestLabel, ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.configure.junit.test.kind.label"));
+		GridBagConstraints gbc;
+		gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.weighty = 1.0;
+		gbc.anchor = GridBagConstraints.WEST;
+		panel1.add(myTestLabel, gbc);
+		myTypeChooser = new JComboBox();
+		gbc = new GridBagConstraints();
+		gbc.gridx = 1;
+		gbc.gridy = 0;
+		gbc.weighty = 1.0;
+		gbc.anchor = GridBagConstraints.WEST;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.insets = new Insets(0, JBUI.scale(10), 0, 0);
+		panel1.add(myTypeChooser, gbc);
+		final JPanel spacer1 = new JPanel();
+		gbc = new GridBagConstraints();
+		gbc.gridx = 2;
+		gbc.gridy = 0;
+		gbc.weightx = 1.0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		panel1.add(spacer1, gbc);
+		final JPanel panel2 = new JPanel();
+		panel2.setLayout(new GridLayoutManager(6, 1, new Insets(0, 0, 0, 0), -1, -1));
+		myWholePanel.add(panel2, new GridConstraints(3, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+		myCommonJavaParameters = new CommonJavaParametersPanel();
+		panel2.add(myCommonJavaParameters, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myModule = new LabeledComponent();
+		myModule.setComponent(new ModuleDescriptionsComboBox());
+		myModule.setEnabled(true);
+		myModule.setLabelLocation("West");
+		myModule.setText(ResourceBundle.getBundle("messages/JavaExecutionBundle").getString("application.configuration.use.classpath.and.jdk.of.module.label"));
+		panel2.add(myModule, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myShortenClasspathModeCombo.setEnabled(true);
+		myShortenClasspathModeCombo.setLabelLocation("West");
+		myShortenClasspathModeCombo.setText(ResourceBundle.getBundle("messages/JavaExecutionBundle").getString("application.configuration.shorten.command.line.label"));
+		panel2.add(myShortenClasspathModeCombo, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK |
+				GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		final Spacer spacer2 = new Spacer();
+		panel2.add(spacer2, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, JBUI.scale(10)), null, 0, false));
+		final Spacer spacer3 = new Spacer();
+		panel2.add(spacer3, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+		myJrePathEditor = new JrePathEditor();
+		panel2.add(myJrePathEditor, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+		final JPanel panel3 = new JPanel();
+		panel3.setLayout(new GridLayoutManager(1, 6, new Insets(0, 0, 0, 0), -1, -1));
+		myWholePanel.add(panel3, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_NORTH, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		final Spacer spacer4 = new Spacer();
+		panel3.add(spacer4, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+		final JLabel label1 = new JLabel();
+		label1.setText("Repeat:");
+		label1.setDisplayedMnemonic('R');
+		label1.setDisplayedMnemonicIndex(0);
+		panel3.add(label1, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null,
+				null, 0, false));
+		final JBLabel jBLabel1 = new JBLabel();
+		panel3.add(jBLabel1, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null,
+				null, 0, false));
+		myForkCb = new JComboBox();
+		panel3.add(myForkCb, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED,
+				null, null, null, 0, false));
+		myRepeatCountField = new JTextField();
+		panel3.add(myRepeatCountField, new GridConstraints(0, 5, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints
+				.SIZEPOLICY_FIXED, new Dimension(JBUI.scale(30), -1), new Dimension(JBUI.scale(50), -1), new Dimension(JBUI.scale(60),
+				-1), 0, false));
+		myRepeatCb = new JComboBox();
+		panel3.add(myRepeatCb, new GridConstraints(0, 4, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED,
+				null, null, null, 0, false));
+		final JSeparator separator1 = new JSeparator();
+		myWholePanel.add(separator1, new GridConstraints(2, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_FIXED, GridConstraints
+				.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		final JPanel panel4 = new JPanel();
+		panel4.setLayout(new GridLayoutManager(9, 1, new Insets(0, 0, 0, 0), -1, -1));
+		myWholePanel.add(panel4, new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_NORTH, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+		myMethod.setEnabled(true);
+		myMethod.setLabelLocation("West");
+		myMethod.setText(ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.method.label"));
+		panel4.add(myMethod, new GridConstraints(7, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myPackagePanel = new JPanel();
+		myPackagePanel.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+		panel4.add(myPackagePanel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+		myPackage.setEnabled(true);
+		myPackage.setLabelLocation("West");
+		myPackage.setText(ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.package.label"));
+		myPackage.setVisible(true);
+		myPackagePanel.add(myPackage, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myPattern = new LabeledComponent();
+		myPattern.setComponent(new JPanel());
+		myPattern.setLabelLocation("West");
+		myPattern.setText("Pattern");
+		myPattern.setVisible(true);
+		panel4.add(myPattern, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myClass.setLabelLocation("West");
+		myClass.setText(ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.class.label"));
+		panel4.add(myClass, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myCategory.setLabelLocation("West");
+		myCategory.setText("Category");
+		panel4.add(myCategory, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myUniqueIdField = new LabeledComponent();
+		myUniqueIdField.setComponent(new RawCommandLineEditor());
+		myUniqueIdField.setLabelLocation("West");
+		myUniqueIdField.setText("UniqueId");
+		panel4.add(myUniqueIdField, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myDir = new LabeledComponent();
+		myDir.setComponent(new TextFieldWithBrowseButton());
+		myDir.setLabelLocation("West");
+		myDir.setText("Directory");
+		panel4.add(myDir, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+				GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myChangeListLabeledComponent = new LabeledComponent();
+		myChangeListLabeledComponent.setComponent(new JComboBox<>());
+		myChangeListLabeledComponent.setLabelLocation("West");
+		myChangeListLabeledComponent.setText("Change list");
+		panel4.add(myChangeListLabeledComponent, new GridConstraints(6, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK |
+				GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myScopesPanel = new JPanel();
+		myScopesPanel.setLayout(new GridLayoutManager(3, 3, new Insets(0, 0, 0, 0), -1, -1));
+		panel4.add(myScopesPanel, new GridConstraints(8, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+		mySearchForTestsLabel = new JBLabel();
+		this.$$$loadLabelText$$$(mySearchForTestsLabel, ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.search.for.tests.label"));
+		myScopesPanel.add(mySearchForTestsLabel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints
+				.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myWholeProjectScope = new JRadioButton();
+		this.$$$loadButtonText$$$(myWholeProjectScope, ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.in.whole.project.radio"));
+		myScopesPanel.add(myWholeProjectScope, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		final Spacer spacer5 = new Spacer();
+		myScopesPanel.add(spacer5, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0,
+				false));
+		mySingleModuleScope = new JRadioButton();
+		this.$$$loadButtonText$$$(mySingleModuleScope, ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.in.single.module.radio"));
+		myScopesPanel.add(mySingleModuleScope, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myModuleWDScope = new JRadioButton();
+		this.$$$loadButtonText$$$(myModuleWDScope, ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.across.module.dependencies.radio"));
+		myScopesPanel.add(myModuleWDScope, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
+				.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+		myTestLabel.setLabelFor(myTypeChooser);
+		label1.setLabelFor(myRepeatCb);
+	}
+
+	/**
+	 * @noinspection ALL
+	 */
+	private void $$$loadLabelText$$$(JLabel component, String text)
+	{
+		StringBuffer result = new StringBuffer();
+		boolean haveMnemonic = false;
+		char mnemonic = '\0';
+		int mnemonicIndex = -1;
+		for(int i = 0; i < text.length(); i++)
+		{
+			if(text.charAt(i) == '&')
+			{
+				i++;
+				if(i == text.length())
+				{
+					break;
+				}
+				if(!haveMnemonic && text.charAt(i) != '&')
+				{
+					haveMnemonic = true;
+					mnemonic = text.charAt(i);
+					mnemonicIndex = result.length();
+				}
+			}
+			result.append(text.charAt(i));
+		}
+		component.setText(result.toString());
+		if(haveMnemonic)
+		{
+			component.setDisplayedMnemonic(mnemonic);
+			component.setDisplayedMnemonicIndex(mnemonicIndex);
+		}
+	}
+
+	/**
+	 * @noinspection ALL
+	 */
+	private void $$$loadButtonText$$$(AbstractButton component, String text)
+	{
+		StringBuffer result = new StringBuffer();
+		boolean haveMnemonic = false;
+		char mnemonic = '\0';
+		int mnemonicIndex = -1;
+		for(int i = 0; i < text.length(); i++)
+		{
+			if(text.charAt(i) == '&')
+			{
+				i++;
+				if(i == text.length())
+				{
+					break;
+				}
+				if(!haveMnemonic && text.charAt(i) != '&')
+				{
+					haveMnemonic = true;
+					mnemonic = text.charAt(i);
+					mnemonicIndex = result.length();
+				}
+			}
+			result.append(text.charAt(i));
+		}
+		component.setText(result.toString());
+		if(haveMnemonic)
+		{
+			component.setMnemonic(mnemonic);
+			component.setDisplayedMnemonicIndex(mnemonicIndex);
+		}
+	}
+
+	/**
+	 * @noinspection ALL
+	 */
+	public JComponent $$$getRootComponent$$$()
+	{
+		return myWholePanel;
 	}
 }

@@ -15,14 +15,16 @@
  */
 package com.intellij.execution.junit;
 
+import com.intellij.java.execution.impl.testframework.AbstractInClassConfigurationProducer;
+import consulo.annotation.component.ExtensionImpl;
+import consulo.execution.action.ConfigurationContext;
+import consulo.execution.action.ConfigurationFromContext;
+import consulo.language.psi.PsiElement;
+import consulo.util.lang.ref.Ref;
+
 import javax.annotation.Nonnull;
 
-import com.intellij.execution.actions.ConfigurationContext;
-import com.intellij.execution.actions.ConfigurationFromContext;
-import com.intellij.execution.testframework.AbstractInClassConfigurationProducer;
-import com.intellij.openapi.util.Ref;
-import com.intellij.psi.PsiElement;
-
+@ExtensionImpl
 public class TestInClassConfigurationProducer extends JUnitConfigurationProducer
 {
 	private JUnitInClassConfigurationProducerDelegate myDelegate = new JUnitInClassConfigurationProducerDelegate();

@@ -1,25 +1,33 @@
 // Copyright 2000-2017 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.execution.junit;
 
-import com.intellij.CommonBundle;
-import com.intellij.codeInsight.AnnotationUtil;
-import com.intellij.codeInsight.intention.AddAnnotationFix;
-import com.intellij.execution.configurations.ConfigurationType;
-import com.intellij.execution.junit2.info.MethodLocation;
-import com.intellij.icons.AllIcons;
-import com.intellij.ide.fileTemplates.FileTemplateDescriptor;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.roots.ExternalLibraryDescriptor;
-import com.intellij.openapi.ui.Messages;
-import com.intellij.psi.*;
-import com.intellij.psi.codeStyle.JavaCodeStyleManager;
-import com.intellij.testIntegration.JavaTestFramework;
-import com.intellij.util.IncorrectOperationException;
+import com.intellij.java.analysis.impl.codeInsight.intention.AddAnnotationFix;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.execution.impl.junit2.info.MethodLocation;
+import com.intellij.java.language.codeInsight.AnnotationUtil;
+import com.intellij.java.language.projectRoots.roots.ExternalLibraryDescriptor;
+import com.intellij.java.language.psi.JavaPsiFacade;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiElementFactory;
+import com.intellij.java.language.psi.PsiMethod;
+import com.intellij.java.language.psi.codeStyle.JavaCodeStyleManager;
+import com.intellij.java.language.testIntegration.JavaTestFramework;
+import consulo.annotation.component.ExtensionImpl;
+import consulo.application.AllIcons;
+import consulo.application.ApplicationManager;
+import consulo.application.CommonBundle;
+import consulo.execution.configuration.ConfigurationType;
+import consulo.fileTemplate.FileTemplateDescriptor;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiManager;
+import consulo.language.util.IncorrectOperationException;
+import consulo.ui.ex.awt.Messages;
 import consulo.ui.image.Image;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+@ExtensionImpl
 public class JUnit5Framework extends JavaTestFramework
 {
 	@Nonnull

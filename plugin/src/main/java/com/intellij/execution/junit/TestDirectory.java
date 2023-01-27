@@ -15,35 +15,35 @@
  */
 package com.intellij.execution.junit;
 
-import java.nio.file.Path;
-import java.util.Collection;
+import com.intellij.java.execution.impl.TestClassCollector;
+import com.intellij.java.execution.impl.util.JavaParametersUtil;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.execution.CantRunException;
+import consulo.execution.ExecutionBundle;
+import consulo.execution.RuntimeConfigurationException;
+import consulo.execution.RuntimeConfigurationWarning;
+import consulo.execution.configuration.RuntimeConfigurationError;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.execution.test.SourceScope;
+import consulo.execution.util.ProgramParametersUtil;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiManager;
+import consulo.language.psi.PsiPackage;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.language.psi.scope.GlobalSearchScopesCore;
+import consulo.language.util.ModuleUtilCore;
+import consulo.module.Module;
+import consulo.project.Project;
+import consulo.util.io.FileUtil;
+import consulo.util.lang.Comparing;
+import consulo.util.lang.StringUtil;
+import consulo.virtualFileSystem.LocalFileSystem;
+import consulo.virtualFileSystem.VirtualFile;
 
 import javax.annotation.Nullable;
-import com.intellij.execution.CantRunException;
-import com.intellij.execution.ExecutionBundle;
-import com.intellij.execution.TestClassCollector;
-import com.intellij.execution.configurations.RuntimeConfigurationError;
-import com.intellij.execution.configurations.RuntimeConfigurationException;
-import com.intellij.execution.configurations.RuntimeConfigurationWarning;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.testframework.SourceScope;
-import com.intellij.execution.util.JavaParametersUtil;
-import com.intellij.execution.util.ProgramParametersUtil;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleUtilCore;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Comparing;
-import com.intellij.openapi.util.io.FileUtil;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.openapi.vfs.LocalFileSystem;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiManager;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.search.GlobalSearchScopesCore;
-import consulo.psi.PsiPackage;
+import java.nio.file.Path;
+import java.util.Collection;
 
 class TestDirectory extends TestPackage
 {

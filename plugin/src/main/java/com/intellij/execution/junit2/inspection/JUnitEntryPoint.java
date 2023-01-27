@@ -16,28 +16,29 @@
 
 package com.intellij.execution.junit2.inspection;
 
-import javax.annotation.Nonnull;
-
+import com.intellij.java.analysis.codeInspection.ex.EntryPoint;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.indexing.search.searches.ClassInheritorsSearch;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import com.intellij.java.language.psi.PsiModifier;
+import com.intellij.java.language.psi.util.PsiClassUtil;
+import consulo.annotation.component.ExtensionImpl;
+import consulo.application.util.function.CommonProcessors;
+import consulo.language.editor.inspection.InspectionsBundle;
+import consulo.language.editor.inspection.reference.RefElement;
+import consulo.language.psi.PsiElement;
+import consulo.util.xml.serializer.DefaultJDOMExternalizer;
+import consulo.util.xml.serializer.InvalidDataException;
+import consulo.util.xml.serializer.WriteExternalException;
 import org.jdom.Element;
-import com.intellij.codeInspection.InspectionsBundle;
-import com.intellij.codeInspection.reference.EntryPoint;
-import com.intellij.codeInspection.reference.RefElement;
-import com.intellij.execution.junit.JUnitUtil;
-import com.intellij.openapi.util.DefaultJDOMExternalizer;
-import com.intellij.openapi.util.InvalidDataException;
-import com.intellij.openapi.util.WriteExternalException;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.PsiModifier;
-import com.intellij.psi.search.searches.ClassInheritorsSearch;
-import com.intellij.psi.util.PsiClassUtil;
-import com.intellij.util.CommonProcessors;
 
+import javax.annotation.Nonnull;
 /*
  * User: anna
  * Date: 28-May-2007
  */
+@ExtensionImpl
 public class JUnitEntryPoint extends EntryPoint
 {
 	public boolean ADD_JUNIT_TO_ENTRIES = true;

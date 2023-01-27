@@ -16,28 +16,37 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.execution.*;
-import com.intellij.execution.configurations.RuntimeConfigurationException;
-import com.intellij.execution.configurations.RuntimeConfigurationWarning;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.testframework.SearchForTestsTask;
-import com.intellij.execution.testframework.SourceScope;
-import com.intellij.execution.testframework.TestSearchScope;
-import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.project.DumbService;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Comparing;
-import com.intellij.openapi.util.Ref;
-import com.intellij.psi.*;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.search.PackageScope;
-import com.intellij.psi.util.ClassUtil;
-import com.intellij.refactoring.listeners.RefactoringElementListener;
+import com.intellij.java.execution.JavaExecutionUtil;
+import com.intellij.java.execution.impl.TestClassCollector;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.execution.impl.junit.RefactoringListeners;
+import com.intellij.java.execution.impl.testframework.SearchForTestsTask;
+import com.intellij.java.language.psi.*;
+import com.intellij.java.language.psi.search.PackageScope;
+import com.intellij.java.language.psi.util.ClassUtil;
 import com.intellij.rt.execution.junit.JUnitStarter;
+import consulo.application.ReadAction;
+import consulo.execution.CantRunException;
+import consulo.execution.ExecutionBundle;
+import consulo.execution.RuntimeConfigurationException;
+import consulo.execution.RuntimeConfigurationWarning;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.execution.test.SourceScope;
+import consulo.execution.test.TestSearchScope;
 import consulo.java.execution.configurations.OwnJavaParameters;
-import consulo.psi.PsiPackage;
-import conuslo.junit.JUnitProperties;
+import consulo.language.editor.refactoring.event.RefactoringElementListener;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiManager;
+import consulo.language.psi.PsiPackage;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.module.Module;
+import consulo.process.ExecutionException;
+import consulo.project.DumbService;
+import consulo.project.Project;
+import consulo.util.lang.Comparing;
+import consulo.util.lang.ref.Ref;
+import consulo.junit.JUnitProperties;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
@@ -86,7 +95,7 @@ public class TestPackage extends TestObject
 				final Module module = getConfiguration().getConfigurationModule().getModule();
 				if(sourceScope != null && !JUnitStarter.JUNIT5_PARAMETER.equals(getRunner()))
 				{
-					DumbService instance = DumbService.getInstance(myProject);
+					DumbService instance = DumbService.getInstance((Project) myProject);
 					try
 					{
 						instance.setAlternativeResolveEnabled(true);
@@ -97,7 +106,7 @@ public class TestPackage extends TestObject
 						{
 							String packageName = getPackageName(data);
 							String[] classNames = TestClassCollector.collectClassFQNames(packageName, getRootPath(), getConfiguration(), TestPackage::createPredicate);
-							PsiManager manager = PsiManager.getInstance(myProject);
+							PsiManager manager = PsiManager.getInstance((Project) myProject);
 							Arrays.stream(classNames).filter(className -> acceptClassName(className)) //check patterns
 									.map(name -> ReadAction.<PsiClass, RuntimeException>compute(() -> ClassUtil.findPsiClass(manager, name, null, true, classFilter.getScope()))).filter(Objects
 									::nonNull).forEach(myClasses::add);

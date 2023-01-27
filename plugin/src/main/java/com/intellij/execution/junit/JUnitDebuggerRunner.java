@@ -15,14 +15,16 @@
  */
 package com.intellij.execution.junit;
 
-import javax.annotation.Nonnull;
+import com.intellij.java.execution.impl.JavaTestFrameworkDebuggerRunner;
+import consulo.annotation.component.ExtensionImpl;
+import consulo.execution.configuration.RunProfile;
 
-import com.intellij.execution.JavaTestFrameworkDebuggerRunner;
-import com.intellij.execution.configurations.RunProfile;
+import javax.annotation.Nonnull;
 
 /**
  * @author egor
  */
+@ExtensionImpl
 public class JUnitDebuggerRunner extends JavaTestFrameworkDebuggerRunner
 {
 	@Override

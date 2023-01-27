@@ -2,27 +2,26 @@
 
 package com.intellij.execution.junit;
 
+import consulo.annotation.component.ExtensionImpl;
+import consulo.dataContext.DataContext;
+import consulo.execution.action.ConfigurationContext;
+import consulo.execution.action.ConfigurationFromContext;
+import consulo.execution.configuration.RunConfiguration;
+import consulo.execution.test.AbstractTestProxy;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.module.Module;
+import consulo.project.Project;
+import consulo.util.lang.ref.Ref;
+
+import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Objects;
 
-import javax.annotation.Nonnull;
-
-import com.intellij.execution.actions.ConfigurationContext;
-import com.intellij.execution.actions.ConfigurationFromContext;
-import com.intellij.execution.configurations.RunConfiguration;
-import com.intellij.execution.testframework.AbstractTestProxy;
-import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Ref;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.search.GlobalSearchScope;
-
-
+@ExtensionImpl
 public class UniqueIdConfigurationProducer extends JUnitConfigurationProducer
 {
-
-	protected UniqueIdConfigurationProducer()
+	public UniqueIdConfigurationProducer()
 	{
 		super(JUnitConfigurationType.getInstance());
 	}
@@ -32,7 +31,7 @@ public class UniqueIdConfigurationProducer extends JUnitConfigurationProducer
 	{
 		final Project project = configuration.getProject();
 		DataContext dataContext = context.getDataContext();
-		AbstractTestProxy[] testProxies = dataContext.getData(AbstractTestProxy.DATA_KEYS);
+		AbstractTestProxy[] testProxies = dataContext.getData(AbstractTestProxy.KEY_OF_ARRAY);
 		if(testProxies == null)
 		{
 			return false;

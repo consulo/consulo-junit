@@ -2,20 +2,21 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.execution.actions.ConfigurationContext;
-import com.intellij.execution.configurations.ConfigurationType;
-import com.intellij.execution.junit2.info.LocationUtil;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleUtilCore;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ModuleRootManager;
-import com.intellij.openapi.util.Ref;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiJavaPackage;
-import consulo.roots.ContentFolderScopes;
-
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.execution.impl.junit.JavaRuntimeConfigurationProducerBase;
+import com.intellij.java.execution.impl.junit2.info.LocationUtil;
+import com.intellij.java.language.psi.PsiJavaPackage;
+import consulo.execution.action.ConfigurationContext;
+import consulo.execution.configuration.ConfigurationType;
+import consulo.language.content.LanguageContentFolderScopes;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiElement;
+import consulo.language.util.ModuleUtilCore;
+import consulo.module.Module;
+import consulo.module.content.ModuleRootManager;
+import consulo.project.Project;
+import consulo.util.lang.ref.Ref;
+import consulo.virtualFileSystem.VirtualFile;
 
 public abstract class AbstractAllInDirectoryConfigurationProducer extends JUnitConfigurationProducer
 {
@@ -48,7 +49,7 @@ public abstract class AbstractAllInDirectoryConfigurationProducer extends JUnitC
 		{
 			return false;
 		}
-		int testRootCount = ModuleRootManager.getInstance(module).getContentFolders(ContentFolderScopes.onlyTest()).length;
+		int testRootCount = ModuleRootManager.getInstance(module).getContentFolders(LanguageContentFolderScopes.onlyTest()).length;
 		if(testRootCount < 2)
 		{
 			return false;

@@ -15,29 +15,29 @@
  */
 package com.intellij.execution.junit.testDiscovery;
 
-import java.util.Set;
-
-import com.intellij.execution.ExecutionException;
 import com.intellij.execution.junit.JUnitConfiguration;
 import com.intellij.execution.junit.TestObject;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.testDiscovery.TestDiscoverySearchHelper;
-import com.intellij.execution.testframework.SearchForTestsTask;
-import com.intellij.execution.testframework.SourceScope;
-import com.intellij.execution.testframework.TestSearchScope;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Pair;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.psi.JavaPsiFacade;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.refactoring.listeners.RefactoringElementListener;
-import com.intellij.util.FunctionUtil;
+import com.intellij.java.execution.impl.testDiscovery.TestDiscoverySearchHelper;
+import com.intellij.java.execution.impl.testframework.SearchForTestsTask;
+import com.intellij.java.language.psi.JavaPsiFacade;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.execution.test.SourceScope;
+import consulo.execution.test.TestSearchScope;
 import consulo.java.execution.configurations.OwnJavaParameters;
-import consulo.psi.PsiPackage;
+import consulo.language.editor.refactoring.event.RefactoringElementListener;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiPackage;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.process.ExecutionException;
+import consulo.project.Project;
+import consulo.util.lang.Pair;
+import consulo.util.lang.StringUtil;
+
+import java.util.Set;
+import java.util.function.Function;
 
 abstract class JUnitTestDiscoveryRunnableState extends TestObject
 {
@@ -86,13 +86,12 @@ abstract class JUnitTestDiscoveryRunnableState extends TestObject
 	{
 		return new SearchForTestsTask(getConfiguration().getProject(), myServerSocket)
 		{
-
 			private Set<String> myPatterns;
 
 			@Override
 			protected void search() throws ExecutionException
 			{
-				myPatterns = TestDiscoverySearchHelper.search(getProject(), getPosition(), getChangeList(), getConfiguration().getFrameworkPrefix());
+				myPatterns = TestDiscoverySearchHelper.search((Project) getProject(), getPosition(), getChangeList(), getConfiguration().getFrameworkPrefix());
 			}
 
 			@Override
@@ -102,7 +101,7 @@ abstract class JUnitTestDiscoveryRunnableState extends TestObject
 				{
 					try
 					{
-						addClassesListToJavaParameters(myPatterns, FunctionUtil.id(), "", false, getJavaParameters());
+						addClassesListToJavaParameters(myPatterns, Function.identity(), "", false, getJavaParameters());
 					}
 					catch(ExecutionException ignored)
 					{

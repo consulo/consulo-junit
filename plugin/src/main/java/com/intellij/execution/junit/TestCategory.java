@@ -15,24 +15,25 @@
  */
 package com.intellij.execution.junit;
 
-import com.intellij.execution.CantRunException;
-import com.intellij.execution.ExecutionBundle;
-import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.configurations.JavaRunConfigurationModule;
-import com.intellij.execution.configurations.RuntimeConfigurationError;
-import com.intellij.execution.configurations.RuntimeConfigurationException;
-import com.intellij.execution.configurations.RuntimeConfigurationWarning;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.util.JavaParametersUtil;
-import com.intellij.execution.util.ProgramParametersUtil;
-import com.intellij.openapi.module.Module;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.refactoring.listeners.RefactoringElementListener;
-import consulo.psi.PsiPackage;
+import com.intellij.java.execution.JavaExecutionUtil;
+import com.intellij.java.execution.configurations.JavaRunConfigurationModule;
+import com.intellij.java.execution.impl.junit.RefactoringListeners;
+import com.intellij.java.execution.impl.util.JavaParametersUtil;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.execution.CantRunException;
+import consulo.execution.ExecutionBundle;
+import consulo.execution.RuntimeConfigurationException;
+import consulo.execution.RuntimeConfigurationWarning;
+import consulo.execution.configuration.RuntimeConfigurationError;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.execution.util.ProgramParametersUtil;
+import consulo.language.editor.refactoring.event.RefactoringElementListener;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiPackage;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.module.Module;
 
 class TestCategory extends TestPackage
 {

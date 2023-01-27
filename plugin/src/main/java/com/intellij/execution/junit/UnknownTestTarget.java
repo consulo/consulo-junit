@@ -15,13 +15,13 @@
  */
 package com.intellij.execution.junit;
 
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
-import com.intellij.refactoring.listeners.RefactoringElementListener;
-import consulo.psi.PsiPackage;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.language.editor.refactoring.event.RefactoringElementListener;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiPackage;
 
 public class UnknownTestTarget extends TestObject
 {

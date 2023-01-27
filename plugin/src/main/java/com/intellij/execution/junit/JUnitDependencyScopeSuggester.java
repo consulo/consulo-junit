@@ -15,20 +15,21 @@
  */
 package com.intellij.execution.junit;
 
-import com.intellij.openapi.roots.DependencyScope;
-import com.intellij.openapi.roots.LibraryDependencyScopeSuggester;
-import com.intellij.openapi.roots.libraries.Library;
-import com.intellij.openapi.roots.libraries.LibraryUtil;
-import com.intellij.openapi.vfs.VirtualFile;
-import consulo.roots.types.BinariesOrderRootType;
+import com.intellij.java.impl.openapi.roots.libraries.LibrariesHelper;
+import consulo.annotation.component.ExtensionImpl;
+import consulo.content.base.BinariesOrderRootType;
+import consulo.content.library.Library;
+import consulo.module.content.layer.orderEntry.DependencyScope;
+import consulo.module.content.layer.orderEntry.LibraryDependencyScopeSuggester;
+import consulo.virtualFileSystem.VirtualFile;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Collections;
 
 /**
  * @author nik
  */
+@ExtensionImpl
 public class JUnitDependencyScopeSuggester extends LibraryDependencyScopeSuggester
 {
 	private static final String[] JUNIT_JAR_MARKERS = {
@@ -61,7 +62,7 @@ public class JUnitDependencyScopeSuggester extends LibraryDependencyScopeSuggest
 	{
 		for(String marker : JUNIT_JAR_MARKERS)
 		{
-			if(LibraryUtil.isClassAvailableInLibrary(Collections.singletonList(file), marker))
+			if(LibrariesHelper.getInstance().isClassAvailable(new String[] {file.getUrl()}, marker))
 			{
 				return true;
 			}

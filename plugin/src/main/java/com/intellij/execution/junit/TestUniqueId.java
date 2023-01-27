@@ -1,30 +1,29 @@
 // Copyright 2000-2017 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package com.intellij.execution.junit;
 
-import java.util.Arrays;
+import com.intellij.java.execution.JavaExecutionUtil;
+import com.intellij.java.language.codeInsight.TestFrameworks;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import com.intellij.java.language.testIntegration.TestFramework;
+import consulo.execution.RuntimeConfigurationException;
+import consulo.execution.action.Location;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.execution.test.AbstractTestProxy;
+import consulo.execution.test.sm.runner.SMTestProxy;
+import consulo.java.execution.configurations.OwnJavaParameters;
+import consulo.language.editor.refactoring.event.RefactoringElementListener;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiPackage;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.language.psi.util.PsiTreeUtil;
+import consulo.process.ExecutionException;
+import consulo.project.Project;
 
 import javax.annotation.Nonnull;
-
-import com.intellij.codeInsight.TestFrameworks;
-import com.intellij.execution.ExecutionException;
-import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.Location;
-import com.intellij.execution.configurations.RuntimeConfigurationException;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.testframework.AbstractTestProxy;
-import com.intellij.execution.testframework.sm.runner.SMTestProxy;
-import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.refactoring.listeners.RefactoringElementListener;
-import com.intellij.testIntegration.TestFramework;
-import com.intellij.util.Function;
-import consulo.java.execution.configurations.OwnJavaParameters;
-import consulo.psi.PsiPackage;
+import java.util.Arrays;
+import java.util.function.Function;
 
 public class TestUniqueId extends TestObject
 {

@@ -16,31 +16,32 @@
 
 package com.intellij.execution.junit;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import com.intellij.java.execution.JavaExecutionUtil;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.execution.impl.junit.RefactoringListeners;
+import com.intellij.java.execution.impl.testframework.SearchForTestsTask;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.execution.CantRunException;
+import consulo.execution.RuntimeConfigurationException;
+import consulo.execution.RuntimeConfigurationWarning;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.execution.test.SourceScope;
+import consulo.language.editor.refactoring.event.RefactoringElementListener;
+import consulo.language.editor.refactoring.event.RefactoringElementListenerComposite;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiPackage;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.module.Module;
+import consulo.process.ExecutionException;
+import consulo.project.Project;
+import consulo.util.lang.StringUtil;
 
 import javax.annotation.Nullable;
-import com.intellij.execution.CantRunException;
-import com.intellij.execution.ExecutionException;
-import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.configurations.RuntimeConfigurationException;
-import com.intellij.execution.configurations.RuntimeConfigurationWarning;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.testframework.SearchForTestsTask;
-import com.intellij.execution.testframework.SourceScope;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.refactoring.listeners.RefactoringElementListener;
-import com.intellij.refactoring.listeners.RefactoringElementListenerComposite;
-import com.intellij.util.Function;
-import com.intellij.util.FunctionUtil;
-import consulo.psi.PsiPackage;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.function.Function;
 
 public class TestsPattern extends TestPackage
 {
@@ -96,7 +97,7 @@ public class TestsPattern extends TestPackage
 				@Override
 				protected void onFound() throws ExecutionException
 				{
-					final Function<String, String> nameFunction = StringUtil.isEmpty(data.METHOD_NAME) ? FunctionUtil.id() : className -> className;
+					final Function<String, String> nameFunction = StringUtil.isEmpty(data.METHOD_NAME) ? Function.identity() : className -> className;
 					addClassesListToJavaParameters(classNames, nameFunction, "", false, getJavaParameters());
 				}
 			};

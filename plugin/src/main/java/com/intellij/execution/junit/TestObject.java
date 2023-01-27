@@ -16,44 +16,58 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.execution.*;
-import com.intellij.execution.configurations.ParametersList;
-import com.intellij.execution.configurations.RuntimeConfigurationException;
 import com.intellij.execution.junit.testDiscovery.TestBySource;
 import com.intellij.execution.junit.testDiscovery.TestsByChanges;
-import com.intellij.execution.process.KillableColoredProcessHandler;
-import com.intellij.execution.process.OSProcessHandler;
-import com.intellij.execution.process.ProcessTerminatedListener;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.testframework.SearchForTestsTask;
-import com.intellij.execution.testframework.SourceScope;
-import com.intellij.execution.testframework.TestSearchScope;
-import com.intellij.execution.util.JavaParametersUtil;
-import com.intellij.execution.util.ProgramParametersUtil;
+import com.intellij.java.execution.JavaExecutionUtil;
+import com.intellij.java.execution.impl.JavaTestFrameworkRunnableState;
+import com.intellij.java.execution.impl.TestClassCollector;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.execution.impl.testframework.SearchForTestsTask;
+import com.intellij.java.execution.impl.util.JavaParametersUtil;
+import com.intellij.java.language.psi.JavaPsiFacade;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
 import com.intellij.junit5.JUnit5IdeaTestRunner;
-import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleUtilCore;
-import com.intellij.openapi.project.DumbService;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectFileIndex;
-import com.intellij.openapi.util.io.FileUtil;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.*;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.search.GlobalSearchScopesCore;
-import com.intellij.psi.util.PsiUtilCore;
-import com.intellij.refactoring.listeners.RefactoringElementListener;
 import com.intellij.rt.execution.junit.IDEAJUnitListener;
 import com.intellij.rt.execution.junit.JUnitStarter;
 import com.intellij.rt.execution.junit.RepeatCount;
-import com.intellij.util.*;
 import com.siyeh.ig.junit.JUnitCommonClassNames;
+import consulo.application.ReadAction;
+import consulo.execution.CantRunException;
+import consulo.execution.ExecutionBundle;
+import consulo.execution.RuntimeConfigurationException;
+import consulo.execution.executor.Executor;
+import consulo.execution.process.ProcessTerminatedListener;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.execution.test.SourceScope;
+import consulo.execution.test.TestSearchScope;
+import consulo.execution.util.ProgramParametersUtil;
 import consulo.java.execution.configurations.OwnJavaParameters;
-import consulo.psi.PsiPackage;
-import consulo.vfs.ArchiveFileSystem;
+import consulo.junit.JUnitListener;
+import consulo.language.editor.refactoring.event.RefactoringElementListener;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiPackage;
+import consulo.language.psi.PsiUtilCore;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.language.psi.scope.GlobalSearchScopesCore;
+import consulo.language.util.ModuleUtilCore;
+import consulo.logging.Logger;
+import consulo.module.Module;
+import consulo.module.content.ProjectFileIndex;
+import consulo.process.ExecutionException;
+import consulo.process.ProcessHandler;
+import consulo.process.ProcessHandlerBuilder;
+import consulo.process.cmd.ParametersList;
+import consulo.project.DumbService;
+import consulo.project.Project;
+import consulo.util.io.ClassPathUtil;
+import consulo.util.io.FileUtil;
+import consulo.util.lang.ObjectUtil;
+import consulo.util.lang.StringUtil;
+import consulo.virtualFileSystem.VirtualFile;
+import consulo.virtualFileSystem.archive.ArchiveFileSystem;
+import consulo.virtualFileSystem.util.PathsList;
 import org.jetbrains.annotations.NonNls;
 
 import javax.annotation.Nonnull;
@@ -63,6 +77,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -153,7 +168,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 	@Override
 	protected void configureRTClasspath(OwnJavaParameters javaParameters) throws CantRunException
 	{
-		javaParameters.getClassPath().add(PathUtil.getJarPathForClass(JUnitStarter.class));
+		javaParameters.getClassPath().add(ClassPathUtil.getJarPathForClass(JUnitStarter.class));
 
 		//include junit5 listeners for the case custom junit 5 engines would be detected on runtime
 		javaParameters.getClassPath().add(getJUnit5RtFile());
@@ -169,7 +184,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 
 	public static File getJUnit5RtFile()
 	{
-		return new File(PathUtil.getJarPathForClass(JUnit5IdeaTestRunner.class));
+		return new File(ClassPathUtil.getJarPathForClass(JUnit5IdeaTestRunner.class));
 	}
 
 	@Override
@@ -180,7 +195,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 		javaParameters.getProgramParametersList().add(JUnitStarter.IDE_VERSION + JUnitStarter.VERSION);
 
 		final StringBuilder buf = new StringBuilder();
-		collectListeners(javaParameters, buf, IDEAJUnitListener.EP_NAME, "\n");
+		collectListeners(javaParameters, buf, JUnitListener.class, "\n");
 		if(buf.length() > 0)
 		{
 			try
@@ -223,7 +238,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 			if(!hasPackageWithDirectories(psiFacade, "org.junit.jupiter.engine", globalSearchScope) && hasPackageWithDirectories(psiFacade, JUnitUtil.TEST5_PACKAGE_FQN, globalSearchScope))
 			{
 				PsiClass testAnnotation = DumbService.getInstance(project).computeWithAlternativeResolveEnabled(() -> psiFacade.findClass(JUnitUtil.TEST5_ANNOTATION, globalSearchScope));
-				String version = ObjectUtils.notNull(getVersion(testAnnotation), "5.0.0");
+				String version = ObjectUtil.notNull(getVersion(testAnnotation), "5.0.0");
 				// FIXME [VISTALL] depedency to Jar Repositories in IDEA Java Impl, and we dont merge that
 				// downloadDependenciesWhenRequired(project, classPath, new RepositoryLibraryProperties("org.junit.jupiter", "junit-jupiter-engine", version));
 			}
@@ -300,7 +315,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 	}
 
 	@Nonnull
-	protected OSProcessHandler createHandler(Executor executor) throws ExecutionException
+	protected ProcessHandler createHandler(Executor executor) throws ExecutionException
 	{
 		appendForkInfo(executor);
 		final String repeatMode = getConfiguration().getRepeatMode();
@@ -311,7 +326,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 			getJavaParameters().getProgramParametersList().add(countString);
 		}
 
-		final OSProcessHandler processHandler = new KillableColoredProcessHandler(createCommandLine());
+		final ProcessHandler processHandler = ProcessHandlerBuilder.create(createCommandLine()).killable().build();
 		ProcessTerminatedListener.attach(processHandler);
 		final SearchForTestsTask searchForTestsTask = createSearchingForTestsTask();
 		if(searchForTestsTask != null)
@@ -380,7 +395,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 
 			for(final T element : elements)
 			{
-				final String name = nameFunction.fun(element);
+				final String name = nameFunction.apply(element);
 				if(name == null)
 				{
 					continue;

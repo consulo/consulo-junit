@@ -16,14 +16,13 @@
 
 package com.intellij.execution.junit;
 
-import java.util.Set;
+import com.intellij.java.execution.impl.actions.AbstractExcludeFromRunAction;
+import consulo.execution.configuration.RunConfiguration;
 
-import com.intellij.execution.actions.AbstractExcludeFromRunAction;
-import com.intellij.execution.configurations.RunConfiguration;
+import java.util.Set;
 
 public class JUnitExcludeFromRunAction extends AbstractExcludeFromRunAction<JUnitConfiguration>
 {
-
 	@Override
 	protected Set<String> getPattern(JUnitConfiguration configuration)
 	{

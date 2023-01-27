@@ -1,4 +1,4 @@
-package conuslo.junit;
+package consulo.junit;
 
 import consulo.platform.Platform;
 

@@ -16,24 +16,23 @@
 
 package com.intellij.execution.junit2.configuration;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
+import com.intellij.execution.junit.JUnitConfiguration;
+import com.intellij.java.execution.JavaExecutionUtil;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.language.psi.PsiClass;
+import consulo.application.dumb.IndexNotReadyException;
+import consulo.component.ProcessCanceledException;
+import consulo.document.Document;
+import consulo.language.editor.WriteCommandAction;
+import consulo.module.Module;
+import consulo.project.Project;
+import consulo.util.lang.StringUtil;
 
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
-
-import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.junit.JUnitConfiguration;
-import com.intellij.execution.junit.JUnitUtil;
-import com.intellij.openapi.command.WriteCommandAction;
-import com.intellij.openapi.editor.Document;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.progress.ProcessCanceledException;
-import com.intellij.openapi.project.IndexNotReadyException;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.psi.PsiClass;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 // Author: dyoma
 

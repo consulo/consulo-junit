@@ -16,19 +16,21 @@
 
 package com.intellij.execution.junit;
 
+import com.intellij.java.execution.impl.junit2.PsiMemberParameterizedLocation;
+import com.intellij.java.execution.impl.testframework.AbstractPatternBasedConfigurationProducer;
+import com.intellij.java.language.psi.PsiMember;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.annotation.component.ExtensionImpl;
+import consulo.execution.action.ConfigurationContext;
+import consulo.execution.action.Location;
+import consulo.language.psi.PsiElement;
+import consulo.module.Module;
+import consulo.util.lang.ref.Ref;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import com.intellij.execution.Location;
-import com.intellij.execution.actions.ConfigurationContext;
-import com.intellij.execution.junit2.PsiMemberParameterizedLocation;
-import com.intellij.execution.testframework.AbstractPatternBasedConfigurationProducer;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.util.Ref;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMember;
-import com.intellij.psi.PsiMethod;
-
+@ExtensionImpl
 public class PatternConfigurationProducer extends AbstractPatternBasedConfigurationProducer<JUnitConfiguration>
 {
 	public PatternConfigurationProducer()

@@ -16,30 +16,29 @@
 
 package com.intellij.execution.junit;
 
-import java.util.Collection;
+import com.intellij.java.execution.JavaExecutionUtil;
+import com.intellij.java.execution.impl.junit2.PsiMemberParameterizedLocation;
+import com.intellij.java.execution.impl.junit2.info.MethodLocation;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.execution.action.Location;
+import consulo.execution.configuration.RunConfigurationModule;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.execution.test.AbstractTestProxy;
+import consulo.execution.test.SourceScope;
+import consulo.execution.test.TestSearchScope;
+import consulo.execution.test.sm.runner.SMTestProxy;
+import consulo.java.execution.configurations.OwnJavaParameters;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.module.Module;
+import consulo.process.ExecutionException;
+import consulo.project.Project;
+import consulo.ui.ex.action.ActionsBundle;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import com.intellij.execution.ExecutionException;
-import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.Location;
-import com.intellij.execution.configurations.RunConfigurationModule;
-import com.intellij.execution.junit2.PsiMemberParameterizedLocation;
-import com.intellij.execution.junit2.info.MethodLocation;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.testframework.AbstractTestProxy;
-import com.intellij.execution.testframework.SourceScope;
-import com.intellij.execution.testframework.TestSearchScope;
-import com.intellij.execution.testframework.sm.runner.SMTestProxy;
-import com.intellij.idea.ActionsBundle;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.project.Project;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.search.GlobalSearchScope;
-import consulo.java.execution.configurations.OwnJavaParameters;
+import java.util.Collection;
 
 public class TestMethods extends TestMethod
 {
@@ -105,7 +104,7 @@ public class TestMethods extends TestMethod
 			String nodeId = TestUniqueId.getEffectiveNodeId(testInfo, project, searchScope);
 			if(nodeId != null)
 			{
-				return TestUniqueId.getUniqueIdPresentation().fun(nodeId);
+				return TestUniqueId.getUniqueIdPresentation().apply(nodeId);
 			}
 
 			final PsiClass containingClass = location instanceof MethodLocation ? ((MethodLocation) location).getContainingClass() : location instanceof PsiMemberParameterizedLocation ? (

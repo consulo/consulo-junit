@@ -2,29 +2,31 @@
 
 package com.intellij.execution.junit;
 
-import javax.annotation.Nonnull;
-
-import com.intellij.codeInsight.AnnotationUtil;
-import com.intellij.execution.ExecutionBundle;
-import com.intellij.execution.ExecutionException;
-import com.intellij.execution.JavaExecutionUtil;
-import com.intellij.execution.ProgramRunnerUtil;
-import com.intellij.execution.PsiLocation;
-import com.intellij.execution.configurations.JavaRunConfigurationModule;
-import com.intellij.execution.configurations.RuntimeConfigurationError;
-import com.intellij.execution.configurations.RuntimeConfigurationException;
-import com.intellij.execution.configurations.RuntimeConfigurationWarning;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.openapi.util.Comparing;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDirectory;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
-import com.intellij.refactoring.listeners.RefactoringElementAdapter;
-import com.intellij.refactoring.listeners.RefactoringElementListener;
-import com.intellij.refactoring.listeners.UndoRefactoringElementListener;
+import com.intellij.java.execution.JavaExecutionUtil;
+import com.intellij.java.execution.configurations.JavaRunConfigurationModule;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.execution.impl.junit.RefactoringListeners;
+import com.intellij.java.language.codeInsight.AnnotationUtil;
+import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.execution.ExecutionBundle;
+import consulo.execution.ProgramRunnerUtil;
+import consulo.execution.RuntimeConfigurationException;
+import consulo.execution.RuntimeConfigurationWarning;
+import consulo.execution.action.PsiLocation;
+import consulo.execution.configuration.RuntimeConfigurationError;
+import consulo.execution.runner.ExecutionEnvironment;
 import consulo.java.execution.configurations.OwnJavaParameters;
-import consulo.psi.PsiPackage;
+import consulo.language.editor.refactoring.event.RefactoringElementAdapter;
+import consulo.language.editor.refactoring.event.RefactoringElementListener;
+import consulo.language.editor.refactoring.event.UndoRefactoringElementListener;
+import consulo.language.psi.PsiDirectory;
+import consulo.language.psi.PsiElement;
+import consulo.language.psi.PsiPackage;
+import consulo.process.ExecutionException;
+import consulo.util.lang.Comparing;
+
+import javax.annotation.Nonnull;
 
 class TestMethod extends TestObject
 {

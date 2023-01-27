@@ -16,27 +16,25 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.execution.ExecutionBundle;
-import com.intellij.execution.configuration.ConfigurationFactoryEx;
-import com.intellij.execution.configurations.ConfigurationFactory;
-import com.intellij.execution.configurations.ConfigurationType;
-import com.intellij.execution.configurations.ModuleBasedConfiguration;
-import com.intellij.execution.configurations.RunConfiguration;
-import com.intellij.icons.AllIcons;
-import com.intellij.openapi.project.Project;
-import consulo.java.module.extension.JavaModuleExtension;
+import consulo.annotation.component.ExtensionImpl;
+import consulo.application.AllIcons;
+import consulo.execution.ExecutionBundle;
+import consulo.execution.configuration.*;
+import consulo.java.language.module.extension.JavaModuleExtension;
 import consulo.module.extension.ModuleExtensionHelper;
+import consulo.project.Project;
 import consulo.ui.image.Image;
 
 import javax.annotation.Nonnull;
 
+@ExtensionImpl
 public class JUnitConfigurationType implements ConfigurationType
 {
 	private final ConfigurationFactory myFactory;
 
 	public JUnitConfigurationType()
 	{
-		myFactory = new ConfigurationFactoryEx(this)
+		myFactory = new ConfigurationFactory(this)
 		{
 			@Override
 			public RunConfiguration createTemplateConfiguration(Project project)
@@ -92,6 +90,6 @@ public class JUnitConfigurationType implements ConfigurationType
 	@Nonnull
 	public static JUnitConfigurationType getInstance()
 	{
-		return CONFIGURATION_TYPE_EP.findExtensionOrFail(JUnitConfigurationType.class);
+		return EP_NAME.findExtensionOrFail(JUnitConfigurationType.class);
 	}
 }

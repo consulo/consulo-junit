@@ -15,17 +15,17 @@
  */
 package com.intellij.execution.junit2.ui.actions;
 
-import javax.annotation.Nonnull;
-
-import com.intellij.execution.Executor;
-import com.intellij.execution.actions.JavaRerunFailedTestsAction;
-import com.intellij.execution.configurations.RunProfileState;
 import com.intellij.execution.junit.JUnitConfiguration;
 import com.intellij.execution.junit.TestMethods;
-import com.intellij.execution.runners.ExecutionEnvironment;
-import com.intellij.execution.testframework.TestConsoleProperties;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.ui.ComponentContainer;
+import com.intellij.java.execution.impl.actions.JavaRerunFailedTestsAction;
+import consulo.execution.configuration.RunProfileState;
+import consulo.execution.executor.Executor;
+import consulo.execution.runner.ExecutionEnvironment;
+import consulo.execution.test.TestConsoleProperties;
+import consulo.module.Module;
+import consulo.ui.ex.ComponentContainer;
+
+import javax.annotation.Nonnull;
 
 public class RerunFailedTestsAction extends JavaRerunFailedTestsAction
 {

@@ -16,13 +16,12 @@
 
 package com.intellij.execution.junit;
 
-import java.util.Set;
+import com.intellij.java.execution.impl.actions.AbstractAddToTestsPatternAction;
+import consulo.execution.action.RunConfigurationProducer;
+import consulo.execution.configuration.ConfigurationType;
 
 import javax.annotation.Nonnull;
-
-import com.intellij.execution.actions.AbstractAddToTestsPatternAction;
-import com.intellij.execution.actions.RunConfigurationProducer;
-import com.intellij.execution.configurations.ConfigurationType;
+import java.util.Set;
 
 public class JUnitAddToTestsPatternAction extends AbstractAddToTestsPatternAction<JUnitConfiguration>
 {

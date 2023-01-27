@@ -15,6 +15,9 @@
  */
 package com.intellij.execution.junit;
 
+import consulo.annotation.component.ExtensionImpl;
+
+@ExtensionImpl
 public class AllInDirectoryConfigurationProducer extends AbstractAllInDirectoryConfigurationProducer
 {
 	public AllInDirectoryConfigurationProducer()

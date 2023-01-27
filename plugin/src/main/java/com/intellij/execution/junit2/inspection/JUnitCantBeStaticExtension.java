@@ -20,15 +20,19 @@
  */
 package com.intellij.execution.junit2.inspection;
 
-import com.intellij.execution.junit.JUnitUtil;
-import com.intellij.openapi.util.Condition;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiMethod;
+import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.annotation.component.ExtensionImpl;
+import consulo.java.analysis.codeInspection.CantBeStaticCondition;
+import consulo.language.psi.PsiElement;
 
-public class JUnitCantBeStaticExtension implements Condition<PsiElement>
+import javax.annotation.Nonnull;
+
+@ExtensionImpl
+public class JUnitCantBeStaticExtension implements CantBeStaticCondition
 {
 	@Override
-	public boolean value(PsiElement member)
+	public boolean cantBeStatic(@Nonnull PsiElement member)
 	{
 		if(member instanceof PsiMethod)
 		{

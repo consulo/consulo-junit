@@ -15,10 +15,10 @@
  */
 package com.intellij.execution.junit;
 
-import com.intellij.execution.actions.ConfigurationContext;
-import com.intellij.execution.testframework.AbstractInClassConfigurationProducer;
-import com.intellij.openapi.util.Ref;
-import com.intellij.psi.PsiElement;
+import com.intellij.java.execution.impl.testframework.AbstractInClassConfigurationProducer;
+import consulo.execution.action.ConfigurationContext;
+import consulo.language.psi.PsiElement;
+import consulo.util.lang.ref.Ref;
 
 //to be deleted in 2018
 @Deprecated

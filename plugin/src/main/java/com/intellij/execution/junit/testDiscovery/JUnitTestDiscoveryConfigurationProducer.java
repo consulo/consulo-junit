@@ -15,13 +15,13 @@
  */
 package com.intellij.execution.junit.testDiscovery;
 
-import com.intellij.execution.JavaTestConfigurationBase;
-import com.intellij.execution.PsiLocation;
 import com.intellij.execution.junit.JUnitConfiguration;
 import com.intellij.execution.junit.JUnitConfigurationType;
-import com.intellij.execution.testDiscovery.TestDiscoveryConfigurationProducer;
-import com.intellij.openapi.util.Pair;
-import com.intellij.psi.PsiMethod;
+import com.intellij.java.execution.impl.JavaTestConfigurationBase;
+import com.intellij.java.execution.impl.testDiscovery.TestDiscoveryConfigurationProducer;
+import com.intellij.java.language.psi.PsiMethod;
+import consulo.execution.action.PsiLocation;
+import consulo.util.lang.Pair;
 
 public class JUnitTestDiscoveryConfigurationProducer extends TestDiscoveryConfigurationProducer
 {
