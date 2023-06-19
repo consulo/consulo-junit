@@ -29,19 +29,15 @@ import consulo.language.psi.PsiElement;
 import javax.annotation.Nonnull;
 
 @ExtensionImpl
-public class JUnitCantBeStaticExtension implements CantBeStaticCondition
-{
-	@Override
-	public boolean cantBeStatic(@Nonnull PsiElement member)
-	{
-		if(member instanceof PsiMethod)
-		{
-			PsiMethod method = (PsiMethod) member;
-			if(JUnitUtil.isTestMethodOrConfig(method))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+public class JUnitCantBeStaticExtension implements CantBeStaticCondition {
+  @Override
+  public boolean cantBeStatic(@Nonnull PsiElement member) {
+    if (member instanceof PsiMethod) {
+      PsiMethod method = (PsiMethod)member;
+      if (JUnitUtil.isTestMethodOrConfig(method)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
