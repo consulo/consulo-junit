@@ -1,0 +1,4 @@
+junit.configuration.name:
+  text: JUnit
+junit.configuration.description:
+  text: JUnit test configuration

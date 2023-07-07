@@ -18,9 +18,13 @@ package com.intellij.execution.junit;
 
 import consulo.annotation.component.ExtensionImpl;
 import consulo.application.AllIcons;
-import consulo.execution.ExecutionBundle;
-import consulo.execution.configuration.*;
+import consulo.execution.configuration.ConfigurationFactory;
+import consulo.execution.configuration.ConfigurationType;
+import consulo.execution.configuration.ModuleBasedConfiguration;
+import consulo.execution.configuration.RunConfiguration;
 import consulo.java.language.module.extension.JavaModuleExtension;
+import consulo.junit.localize.JUnitLocalize;
+import consulo.localize.LocalizeValue;
 import consulo.module.extension.ModuleExtensionHelper;
 import consulo.project.Project;
 import consulo.ui.image.Image;
@@ -57,15 +61,15 @@ public class JUnitConfigurationType implements ConfigurationType
 	}
 
 	@Override
-	public String getDisplayName()
+	public LocalizeValue getDisplayName()
 	{
-		return ExecutionBundle.message("junit.configuration.display.name");
+		return JUnitLocalize.junitConfigurationName();
 	}
 
 	@Override
-	public String getConfigurationTypeDescription()
+	public LocalizeValue getConfigurationTypeDescription()
 	{
-		return ExecutionBundle.message("junit.configuration.description");
+		return JUnitLocalize.junitConfigurationDescription();
 	}
 
 	@Override
