@@ -17,78 +17,41 @@
 package com.intellij.execution.junit;
 
 import consulo.annotation.component.ExtensionImpl;
-import consulo.application.AllIcons;
-import consulo.execution.configuration.ConfigurationFactory;
-import consulo.execution.configuration.ConfigurationType;
 import consulo.execution.configuration.ModuleBasedConfiguration;
 import consulo.execution.configuration.RunConfiguration;
+import consulo.execution.configuration.SimpleConfigurationType;
 import consulo.java.language.module.extension.JavaModuleExtension;
 import consulo.junit.localize.JUnitLocalize;
-import consulo.localize.LocalizeValue;
 import consulo.module.extension.ModuleExtensionHelper;
+import consulo.platform.base.icon.PlatformIconGroup;
 import consulo.project.Project;
-import consulo.ui.image.Image;
 
 import javax.annotation.Nonnull;
 
 @ExtensionImpl
-public class JUnitConfigurationType implements ConfigurationType
+public class JUnitConfigurationType extends SimpleConfigurationType
 {
-	private final ConfigurationFactory myFactory;
-
 	public JUnitConfigurationType()
 	{
-		myFactory = new ConfigurationFactory(this)
-		{
-			@Override
-			public RunConfiguration createTemplateConfiguration(Project project)
-			{
-				return new JUnitConfiguration("", project, this);
-			}
-
-			@Override
-			public void onNewConfigurationCreated(@Nonnull RunConfiguration configuration)
-			{
-				((ModuleBasedConfiguration) configuration).onNewConfigurationCreated();
-			}
-
-			@Override
-			public boolean isApplicable(@Nonnull Project project)
-			{
-				return ModuleExtensionHelper.getInstance(project).hasModuleExtension(JavaModuleExtension.class);
-			}
-		};
+		super("JUnit", JUnitLocalize.junitConfigurationName(), JUnitLocalize.junitConfigurationDescription(), PlatformIconGroup.runconfigurationsJunit());
 	}
 
 	@Override
-	public LocalizeValue getDisplayName()
+	public RunConfiguration createTemplateConfiguration(Project project)
 	{
-		return JUnitLocalize.junitConfigurationName();
+		return new JUnitConfiguration("", project, this);
 	}
 
 	@Override
-	public LocalizeValue getConfigurationTypeDescription()
+	public void onNewConfigurationCreated(@Nonnull RunConfiguration configuration)
 	{
-		return JUnitLocalize.junitConfigurationDescription();
+		((ModuleBasedConfiguration) configuration).onNewConfigurationCreated();
 	}
 
 	@Override
-	public Image getIcon()
+	public boolean isApplicable(@Nonnull Project project)
 	{
-		return AllIcons.RunConfigurations.Junit;
-	}
-
-	@Override
-	public ConfigurationFactory[] getConfigurationFactories()
-	{
-		return new ConfigurationFactory[]{myFactory};
-	}
-
-	@Override
-	@Nonnull
-	public String getId()
-	{
-		return "JUnit";
+		return ModuleExtensionHelper.getInstance(project).hasModuleExtension(JavaModuleExtension.class);
 	}
 
 	@Nonnull
