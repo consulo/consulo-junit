@@ -21,11 +21,6 @@ import consulo.execution.configuration.ConfigurationType;
 
 public abstract class JUnitConfigurationProducer extends AbstractJavaTestConfigurationProducer<JUnitConfiguration> implements Cloneable
 {
-	public JUnitConfigurationProducer()
-	{
-		super(JUnitConfigurationType.getInstance());
-	}
-
 	protected JUnitConfigurationProducer(ConfigurationType configurationType)
 	{
 		super(configurationType);
