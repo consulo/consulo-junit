@@ -61,7 +61,8 @@ public class JUnitEntryPointProvider implements EntryPointProvider<JUnitEntryPoi
       else if (psiElement instanceof PsiMethod) {
         final PsiMethod method = (PsiMethod)psiElement;
         if (method.isConstructor() && method.getParameterList().getParametersCount() == 0) {
-          return JUnitUtil.isTestClass(method.getContainingClass());
+          PsiClass psiClass = method.getContainingClass();
+          return psiClass != null && JUnitUtil.isTestClass(psiClass);
         }
         if (JUnitUtil.isTestMethodOrConfig(method)) {
           return true;
