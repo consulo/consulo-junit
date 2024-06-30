@@ -24,10 +24,13 @@ import com.intellij.java.execution.impl.MethodBrowser;
 import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.testDiscovery.TestDiscoveryExtension;
 import com.intellij.java.execution.impl.ui.*;
-import com.intellij.java.language.impl.codeInsight.PackageChooserDialog;
+import com.intellij.java.impl.codeInsight.PackageChooserDialog;
 import com.intellij.java.language.impl.ui.EditorTextFieldWithBrowseButton;
+import com.intellij.java.language.impl.ui.PackageChooser;
+import com.intellij.java.language.impl.ui.PackageChooserFactory;
 import com.intellij.java.language.psi.JavaCodeFragment;
 import com.intellij.java.language.psi.PsiClass;
+import com.intellij.java.language.psi.PsiJavaPackage;
 import com.intellij.java.language.psi.PsiMethod;
 import com.intellij.java.language.util.ClassFilter;
 import com.intellij.rt.execution.junit.RepeatCount;
@@ -733,9 +736,9 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 
 		protected String showDialog()
 		{
-			final PackageChooserDialog dialog = new PackageChooserDialog(ExecutionBundle.message("choose.package.dialog.title"), getProject());
-			dialog.show();
-			final PsiPackage aPackage = dialog.getSelectedPackage();
+			PackageChooser chooser = getProject().getInstance(PackageChooserFactory.class).create();
+			List<PsiJavaPackage> packages = chooser.showAndSelect();
+			final PsiPackage aPackage = packages == null || packages.isEmpty() ? null : packages.getFirst();
 			return aPackage != null ? aPackage.getQualifiedName() : null;
 		}
 	}
