@@ -16,7 +16,9 @@
 package com.intellij.rt.execution.junit;
 
 public interface IDEAJUnitListenerEx extends IDEAJUnitListener {
-  void testRunStarted(String name);
-  void testRunFinished(String name);
-  void testFinished(String className, String methodName, boolean succeed);
+    void testRunStarted(String name);
+
+    void testRunFinished(String name);
+
+    void testFinished(String className, String methodName, boolean succeed);
 }

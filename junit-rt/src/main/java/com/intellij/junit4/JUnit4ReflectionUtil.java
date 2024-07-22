@@ -22,29 +22,31 @@ import java.util.regex.Pattern;
 import org.junit.runner.Description;
 
 public class JUnit4ReflectionUtil {
-  private JUnit4ReflectionUtil() {
-  }
+    private JUnit4ReflectionUtil() {
+    }
 
-  public static String getClassName(Description description) {
-    try {
-      return description.getClassName();
+    public static String getClassName(Description description) {
+        try {
+            return description.getClassName();
+        }
+        catch (NoSuchMethodError e) {
+            final String displayName = description.getDisplayName();
+            Matcher matcher = Pattern.compile("(.*)\\((.*)\\)").matcher(displayName);
+            return matcher.matches() ? matcher.group(2) : displayName;
+        }
     }
-    catch (NoSuchMethodError e) {
-      final String displayName = description.getDisplayName();
-      Matcher matcher = Pattern.compile("(.*)\\((.*)\\)").matcher(displayName);
-      return matcher.matches() ? matcher.group(2) : displayName;
-    }
-  }
 
-  public static String getMethodName(Description description) {
-    try {
-      return description.getMethodName();
+    public static String getMethodName(Description description) {
+        try {
+            return description.getMethodName();
+        }
+        catch (NoSuchMethodError e) {
+            final String displayName = description.getDisplayName();
+            Matcher matcher = Pattern.compile("(.*)\\((.*)\\)").matcher(displayName);
+            if (matcher.matches()) {
+                return matcher.group(1);
+            }
+            return null;
+        }
     }
-    catch (NoSuchMethodError e) {
-      final String displayName = description.getDisplayName();
-      Matcher matcher = Pattern.compile("(.*)\\((.*)\\)").matcher(displayName);
-      if (matcher.matches()) return matcher.group(1);
-      return null;
-    }
-  }
 }

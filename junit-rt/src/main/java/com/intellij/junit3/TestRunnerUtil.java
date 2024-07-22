@@ -33,247 +33,265 @@ import junit.framework.TestSuite;
 import junit.runner.BaseTestRunner;
 
 public class TestRunnerUtil {
-  /** @noinspection HardCodedStringLiteral*/
-  private static final ResourceBundle ourBundle = ResourceBundle.getBundle("RuntimeBundle");
+    /**
+     * @noinspection HardCodedStringLiteral
+     */
+    private static final ResourceBundle ourBundle = ResourceBundle.getBundle("RuntimeBundle");
 
-  public static Test getTestSuite(JUnit3IdeaTestRunner runner, String[] suiteClassNames){
-    if (suiteClassNames.length == 0) {
-      return null;
-    }
-    Vector result = new Vector();
-    for (int i = 0; i < suiteClassNames.length; i++) {
-      String suiteClassName = suiteClassNames[i];
-      Test test;
-      if (suiteClassName.charAt(0) == '@') {
-        // all tests in the package specified
-        String[] classNames;
-        String suiteName;
-        try {
-          BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(suiteClassName.substring(1)), "UTF-8"));
-          Vector vector;
-          try {
-            suiteName = reader.readLine();
+    public static Test getTestSuite(JUnit3IdeaTestRunner runner, String[] suiteClassNames) {
+        if (suiteClassNames.length == 0) {
+            return null;
+        }
+        Vector result = new Vector();
+        for (int i = 0; i < suiteClassNames.length; i++) {
+            String suiteClassName = suiteClassNames[i];
+            Test test;
+            if (suiteClassName.charAt(0) == '@') {
+                // all tests in the package specified
+                String[] classNames;
+                String suiteName;
+                try {
+                    BufferedReader reader =
+                        new BufferedReader(new InputStreamReader(new FileInputStream(suiteClassName.substring(1)), "UTF-8"));
+                    Vector vector;
+                    try {
+                        suiteName = reader.readLine();
 
-            reader.readLine(); //category
-            reader.readLine();//filters
+                        reader.readLine(); //category
+                        reader.readLine();//filters
 
-            vector = new Vector();
-            String line;
-            while ((line = reader.readLine()) != null) {
-              vector.addElement(line);
+                        vector = new Vector();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            vector.addElement(line);
+                        }
+                    }
+                    finally {
+                        reader.close();
+                    }
+
+                    // toArray cannot be used here because the class must be compilable with 1.1
+                    classNames = new String[vector.size()];
+                    for (int j = 0; j < classNames.length; j++) {
+                        classNames[j] = (String)vector.elementAt(j);
+                    }
+                }
+                catch (Exception e) {
+                    runner.runFailed(MessageFormat.format(ourBundle.getString("junit.runner.error"), e.toString()));
+                    return null;
+                }
+                test = new TestAllInPackage2(runner, suiteName, classNames);
             }
-          }
-          finally {
-            reader.close();
-          }
+            else {
+                test = createClassOrMethodSuite(runner, suiteClassName);
+                if (test == null) {
+                    return null;
+                }
+            }
+            result.addElement(test);
+        }
+        if (result.size() == 1) {
+            return (Test)result.elementAt(0);
+        }
+        else {
+            TestSuite suite = new TestSuite();
+            for (int i = 0; i < result.size(); i++) {
+                final Test test = (Test)result.elementAt(i);
+                suite.addTest(test);
+            }
+            return suite;
+        }
+    }
 
-          // toArray cannot be used here because the class must be compilable with 1.1
-          classNames = new String[vector.size()];
-          for (int j = 0; j < classNames.length; j++) {
-            classNames[j] = (String)vector.elementAt(j);
-          }
+    public static Test createClassOrMethodSuite(JUnit3IdeaTestRunner runner, String suiteClassName) {
+        String methodName = null;
+        int index = suiteClassName.indexOf(',');
+        if (index != -1) {
+            methodName = suiteClassName.substring(index + 1);
+            suiteClassName = suiteClassName.substring(0, index);
+        }
+
+        Class testClass = loadTestClass(runner, suiteClassName);
+        if (testClass == null) {
+            return null;
+        }
+        Test test = null;
+        if (methodName == null) {
+            if (test == null) {
+                try {
+                    Method suiteMethod = testClass.getMethod(BaseTestRunner.SUITE_METHODNAME);
+                    if (!Modifier.isStatic(suiteMethod.getModifiers())) {
+                        String message =
+                            MessageFormat.format(ourBundle.getString("junit.suite.must.be.static"), testClass.getName());
+                        System.err.println(message);
+                        //runFailed(message);
+                        return null;
+                    }
+                    try {
+                        //noinspection SSBasedInspection
+                        test = (Test)suiteMethod.invoke(null, new Class[0]); // static method
+                        if (test == null) {
+                            return new FailedTestCase(testClass, BaseTestRunner.SUITE_METHODNAME,
+                                MessageFormat.format(
+                                    ourBundle.getString("junit.failed.to.invoke.suite"),
+                                    "method " + suiteClassName + ".suite() evaluates to null"
+                                ),
+                                null
+                            );
+                        }
+                        test = new SuiteMethodWrapper(test, suiteClassName);
+                    }
+                    catch (final InvocationTargetException e) {
+                        final String message = MessageFormat.format(
+                            ourBundle.getString("junit.failed.to.invoke.suite"),
+                            testClass + " " + e.getTargetException().toString()
+                        );
+                        //System.err.println(message);
+                        //runner.runFailed(message);
+                        runner.clearStatus();
+                        return new FailedTestCase(testClass, BaseTestRunner.SUITE_METHODNAME, message, e);
+                    }
+                    catch (IllegalAccessException e) {
+                        String message = MessageFormat.format(
+                            ourBundle.getString("junit.failed.to.invoke.suite"),
+                            testClass + " " + e.toString()
+                        );
+                        //System.err.println(message);
+                        //runner.runFailed(message);
+                        return new FailedTestCase(testClass, BaseTestRunner.SUITE_METHODNAME, message, e);
+                    }
+                }
+                catch (Throwable e) {
+                    // try to extract a test suite automatically
+                    runner.clearStatus();
+                    test = new TestSuite(testClass);
+                }
+            }
+        }
+        else {
+            test = createMethodSuite(runner, testClass, methodName);
+        }
+        return test;
+    }
+
+    private static Class loadTestClass(JUnit3IdeaTestRunner runner, String suiteClassName) {
+        try {
+            return Class.forName(suiteClassName, false, TestRunnerUtil.class.getClassLoader());
+        }
+        catch (ClassNotFoundException e) {
+            String clazz = e.getMessage();
+            if (clazz == null) {
+                clazz = suiteClassName;
+            }
+            runner.runFailed(MessageFormat.format(ourBundle.getString("junit.class.not.found"), clazz));
         }
         catch (Exception e) {
-          runner.runFailed(MessageFormat.format(ourBundle.getString("junit.runner.error"), new Object[] {e.toString()}));
-          return null;
+            runner.runFailed(MessageFormat.format(ourBundle.getString("junit.cannot.instantiate.tests"), e.toString()));
         }
-        test = new TestAllInPackage2(runner, suiteName, classNames);
-      }
-      else {
-        test = createClassOrMethodSuite(runner, suiteClassName);
-        if (test == null) return null;
-      }
-      result.addElement(test);
-    }
-    if (result.size() == 1) {
-      return (Test)result.elementAt(0);
-    }
-    else {
-      TestSuite suite = new TestSuite();
-      for (int i = 0; i < result.size(); i++) {
-        final Test test = (Test)result.elementAt(i);
-        suite.addTest(test);
-      }
-      return suite;
-    }
-  }
-
-  public static Test createClassOrMethodSuite(JUnit3IdeaTestRunner runner, String suiteClassName) {
-    String methodName = null;
-    int index = suiteClassName.indexOf(',');
-    if (index != -1) {
-      methodName = suiteClassName.substring(index + 1);
-      suiteClassName = suiteClassName.substring(0, index);
+        return null;
     }
 
-    Class testClass = loadTestClass(runner, suiteClassName);
-    if (testClass == null) return null;
-    Test test = null;
-    if (methodName == null) {
-      if (test == null) {
+    private static Test createMethodSuite(JUnit3IdeaTestRunner runner, Class testClass, String methodName) {
+        runner.clearStatus();
         try {
-          Method suiteMethod = testClass.getMethod(BaseTestRunner.SUITE_METHODNAME, new Class[0]);
-          if (!Modifier.isStatic(suiteMethod.getModifiers())) {
-            String message = MessageFormat.format(ourBundle.getString("junit.suite.must.be.static"), new Object[]{testClass.getName()});
-            System.err.println(message);
-            //runFailed(message);
-            return null;
-          }
-          try {
-            //noinspection SSBasedInspection
-            test = (Test)suiteMethod.invoke(null, new Class[0]); // static method 
-            if (test == null) {
-              return new FailedTestCase(testClass, BaseTestRunner.SUITE_METHODNAME, 
-                                        MessageFormat.format(ourBundle.getString("junit.failed.to.invoke.suite"), new Object[]{"method " + suiteClassName + ".suite() evaluates to null"}), 
-                                        null);
+            Constructor constructor = testClass.getConstructor(String.class);
+            return (Test)constructor.newInstance(methodName);
+        }
+        catch (NoSuchMethodException e) {
+            try {
+                Constructor constructor = testClass.getConstructor();
+                TestCase test = (TestCase)constructor.newInstance();
+                test.setName(methodName);
+                return test;
             }
-            test = new SuiteMethodWrapper(test, suiteClassName);
-          }
-          catch (final InvocationTargetException e) {
-            final String message = MessageFormat.format(ourBundle.getString("junit.failed.to.invoke.suite"), new Object[]{testClass + " " + e.getTargetException().toString()});
-            //System.err.println(message);
-            //runner.runFailed(message);
-            runner.clearStatus();
-            return new FailedTestCase(testClass, BaseTestRunner.SUITE_METHODNAME, message, e);
-          }
-          catch (IllegalAccessException e) {
-            String message = MessageFormat.format(ourBundle.getString("junit.failed.to.invoke.suite"), new Object[]{testClass + " " + e.toString()});
-            //System.err.println(message);
-            //runner.runFailed(message);
-            return new FailedTestCase(testClass, BaseTestRunner.SUITE_METHODNAME, message, e);
-          }
+            catch (ClassCastException e1) {
+                boolean methodExists;
+                try {
+                    //noinspection SSBasedInspection
+                    testClass.getMethod(methodName);
+                    methodExists = true;
+                }
+                catch (NoSuchMethodException e2) {
+                    methodExists = false;
+                }
+                if (!methodExists) {
+                    String error = MessageFormat.format(ourBundle.getString("junit.method.not.found"), methodName);
+                    String message = MessageFormat.format(ourBundle.getString("junit.cannot.instantiate.tests"), error);
+                    return new FailedTestCase(testClass, methodName, message, null);
+                }
+                runner.runFailed(MessageFormat.format(ourBundle.getString("junit.class.not.derived"), testClass.getName()));
+                return null;
+            }
+            catch (Exception e1) {
+                String message = MessageFormat.format(ourBundle.getString("junit.cannot.instantiate.tests"), e1.toString());
+                return new FailedTestCase(testClass, methodName, message, e1);
+            }
         }
         catch (Throwable e) {
-          // try to extract a test suite automatically
-          runner.clearStatus();
-          test = new TestSuite(testClass);
+            String message = MessageFormat.format(ourBundle.getString("junit.cannot.instantiate.tests"), e.toString());
+            return new FailedTestCase(testClass, methodName, message, e);
         }
-      }
     }
-    else {
-      test = createMethodSuite(runner, testClass, methodName);
-    }
-    return test;
-  }
 
-  private static Class loadTestClass(JUnit3IdeaTestRunner runner, String suiteClassName) {
-    try {
-      return Class.forName(suiteClassName, false, TestRunnerUtil.class.getClassLoader());
+    public static String testsFoundInPackageMesage(int testCount, String name) {
+        return MessageFormat.format(ourBundle.getString("tests.found.in.package"), testCount, name);
     }
-    catch (ClassNotFoundException e) {
-      String clazz = e.getMessage();
-      if (clazz == null) {
-        clazz = suiteClassName;
-      }
-      runner.runFailed(MessageFormat.format(ourBundle.getString("junit.class.not.found"), new Object[] {clazz}));
-    }
-    catch (Exception e) {
-      runner.runFailed(MessageFormat.format(ourBundle.getString("junit.cannot.instantiate.tests"), new Object[]{e.toString()}));
-    }
-    return null;
-  }
 
-  private static Test createMethodSuite(JUnit3IdeaTestRunner runner, Class testClass, String methodName) {
-    runner.clearStatus();
-    try {
-      Constructor constructor = testClass.getConstructor(new Class[]{String.class});
-      return (Test)constructor.newInstance(new Object[]{methodName});
-    }
-    catch (NoSuchMethodException e) {
-      try {
-        Constructor constructor = testClass.getConstructor(new Class[0]);
-        TestCase test = (TestCase)constructor.newInstance(new Object[0]);
-        test.setName(methodName);
-        return test;
-      }
-      catch(ClassCastException e1) {
-        boolean methodExists;
-        try {
-          //noinspection SSBasedInspection
-          testClass.getMethod(methodName, new Class[0]);
-          methodExists = true;
+    /** @noinspection JUnitTestClassNamingConvention, JUnitTestCaseWithNonTrivialConstructors, JUnitTestCaseWithNoTests */
+    public static class FailedTestCase extends TestCase {
+        private final String myMethodName;
+        private final String myMessage;
+        private final Throwable myThrowable;
+
+        public FailedTestCase(final Class testClass, final String methodName, final String message, final Throwable e) {
+            super(testClass.getName());
+            myMethodName = methodName;
+            myMessage = message;
+            myThrowable = e;
         }
-        catch (NoSuchMethodException e2) {
-          methodExists = false;
+
+        public String getMethodName() {
+            return myMethodName;
         }
-        if (!methodExists) {
-          String error = MessageFormat.format(ourBundle.getString("junit.method.not.found"), new Object[]{methodName});
-          String message = MessageFormat.format(ourBundle.getString("junit.cannot.instantiate.tests"), new Object[]{error});
-          return new FailedTestCase(testClass, methodName, message, null);
+
+        public String getMessage() {
+            return myMessage;
         }
-        runner.runFailed(MessageFormat.format(ourBundle.getString("junit.class.not.derived"), new Object[]{testClass.getName()}));
-        return null;
-      }
-      catch (Exception e1) {
-        String message = MessageFormat.format(ourBundle.getString("junit.cannot.instantiate.tests"), new Object[]{e1.toString()});
-        return new FailedTestCase(testClass, methodName, message, e1);
-      }
-    }
-    catch (Throwable e) {
-      String message = MessageFormat.format(ourBundle.getString("junit.cannot.instantiate.tests"), new Object[]{e.toString()});
-      return new FailedTestCase(testClass, methodName, message, e);
-    }
-  }
 
-  public static String testsFoundInPackageMesage(int testCount, String name) {
-    return MessageFormat.format(ourBundle.getString("tests.found.in.package"), new Object[]{new Integer(testCount), name});
-  }
-
-  /** @noinspection JUnitTestClassNamingConvention, JUnitTestCaseWithNonTrivialConstructors, JUnitTestCaseWithNoTests */
-  public static class FailedTestCase extends TestCase {
-    private final String myMethodName;
-    private final String myMessage;
-    private final Throwable myThrowable;
-
-    public FailedTestCase(final Class testClass, final String methodName, final String message, final Throwable e) {
-      super(testClass.getName());
-      myMethodName = methodName;
-      myMessage = message;
-      myThrowable = e;
+        protected void runTest() throws Throwable {
+            try {
+                //noinspection Since15
+                throw new RuntimeException(myMessage, myThrowable);
+            }
+            catch (NoSuchMethodError e) {
+                throw new RuntimeException(myMessage);
+            }
+        }
     }
 
-    public String getMethodName() {
-      return myMethodName;
-    }
+    public static class SuiteMethodWrapper implements Test {
+        private final Test mySuite;
+        private final String myClassName;
 
-    public String getMessage() {
-      return myMessage;
-    }
+        public SuiteMethodWrapper(Test suite, String className) {
+            mySuite = suite;
+            myClassName = className;
+        }
 
-    protected void runTest() throws Throwable {
-      try {
-        //noinspection Since15
-        throw new RuntimeException(myMessage, myThrowable);
-      }
-      catch (NoSuchMethodError e) {
-        throw new RuntimeException(myMessage);
-      }
-    }
-  }
+        public String getClassName() {
+            return myClassName;
+        }
 
-  public static class SuiteMethodWrapper implements Test {
-    private final Test mySuite;
-    private final String myClassName;
+        public int countTestCases() {
+            return mySuite.countTestCases();
+        }
 
-    public SuiteMethodWrapper(Test suite, String className) {
-      mySuite = suite;
-      myClassName = className;
-    }
+        public void run(TestResult result) {
+            mySuite.run(result);
+        }
 
-    public String getClassName() {
-      return myClassName;
+        public Test getSuite() {
+            return mySuite;
+        }
     }
-
-    public int countTestCases() {
-      return mySuite.countTestCases();
-    }
-
-    public void run(TestResult result) {
-      mySuite.run(result);
-    }
-
-    public Test getSuite() {
-      return mySuite;
-    }
-  }
 }
