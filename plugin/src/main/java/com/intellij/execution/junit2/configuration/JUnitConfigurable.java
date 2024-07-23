@@ -18,13 +18,12 @@ package com.intellij.execution.junit2.configuration;
 
 import com.intellij.execution.junit.JUnitConfiguration;
 import com.intellij.execution.junit.JUnitConfigurationType;
+import com.intellij.execution.junit.JUnitUtil;
 import com.intellij.execution.junit.TestClassFilter;
 import com.intellij.java.execution.ShortenCommandLine;
 import com.intellij.java.execution.impl.MethodBrowser;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.testDiscovery.TestDiscoveryExtension;
 import com.intellij.java.execution.impl.ui.*;
-import com.intellij.java.impl.codeInsight.PackageChooserDialog;
 import com.intellij.java.language.impl.ui.EditorTextFieldWithBrowseButton;
 import com.intellij.java.language.impl.ui.PackageChooser;
 import com.intellij.java.language.impl.ui.PackageChooserFactory;
@@ -694,16 +693,7 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
 
         @Override
         protected ClassFilter.ClassFilterWithScope getFilter() throws NoFilterException {
-            try {
-                return TestClassFilter.create(SourceScope.wholeProject(getProject()), null);
-            }
-            catch (JUnitUtil.NoJUnitException ignore) {
-                throw new NoFilterException(new MessagesEx.MessageInfo(
-                    getProject(),
-                    ignore.getMessage(),
-                    ExecutionBundle.message("cannot.browse.test.inheritors.dialog.title")
-                ));
-            }
+            return TestClassFilter.create(SourceScope.wholeProject(getProject()), null);
         }
 
         @Override
@@ -732,23 +722,18 @@ public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEdi
                 throw NoFilterException.moduleDoesntExist(moduleSelector);
             }
             final ClassFilter.ClassFilterWithScope classFilter;
-            try {
-                final JUnitConfiguration configurationCopy =
+            final JUnitConfiguration configurationCopy =
                     new JUnitConfiguration(
-                        ExecutionBundle.message("default.junit.configuration.name"),
-                        getProject(),
-                        JUnitConfigurationType.getInstance()
-                            .getConfigurationFactories()[0]
+                            ExecutionBundle.message("default.junit.configuration.name"),
+                            getProject(),
+                            JUnitConfigurationType.getInstance()
+                                    .getConfigurationFactories()[0]
                     );
-                applyEditorTo(configurationCopy);
-                classFilter = TestClassFilter.create(
+            applyEditorTo(configurationCopy);
+            classFilter = TestClassFilter.create(
                     SourceScope.modulesWithDependencies(configurationCopy.getModules()),
                     configurationCopy.getConfigurationModule().getModule()
-                );
-            }
-            catch (JUnitUtil.NoJUnitException e) {
-                throw NoFilterException.noJUnitInModule(module);
-            }
+            );
             return classFilter;
         }
     }

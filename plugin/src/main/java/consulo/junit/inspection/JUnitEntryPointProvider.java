@@ -1,7 +1,7 @@
 package consulo.junit.inspection;
 
+import com.intellij.execution.junit.JUnitUtil;
 import com.intellij.java.analysis.codeInspection.ex.EntryPointProvider;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.indexing.search.searches.ClassInheritorsSearch;
 import com.intellij.java.language.psi.PsiClass;
 import com.intellij.java.language.psi.PsiMethod;

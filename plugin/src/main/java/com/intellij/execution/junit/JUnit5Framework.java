@@ -2,7 +2,6 @@
 package com.intellij.execution.junit;
 
 import com.intellij.java.analysis.impl.codeInsight.intention.AddAnnotationFix;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.junit2.info.MethodLocation;
 import com.intellij.java.language.codeInsight.AnnotationUtil;
 import com.intellij.java.language.projectRoots.roots.ExternalLibraryDescriptor;

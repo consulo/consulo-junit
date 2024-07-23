@@ -18,7 +18,6 @@ package com.intellij.execution.junit;
 
 import com.intellij.java.execution.JavaExecutionUtil;
 import com.intellij.java.execution.impl.TestClassCollector;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.junit.RefactoringListeners;
 import com.intellij.java.execution.impl.testframework.SearchForTestsTask;
 import com.intellij.java.language.psi.*;
@@ -170,13 +169,7 @@ public class TestPackage extends TestObject
 	protected OwnJavaParameters createJavaParameters() throws ExecutionException
 	{
 		final OwnJavaParameters javaParameters = super.createJavaParameters();
-		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		final Project project = getConfiguration().getProject();
-		final SourceScope sourceScope = data.getScope().getSourceScope(getConfiguration());
-		if(sourceScope == null || !JUnitStarter.JUNIT5_PARAMETER.equals(getRunner()))
-		{ //check for junit 5
-			JUnitUtil.checkTestCase(sourceScope, project);
-		}
+
 		createTempFiles(javaParameters);
 
 		createServerSocket(javaParameters);

@@ -16,7 +16,6 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.indexing.search.searches.ClassInheritorsSearch;
 import com.intellij.java.indexing.search.searches.ClassesWithAnnotatedMembersSearch;
 import com.intellij.java.language.psi.*;

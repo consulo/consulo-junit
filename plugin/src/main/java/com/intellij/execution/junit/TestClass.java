@@ -18,7 +18,6 @@ package com.intellij.execution.junit;
 
 import com.intellij.java.execution.JavaExecutionUtil;
 import com.intellij.java.execution.configurations.JavaRunConfigurationModule;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.junit.RefactoringListeners;
 import com.intellij.java.language.psi.PsiClass;
 import com.intellij.java.language.psi.PsiMethod;

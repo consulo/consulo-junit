@@ -21,7 +21,6 @@ import com.intellij.execution.junit.testDiscovery.TestsByChanges;
 import com.intellij.java.execution.JavaExecutionUtil;
 import com.intellij.java.execution.impl.JavaTestFrameworkRunnableState;
 import com.intellij.java.execution.impl.TestClassCollector;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.testframework.SearchForTestsTask;
 import com.intellij.java.execution.impl.util.JavaParametersUtil;
 import com.intellij.java.language.psi.JavaPsiFacade;

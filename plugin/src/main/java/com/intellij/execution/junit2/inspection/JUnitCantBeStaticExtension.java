@@ -20,7 +20,7 @@
  */
 package com.intellij.execution.junit2.inspection;
 
-import com.intellij.java.execution.impl.junit.JUnitUtil;
+import com.intellij.execution.junit.JUnitUtil;
 import com.intellij.java.language.psi.PsiMethod;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.java.analysis.codeInspection.CantBeStaticCondition;

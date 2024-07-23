@@ -2,7 +2,6 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.junit.JavaRuntimeConfigurationProducerBase;
 import com.intellij.java.execution.impl.junit2.info.LocationUtil;
 import com.intellij.java.language.psi.PsiJavaPackage;

@@ -17,8 +17,8 @@
 package com.intellij.execution.junit2.configuration;
 
 import com.intellij.execution.junit.JUnitConfiguration;
+import com.intellij.execution.junit.JUnitUtil;
 import com.intellij.java.execution.JavaExecutionUtil;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.language.psi.PsiClass;
 import consulo.application.dumb.IndexNotReadyException;
 import consulo.component.ProcessCanceledException;

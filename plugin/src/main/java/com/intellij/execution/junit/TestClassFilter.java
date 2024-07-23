@@ -17,7 +17,6 @@
 package com.intellij.execution.junit;
 
 import com.intellij.java.execution.configurations.ConfigurationUtil;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.language.psi.PsiClass;
 import com.intellij.java.language.util.ClassFilter;
 import consulo.application.ReadAction;
@@ -41,9 +40,8 @@ import java.util.regex.PatternSyntaxException;
 
 public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 {
-	private final
 	@Nullable
-	PsiClass myBase;
+	private final PsiClass myBase;
 	private final Project myProject;
 	private final GlobalSearchScope myScope;
 
@@ -89,39 +87,19 @@ public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 		return new TestClassFilter(myBase, myScope.intersectWith(scope));
 	}
 
-	public static TestClassFilter create(final SourceScope sourceScope, final Module module) throws JUnitUtil.NoJUnitException
+	public static TestClassFilter create(final SourceScope sourceScope, final Module module)
 	{
 		final PsiClass testCase = getTestCase(sourceScope, module);
 		return new TestClassFilter(testCase, sourceScope.getGlobalSearchScope());
 	}
 
-	private static PsiClass getTestCase(final SourceScope sourceScope, final Module module) throws JUnitUtil.NoJUnitException
+	@Nullable
+	private static PsiClass getTestCase(final SourceScope sourceScope, final Module module)
 	{
-		if(sourceScope == null)
-		{
-			throw new JUnitUtil.NoJUnitException();
-		}
-		final JUnitUtil.NoJUnitException[] ex = new JUnitUtil.NoJUnitException[1];
-		final PsiClass testCase = ReadAction.compute(() ->
-		{
-			try
-			{
-				return module == null ? JUnitUtil.getTestCaseClass(sourceScope) : JUnitUtil.getTestCaseClass(module);
-			}
-			catch(JUnitUtil.NoJUnitException e)
-			{
-				ex[0] = e;
-				return null;
-			}
-		});
-		if(ex[0] != null)
-		{
-			throw ex[0];
-		}
-		return testCase;
+		return ReadAction.compute(() -> module == null ? JUnitUtil.getTestCaseClass(sourceScope) : JUnitUtil.getTestCaseClass(module));
 	}
 
-	public static TestClassFilter create(final SourceScope sourceScope, Module module, final String pattern) throws JUnitUtil.NoJUnitException
+	public static TestClassFilter create(final SourceScope sourceScope, Module module, final String pattern)
 	{
 		final PsiClass testCase = getTestCase(sourceScope, module);
 		Predicate<String> predicate = getClassNamePredicate(pattern);
@@ -132,7 +110,7 @@ public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 			{
 				if(super.isAccepted(aClass))
 				{
-					final String qualifiedName = ReadAction.compute(() -> aClass.getQualifiedName());
+					final String qualifiedName = ReadAction.compute(aClass::getQualifiedName);
 					return predicate.test(qualifiedName);
 				}
 				return false;

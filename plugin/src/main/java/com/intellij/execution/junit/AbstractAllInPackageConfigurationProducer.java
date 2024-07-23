@@ -2,7 +2,6 @@
 
 package com.intellij.execution.junit;
 
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.junit.JavaRuntimeConfigurationProducerBase;
 import com.intellij.java.execution.impl.junit2.info.LocationUtil;
 import com.intellij.java.language.psi.PsiJavaPackage;
@@ -12,7 +11,6 @@ import consulo.execution.action.ConfigurationFromContext;
 import consulo.execution.configuration.ConfigurationType;
 import consulo.language.psi.PsiElement;
 import consulo.util.lang.ref.Ref;
-
 
 public abstract class AbstractAllInPackageConfigurationProducer extends JUnitConfigurationProducer
 {

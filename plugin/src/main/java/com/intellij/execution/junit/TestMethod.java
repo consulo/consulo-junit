@@ -4,7 +4,6 @@ package com.intellij.execution.junit;
 
 import com.intellij.java.execution.JavaExecutionUtil;
 import com.intellij.java.execution.configurations.JavaRunConfigurationModule;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.junit.RefactoringListeners;
 import com.intellij.java.language.codeInsight.AnnotationUtil;
 import com.intellij.java.language.psi.PsiClass;
@@ -166,17 +165,10 @@ class TestMethod extends TestObject
 
 		if(!AnnotationUtil.isAnnotated(psiClass, JUnitUtil.RUN_WITH, AnnotationUtil.CHECK_HIERARCHY) && !testAnnotated)
 		{
-			try
+			final PsiClass testCaseClass = JUnitUtil.getTestCaseClass(configurationModule.getModule());
+			if (testCaseClass != null && !psiClass.isInheritor(testCaseClass, true))
 			{
-				final PsiClass testCaseClass = JUnitUtil.getTestCaseClass(configurationModule.getModule());
-				if(!psiClass.isInheritor(testCaseClass, true))
-				{
-					throw new RuntimeConfigurationError(ExecutionBundle.message("class.isnt.inheritor.of.testcase.error.message", testClass));
-				}
-			}
-			catch(JUnitUtil.NoJUnitException e)
-			{
-				throw new RuntimeConfigurationWarning(ExecutionBundle.message("junit.jar.not.found.in.module.class.path.error.message", configurationModule.getModuleName()));
+				throw new RuntimeConfigurationError(ExecutionBundle.message("class.isnt.inheritor.of.testcase.error.message", testClass));
 			}
 		}
 	}

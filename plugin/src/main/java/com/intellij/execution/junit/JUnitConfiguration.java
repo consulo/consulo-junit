@@ -11,7 +11,6 @@ import com.intellij.java.execution.configurations.JavaRunConfigurationModule;
 import com.intellij.java.execution.impl.JavaRunConfigurationExtensionManager;
 import com.intellij.java.execution.impl.JavaTestConfigurationBase;
 import com.intellij.java.execution.impl.RunConfigurationExtension;
-import com.intellij.java.execution.impl.junit.JUnitUtil;
 import com.intellij.java.execution.impl.junit.RefactoringListeners;
 import com.intellij.java.execution.impl.junit2.info.MethodLocation;
 import com.intellij.java.impl.codeInsight.MetaAnnotationUtil;
