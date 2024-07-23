@@ -19,25 +19,31 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JUnitForkedStarter {
-
-  public static void main(String[] args) throws Exception {
-    List argList = new ArrayList();
-    for (int i = 0; i < args.length; i++) {
-      final int count = RepeatCount.getCount(args[i]);
-      if (count != 0) {
-        JUnitStarter.ourCount = count;
-        continue;
-      }
-      argList.add(args[i]);
+    public static void main(String[] args) throws Exception {
+        List argList = new ArrayList();
+        for (int i = 0; i < args.length; i++) {
+            final int count = RepeatCount.getCount(args[i]);
+            if (count != 0) {
+                JUnitStarter.ourCount = count;
+                continue;
+            }
+            argList.add(args[i]);
+        }
+        args = (String[])argList.toArray(new String[argList.size()]);
+        final String[] childTestDescription = {args[0]};
+        final String argentName = args[1];
+        final ArrayList listeners = new ArrayList();
+        for (int i = 2, argsLength = args.length; i < argsLength; i++) {
+            listeners.add(args[i]);
+        }
+        IdeaTestRunner testRunner = (IdeaTestRunner)JUnitStarter.getAgentClass(argentName).newInstance();
+        System.exit(IdeaTestRunner.Repeater.startRunnerWithArgs(
+            testRunner,
+            childTestDescription,
+            listeners,
+            null,
+            JUnitStarter.ourCount,
+            false
+        ));
     }
-    args = (String[])argList.toArray(new String[argList.size()]);
-    final String[] childTestDescription = {args[0]};
-    final String argentName = args[1];
-    final ArrayList listeners = new ArrayList();
-    for (int i = 2, argsLength = args.length; i < argsLength; i++) {
-      listeners.add(args[i]);
-    }
-    IdeaTestRunner testRunner = (IdeaTestRunner)JUnitStarter.getAgentClass(argentName).newInstance();
-    System.exit(IdeaTestRunner.Repeater.startRunnerWithArgs(testRunner, childTestDescription, listeners, null, JUnitStarter.ourCount, false));
-  }
 }

@@ -32,119 +32,123 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 class IdeaSuite extends Suite {
-  private final String myName;
+    private final String myName;
 
-  public IdeaSuite(List runners, String name) throws InitializationError {
-    super(null, runners);
-    myName = name;
-  }
-
-  public IdeaSuite(final RunnerBuilder builder, Class[] classes, String name) throws InitializationError {
-    super(builder, classes);
-    myName = name;
-  }
-
-  public Description getDescription() {
-    Description description = Description.createSuiteDescription(myName, getTestClass().getAnnotations());
-    try {
-      final Method getFilteredChildrenMethod = ParentRunner.class.getDeclaredMethod("getFilteredChildren", new Class[0]);
-      getFilteredChildrenMethod.setAccessible(true);
-      Collection filteredChildren = (Collection)getFilteredChildrenMethod.invoke(this, new Object[0]);
-      for (Iterator iterator = filteredChildren.iterator(); iterator.hasNext();) {
-        Object child = iterator.next();
-        description.addChild(describeChild((Runner)child));
-      }
+    public IdeaSuite(List<Runner> runners, String name) throws InitializationError {
+        super(null, runners);
+        myName = name;
     }
-    catch (Exception e) {
-      e.printStackTrace();
+
+    public IdeaSuite(final RunnerBuilder builder, Class[] classes, String name) throws InitializationError {
+        super(builder, classes);
+        myName = name;
     }
-    return description;
-  }
 
-  protected Description describeChild(Runner child) {
-    final Description superDescription = super.describeChild(child);
-    if (child instanceof ClassAwareSuiteMethod) {
-      final Description description = Description.createSuiteDescription(((ClassAwareSuiteMethod)child).getKlass());
-      ArrayList children = superDescription.getChildren();
-      for (int i = 0, size = children.size(); i < size; i++) {
-        description.addChild((Description)children.get(i));
-      }
-      return description;
-    }
-    return superDescription;
-  }
-
-  protected List getChildren() {
-    final List children = new ArrayList(super.getChildren());
-    boolean containsSuiteInside = false;
-    for (Iterator iterator = children.iterator(); iterator.hasNext(); ) {
-      Object child = iterator.next();
-      if (isSuite(child)) {
-        containsSuiteInside = true;
-        break;
-      }
-    }
-    if (!containsSuiteInside) return children;
-    try {
-      final Set allNames = new HashSet();
-      for (Iterator iterator = children.iterator(); iterator.hasNext();) {
-        final Object child = iterator.next();
-        allNames.add(describeChild((Runner)child).getDisplayName());
-      }
-      for (Iterator iterator = children.iterator(); iterator.hasNext();) {
-        final Object child = iterator.next();
-        if (isSuite(child)) {
-          skipSuiteComponents(allNames, child);
-        }
-      }
-
-      for (Iterator iterator = children.iterator(); iterator.hasNext(); ) {
-        Object child = iterator.next();
-        if (!isSuite(child) && !allNames.contains(describeChild((Runner)child).getDisplayName())) {
-          iterator.remove();
-        }
-      }
-    }
-    catch (Throwable e){ }
-    return children;
-  }
-
-  private static boolean isSuite(Object child) {
-    return child instanceof Suite && !(child instanceof Parameterized) || child instanceof SuiteMethod;
-  }
-
-  private void skipSuiteComponents(Set allNames, Object child) {
-    try {
-      if (child instanceof Suite) {
-        final Method getChildrenMethod = Suite.class.getDeclaredMethod("getChildren", new Class[0]);
-        getChildrenMethod.setAccessible(true);
-        final List tests = (List)getChildrenMethod.invoke(child, new Object[0]);
-        for (Iterator suiteIterator = tests.iterator(); suiteIterator.hasNext();) {
-          final String displayName = describeChild((Runner)suiteIterator.next()).getDisplayName();
-          if (allNames.contains(displayName)) {
-            allNames.remove(displayName);
-          }
-        }
-      } else if (child instanceof SuiteMethod) {
-        final Method getChildrenMethod = JUnit38ClassRunner.class.getDeclaredMethod("getTest", new Class[0]);
-        getChildrenMethod.setAccessible(true);
-        final Test test = (Test)getChildrenMethod.invoke(child, new Object[0]);
-        if (test instanceof TestSuite) {
-          final Enumeration tests = ((TestSuite)test).tests();
-          while (tests.hasMoreElements()) {
-            final Test t = (Test)tests.nextElement();
-            if (t instanceof TestSuite) {
-              final String testDescription = ((TestSuite)t).getName();
-              if (allNames.contains(testDescription)) {
-                allNames.remove(testDescription);
-              }
+    public Description getDescription() {
+        Description description = Description.createSuiteDescription(myName, getTestClass().getAnnotations());
+        try {
+            final Method getFilteredChildrenMethod = ParentRunner.class.getDeclaredMethod("getFilteredChildren", new Class[0]);
+            getFilteredChildrenMethod.setAccessible(true);
+            Collection filteredChildren = (Collection)getFilteredChildrenMethod.invoke(this);
+            for (Iterator iterator = filteredChildren.iterator(); iterator.hasNext(); ) {
+                Object child = iterator.next();
+                description.addChild(describeChild((Runner)child));
             }
-          }
         }
-      }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return description;
     }
-    catch (Exception e) {
-      e.printStackTrace();
+
+    protected Description describeChild(Runner child) {
+        final Description superDescription = super.describeChild(child);
+        if (child instanceof ClassAwareSuiteMethod) {
+            final Description description = Description.createSuiteDescription(((ClassAwareSuiteMethod)child).getKlass());
+            ArrayList children = superDescription.getChildren();
+            for (int i = 0, size = children.size(); i < size; i++) {
+                description.addChild((Description)children.get(i));
+            }
+            return description;
+        }
+        return superDescription;
     }
-  }
+
+    protected List<Runner> getChildren() {
+        final List<Runner> children = new ArrayList<>(super.getChildren());
+        boolean containsSuiteInside = false;
+        for (Iterator iterator = children.iterator(); iterator.hasNext(); ) {
+            Object child = iterator.next();
+            if (isSuite(child)) {
+                containsSuiteInside = true;
+                break;
+            }
+        }
+        if (!containsSuiteInside) {
+            return children;
+        }
+        try {
+            final Set allNames = new HashSet();
+            for (Iterator<Runner> iterator = children.iterator(); iterator.hasNext(); ) {
+                final Runner child = iterator.next();
+                allNames.add(describeChild(child).getDisplayName());
+            }
+            for (Iterator iterator = children.iterator(); iterator.hasNext(); ) {
+                final Object child = iterator.next();
+                if (isSuite(child)) {
+                    skipSuiteComponents(allNames, child);
+                }
+            }
+
+            for (Iterator<Runner> iterator = children.iterator(); iterator.hasNext(); ) {
+                Runner child = iterator.next();
+                if (!isSuite(child) && !allNames.contains(describeChild(child).getDisplayName())) {
+                    iterator.remove();
+                }
+            }
+        }
+        catch (Throwable e) {
+        }
+        return children;
+    }
+
+    private static boolean isSuite(Object child) {
+        return child instanceof Suite && !(child instanceof Parameterized) || child instanceof SuiteMethod;
+    }
+
+    private void skipSuiteComponents(Set allNames, Object child) {
+        try {
+            if (child instanceof Suite) {
+                final Method getChildrenMethod = Suite.class.getDeclaredMethod("getChildren", new Class[0]);
+                getChildrenMethod.setAccessible(true);
+                final List tests = (List)getChildrenMethod.invoke(child);
+                for (Iterator suiteIterator = tests.iterator(); suiteIterator.hasNext(); ) {
+                    final String displayName = describeChild((Runner)suiteIterator.next()).getDisplayName();
+                    if (allNames.contains(displayName)) {
+                        allNames.remove(displayName);
+                    }
+                }
+            }
+            else if (child instanceof SuiteMethod) {
+                final Method getChildrenMethod = JUnit38ClassRunner.class.getDeclaredMethod("getTest", new Class[0]);
+                getChildrenMethod.setAccessible(true);
+                final Test test = (Test)getChildrenMethod.invoke(child);
+                if (test instanceof TestSuite) {
+                    final Enumeration tests = ((TestSuite)test).tests();
+                    while (tests.hasMoreElements()) {
+                        final Test t = (Test)tests.nextElement();
+                        if (t instanceof TestSuite) {
+                            final String testDescription = ((TestSuite)t).getName();
+                            if (allNames.contains(testDescription)) {
+                                allNames.remove(testDescription);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -30,81 +30,87 @@ import org.junit.runner.Runner;
 import org.junit.runners.model.InitializationError;
 
 public class JUnit46ClassesRequestBuilder {
-  private JUnit46ClassesRequestBuilder() {}
-
-  public static Request getClassesRequest(final String suiteName, Class[] classes, Map classMethods, Class category) {
-    boolean canUseSuiteMethod = canUseSuiteMethod(classMethods);
-    try {
-      if (category != null) {
-        try {
-          Class.forName("org.junit.experimental.categories.Categories");
-        }
-        catch (ClassNotFoundException e) {
-          throw new RuntimeException("Categories are not available");
-        }
-      }
-
-      Runner suite;
-      if (canUseSuiteMethod) {
-        try {
-          Class.forName("org.junit.experimental.categories.Categories");
-          suite = new IdeaSuite48(collectWrappedRunners(classes), suiteName, category);
-        }
-        catch (ClassNotFoundException e) {
-          suite = new IdeaSuite(collectWrappedRunners(classes), suiteName);
-        }
-      } else {
-        final AllDefaultPossibilitiesBuilder builder = new AllDefaultPossibilitiesBuilder(canUseSuiteMethod);
-        try {
-          Class.forName("org.junit.experimental.categories.Categories");
-          suite = new IdeaSuite48(builder, classes, suiteName, category);
-        }
-        catch (ClassNotFoundException e) {
-          suite = new IdeaSuite(builder, classes, suiteName);
-        }
-      }
-      return Request.runner(suite);
+    private JUnit46ClassesRequestBuilder() {
     }
-    catch (InitializationError e) {
-      throw new RuntimeException(e);
-    }
-  }
 
-  private static List collectWrappedRunners(Class[] classes) throws InitializationError {
-    final List runners = new ArrayList();
-    final List nonSuiteClasses = new ArrayList();
-    final SuiteMethodBuilder suiteMethodBuilder = new SuiteMethodBuilder();
-    for (int i = 0, length = classes.length; i < length; i++) {
-      Class aClass = classes[i];
-      if (suiteMethodBuilder.hasSuiteMethod(aClass)) {
+    public static Request getClassesRequest(final String suiteName, Class[] classes, Map classMethods, Class category) {
+        boolean canUseSuiteMethod = canUseSuiteMethod(classMethods);
         try {
-          runners.add(new ClassAwareSuiteMethod(aClass));
-        }
-        catch (Throwable throwable) {
-          runners.add(new ErrorReportingRunner(aClass, throwable));
-        }
-      } else {
-        nonSuiteClasses.add(aClass);
-      }
-    }
-    runners.addAll(new AllDefaultPossibilitiesBuilder(false).runners(null, (Class[])nonSuiteClasses.toArray(new Class[nonSuiteClasses.size()])));
-    return runners;
-  }
+            if (category != null) {
+                try {
+                    Class.forName("org.junit.experimental.categories.Categories");
+                }
+                catch (ClassNotFoundException e) {
+                    throw new RuntimeException("Categories are not available");
+                }
+            }
 
-  private static boolean canUseSuiteMethod(Map classMethods) {
-    for (Iterator iterator = classMethods.keySet().iterator(); iterator.hasNext(); ) {
-      Object className = iterator.next();
-      Set methods = (Set) classMethods.get(className);
-      if (methods == null) {
-        return true;
-      }
-      for (Iterator iterator1 = methods.iterator(); iterator1.hasNext(); ) {
-        String methodName = (String)iterator1.next();
-        if ("suite".equals(methodName)) {
-          return true;
+            Runner suite;
+            if (canUseSuiteMethod) {
+                try {
+                    Class.forName("org.junit.experimental.categories.Categories");
+                    suite = new IdeaSuite48(collectWrappedRunners(classes), suiteName, category);
+                }
+                catch (ClassNotFoundException e) {
+                    suite = new IdeaSuite(collectWrappedRunners(classes), suiteName);
+                }
+            }
+            else {
+                final AllDefaultPossibilitiesBuilder builder = new AllDefaultPossibilitiesBuilder(canUseSuiteMethod);
+                try {
+                    Class.forName("org.junit.experimental.categories.Categories");
+                    suite = new IdeaSuite48(builder, classes, suiteName, category);
+                }
+                catch (ClassNotFoundException e) {
+                    suite = new IdeaSuite(builder, classes, suiteName);
+                }
+            }
+            return Request.runner(suite);
         }
-      }
+        catch (InitializationError e) {
+            throw new RuntimeException(e);
+        }
     }
-    return classMethods.isEmpty();
-  }
+
+    private static List collectWrappedRunners(Class[] classes) throws InitializationError {
+        final List runners = new ArrayList();
+        final List nonSuiteClasses = new ArrayList();
+        final SuiteMethodBuilder suiteMethodBuilder = new SuiteMethodBuilder();
+        for (int i = 0, length = classes.length; i < length; i++) {
+            Class aClass = classes[i];
+            if (suiteMethodBuilder.hasSuiteMethod(aClass)) {
+                try {
+                    runners.add(new ClassAwareSuiteMethod(aClass));
+                }
+                catch (Throwable throwable) {
+                    runners.add(new ErrorReportingRunner(aClass, throwable));
+                }
+            }
+            else {
+                nonSuiteClasses.add(aClass);
+            }
+        }
+        runners.addAll(new AllDefaultPossibilitiesBuilder(false).runners(
+            null,
+            (Class[])nonSuiteClasses.toArray(new Class[nonSuiteClasses.size()])
+        ));
+        return runners;
+    }
+
+    private static boolean canUseSuiteMethod(Map classMethods) {
+        for (Iterator iterator = classMethods.keySet().iterator(); iterator.hasNext(); ) {
+            Object className = iterator.next();
+            Set methods = (Set)classMethods.get(className);
+            if (methods == null) {
+                return true;
+            }
+            for (Iterator iterator1 = methods.iterator(); iterator1.hasNext(); ) {
+                String methodName = (String)iterator1.next();
+                if ("suite".equals(methodName)) {
+                    return true;
+                }
+            }
+        }
+        return classMethods.isEmpty();
+    }
 }

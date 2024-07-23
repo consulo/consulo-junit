@@ -17,9 +17,9 @@
 package com.intellij.rt.execution.junit;
 
 public interface IDEAJUnitListener {
-  String EP_NAME = "com.intellij.junit.listener";
+    String EP_NAME = "com.intellij.junit.listener";
 
-  void testStarted(String className, String methodName);
-  void testFinished(String className, String methodName);
+    void testStarted(String className, String methodName);
 
+    void testFinished(String className, String methodName);
 }

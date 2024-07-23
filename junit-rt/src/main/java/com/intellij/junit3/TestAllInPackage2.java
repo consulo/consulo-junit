@@ -23,69 +23,74 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class TestAllInPackage2 extends TestSuite {
-  public TestAllInPackage2(JUnit3IdeaTestRunner runner, final String name, String[] classMethodNames) {
-    super(name);
-    int testClassCount = 0;
-    final Set allNames = new HashSet(Arrays.asList(classMethodNames));
-    for (int i = 0; i < classMethodNames.length; i++) {
-      String classMethodName = classMethodNames[i];
-      Test suite = TestRunnerUtil.createClassOrMethodSuite(runner, classMethodName);
-      if (suite != null) {
-        skipSuiteComponents(allNames, suite);
-      }
-    }
-    for (int i = 0; i < classMethodNames.length; i++) {
-      String classMethodName = classMethodNames[i];
-      Test suite = TestRunnerUtil.createClassOrMethodSuite(runner, classMethodName);
-      if (suite != null) {
-        boolean skip;
-        if (suite instanceof TestSuite) {
-          skip = !allNames.contains(((TestSuite)suite).getName());
-        } else if (suite instanceof TestRunnerUtil.SuiteMethodWrapper) {
-          skip = !allNames.contains(((TestRunnerUtil.SuiteMethodWrapper)suite).getClassName());
-        } else {
-          skip = false;
+    public TestAllInPackage2(JUnit3IdeaTestRunner runner, final String name, String[] classMethodNames) {
+        super(name);
+        int testClassCount = 0;
+        final Set<String> allNames = new HashSet<>(Arrays.asList(classMethodNames));
+        for (int i = 0; i < classMethodNames.length; i++) {
+            String classMethodName = classMethodNames[i];
+            Test suite = TestRunnerUtil.createClassOrMethodSuite(runner, classMethodName);
+            if (suite != null) {
+                skipSuiteComponents(allNames, suite);
+            }
         }
+        for (int i = 0; i < classMethodNames.length; i++) {
+            String classMethodName = classMethodNames[i];
+            Test suite = TestRunnerUtil.createClassOrMethodSuite(runner, classMethodName);
+            if (suite != null) {
+                boolean skip;
+                if (suite instanceof TestSuite) {
+                    skip = !allNames.contains(((TestSuite)suite).getName());
+                }
+                else if (suite instanceof TestRunnerUtil.SuiteMethodWrapper) {
+                    skip = !allNames.contains(((TestRunnerUtil.SuiteMethodWrapper)suite).getClassName());
+                }
+                else {
+                    skip = false;
+                }
 
-        if (!skip) {
-          if (suite instanceof TestSuite && ((TestSuite)suite).getName() == null) {
-            attachSuiteInfo(suite, classMethodName);
-          }
-          addTest(suite);
-          testClassCount++;
+                if (!skip) {
+                    if (suite instanceof TestSuite && ((TestSuite)suite).getName() == null) {
+                        attachSuiteInfo(suite, classMethodName);
+                    }
+                    addTest(suite);
+                    testClassCount++;
+                }
+            }
         }
-      }
+        String message = TestRunnerUtil.testsFoundInPackageMesage(testClassCount, name);
+        System.out.println(message);
     }
-    String message = TestRunnerUtil.testsFoundInPackageMesage(testClassCount, name);
-    System.out.println(message);
-  }
 
-  private static void skipSuiteComponents(Set allNames, Test suite) {
-    if (suite instanceof TestRunnerUtil.SuiteMethodWrapper) {
-      final Test test = ((TestRunnerUtil.SuiteMethodWrapper)suite).getSuite();
-      final String currentSuiteName =  ((TestRunnerUtil.SuiteMethodWrapper)suite).getClassName();
-      skipSubtests(allNames, test, currentSuiteName);
-    }
-  }
-
-  private static void skipSubtests(Set allNames, Test test, String currentSuiteName) {
-    if (test instanceof TestSuite) {
-      for (int idx = 0; idx < ((TestSuite)test).testCount(); idx++) {
-        Test childTest = ((TestSuite)test).testAt(idx);
-        final String testName = childTest.toString();
-        if (!currentSuiteName.equals(testName)) {
-          allNames.remove(testName);
+    private static void skipSuiteComponents(Set allNames, Test suite) {
+        if (suite instanceof TestRunnerUtil.SuiteMethodWrapper) {
+            TestRunnerUtil.SuiteMethodWrapper suiteMethodWrapper = (TestRunnerUtil.SuiteMethodWrapper)suite;
+            final Test test = suiteMethodWrapper.getSuite();
+            final String currentSuiteName = suiteMethodWrapper.getClassName();
+            skipSubtests(allNames, test, currentSuiteName);
         }
-        skipSubtests(allNames, childTest, currentSuiteName);
-      }
     }
-  }
 
-  private static void attachSuiteInfo(Test test, String name) {
-    if (test instanceof TestSuite) {
-      TestSuite testSuite = (TestSuite)test;
-      if (testSuite.getName() == null)
-        testSuite.setName(name);
+    private static void skipSubtests(Set allNames, Test test, String currentSuiteName) {
+        if (test instanceof TestSuite) {
+            TestSuite testSuite = (TestSuite)test;
+            for (int idx = 0; idx < testSuite.testCount(); idx++) {
+                Test childTest = testSuite.testAt(idx);
+                final String testName = childTest.toString();
+                if (!currentSuiteName.equals(testName)) {
+                    allNames.remove(testName);
+                }
+                skipSubtests(allNames, childTest, currentSuiteName);
+            }
+        }
     }
-  }
+
+    private static void attachSuiteInfo(Test test, String name) {
+        if (test instanceof TestSuite) {
+            TestSuite testSuite = (TestSuite)test;
+            if (testSuite.getName() == null) {
+                testSuite.setName(name);
+            }
+        }
+    }
 }
