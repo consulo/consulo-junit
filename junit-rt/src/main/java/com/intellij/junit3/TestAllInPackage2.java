@@ -39,18 +39,18 @@ public class TestAllInPackage2 extends TestSuite {
             Test suite = TestRunnerUtil.createClassOrMethodSuite(runner, classMethodName);
             if (suite != null) {
                 boolean skip;
-                if (suite instanceof TestSuite testSuite) {
-                    skip = !allNames.contains(testSuite.getName());
+                if (suite instanceof TestSuite) {
+                    skip = !allNames.contains(((TestSuite)suite).getName());
                 }
-                else if (suite instanceof TestRunnerUtil.SuiteMethodWrapper suiteMethodWrapper) {
-                    skip = !allNames.contains(suiteMethodWrapper.getClassName());
+                else if (suite instanceof TestRunnerUtil.SuiteMethodWrapper) {
+                    skip = !allNames.contains(((TestRunnerUtil.SuiteMethodWrapper)suite).getClassName());
                 }
                 else {
                     skip = false;
                 }
 
                 if (!skip) {
-                    if (suite instanceof TestSuite testSuite && testSuite.getName() == null) {
+                    if (suite instanceof TestSuite && ((TestSuite)suite).getName() == null) {
                         attachSuiteInfo(suite, classMethodName);
                     }
                     addTest(suite);
@@ -63,7 +63,8 @@ public class TestAllInPackage2 extends TestSuite {
     }
 
     private static void skipSuiteComponents(Set allNames, Test suite) {
-        if (suite instanceof TestRunnerUtil.SuiteMethodWrapper suiteMethodWrapper) {
+        if (suite instanceof TestRunnerUtil.SuiteMethodWrapper) {
+            TestRunnerUtil.SuiteMethodWrapper suiteMethodWrapper = (TestRunnerUtil.SuiteMethodWrapper)suite;
             final Test test = suiteMethodWrapper.getSuite();
             final String currentSuiteName = suiteMethodWrapper.getClassName();
             skipSubtests(allNames, test, currentSuiteName);
@@ -71,7 +72,8 @@ public class TestAllInPackage2 extends TestSuite {
     }
 
     private static void skipSubtests(Set allNames, Test test, String currentSuiteName) {
-        if (test instanceof TestSuite testSuite) {
+        if (test instanceof TestSuite) {
+            TestSuite testSuite = (TestSuite)test;
             for (int idx = 0; idx < testSuite.testCount(); idx++) {
                 Test childTest = testSuite.testAt(idx);
                 final String testName = childTest.toString();
@@ -84,7 +86,8 @@ public class TestAllInPackage2 extends TestSuite {
     }
 
     private static void attachSuiteInfo(Test test, String name) {
-        if (test instanceof TestSuite testSuite) {
+        if (test instanceof TestSuite) {
+            TestSuite testSuite = (TestSuite)test;
             if (testSuite.getName() == null) {
                 testSuite.setName(name);
             }

@@ -271,15 +271,15 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
         try {
             if (ex != null) {
                 ComparisonFailureData failureData = null;
-                if (ex instanceof MultipleFailuresError multipleFailuresError && multipleFailuresError.hasFailures()) {
-                    for (Throwable assertionError : multipleFailuresError.getFailures()) {
+                if (ex instanceof MultipleFailuresError && ((MultipleFailuresError)ex).hasFailures()) {
+                    for (Throwable assertionError : ((MultipleFailuresError)ex).getFailures()) {
                         testFailure(methodName, id, parentId, messageName, assertionError, duration, reason, false);
                     }
                 }
-                else if (ex instanceof AssertionFailedError assertionError
-                    && assertionError.isActualDefined() && assertionError.isExpectedDefined()) {
-                    final ValueWrapper actual = assertionError.getActual();
-                    final ValueWrapper expected = assertionError.getExpected();
+                else if (ex instanceof AssertionFailedError
+                    && ((AssertionFailedError)ex).isActualDefined() && ((AssertionFailedError)ex).isExpectedDefined()) {
+                    final ValueWrapper actual = ((AssertionFailedError)ex).getActual();
+                    final ValueWrapper expected = ((AssertionFailedError)ex).getExpected();
                     failureData = new ComparisonFailureData(expected.getStringRepresentation(), actual.getStringRepresentation());
                 }
                 else {
@@ -406,7 +406,6 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
     }
 
     static String getLocationHintValue(TestSource testSource) {
-
         if (testSource instanceof CompositeTestSource) {
             CompositeTestSource compositeTestSource = ((CompositeTestSource)testSource);
             for (TestSource sourceFromComposite : compositeTestSource.getSources()) {
@@ -432,8 +431,8 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
             return javaLocation(methodSource.getClassName(), methodSource.getMethodName(), true);
         }
 
-        if (testSource instanceof ClassSource classSource) {
-          return javaLocation(classSource.getClassName(), null, false);
+        if (testSource instanceof ClassSource) {
+          return javaLocation(((ClassSource)testSource).getClassName(), null, false);
         }
 
         return NO_LOCATION_HINT_VALUE;
@@ -452,11 +451,11 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
 
     static String getClassName(TestIdentifier description) {
         return description.getSource().map(source -> {
-            if (source instanceof MethodSource methodSource) {
-                return methodSource.getClassName();
+            if (source instanceof MethodSource) {
+                return ((MethodSource)source).getClassName();
             }
-            if (source instanceof ClassSource classSource) {
-                return classSource.getClassName();
+            if (source instanceof ClassSource) {
+                return ((ClassSource)source).getClassName();
             }
             return null;
         }).orElse(null);
@@ -464,8 +463,8 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
 
     static String getMethodName(TestIdentifier testIdentifier) {
         return testIdentifier.getSource().map(source -> {
-            if (source instanceof MethodSource methodSource) {
-                return methodSource.getMethodName();
+            if (source instanceof MethodSource) {
+                return ((MethodSource)source).getMethodName();
             }
             return null;
         }).orElse(null);
@@ -473,7 +472,8 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
 
     static String getMethodSignature(TestIdentifier testIdentifier) {
         return testIdentifier.getSource().map((source) -> {
-            if (source instanceof MethodSource methodSource) {
+            if (source instanceof MethodSource) {
+                MethodSource methodSource = (MethodSource)source;
                 String parameterTypes = methodSource.getMethodParameterTypes();
                 return methodSource.getMethodName() + (parameterTypes != null ? "(" + parameterTypes + ")" : "");
             }

@@ -91,8 +91,8 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
 
     public String getStartDescription(Object child) {
         final Test test = (Test)child;
-      return test instanceof TestCase testCase
-          ? test.getClass().getName() + "," + testCase.getName()
+      return test instanceof TestCase
+          ? test.getClass().getName() + "," + ((TestCase)test).getName()
           : test.toString();
     }
 
@@ -110,14 +110,14 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
                     }
 
                     public void endTest(Test test) {
-                        if (test instanceof TestCase testCase) {
-                            junitListener.testFinished(test.getClass().getName(), testCase.getName());
+                        if (test instanceof TestCase) {
+                            junitListener.testFinished(test.getClass().getName(), ((TestCase)test).getName());
                         }
                     }
 
                     public void startTest(Test test) {
-                        if (test instanceof TestCase testCase) {
-                            junitListener.testStarted(test.getClass().getName(), testCase.getName());
+                        if (test instanceof TestCase) {
+                            junitListener.testStarted(test.getClass().getName(), ((TestCase)test).getName());
                         }
                     }
                 });
@@ -138,13 +138,13 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
 
     static Vector getTestCasesOf(Test test) {
         Vector testCases = new Vector();
-        if (test instanceof TestRunnerUtil.SuiteMethodWrapper suiteMethodWrapper) {
-            test = suiteMethodWrapper.getSuite();
+        if (test instanceof TestRunnerUtil.SuiteMethodWrapper) {
+            test = ((TestRunnerUtil.SuiteMethodWrapper)test).getSuite();
         }
-        if (test instanceof TestSuite testSuite) {
-            for (Enumeration each = testSuite.tests(); each.hasMoreElements(); ) {
+        if (test instanceof TestSuite) {
+            for (Enumeration each = ((TestSuite)test).tests(); each.hasMoreElements(); ) {
                 Object childTest = each.nextElement();
-                if (childTest instanceof TestSuite childTestSuite && !childTestSuite.tests().hasMoreElements()) {
+                if (childTest instanceof TestSuite && !((TestSuite)childTest).tests().hasMoreElements()) {
                     continue;
                 }
                 testCases.addElement(childTest);
@@ -177,7 +177,8 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
             try {
                 final String trace = getTrace(failure);
                 ComparisonFailureData notification = null;
-                if (failure instanceof FileComparisonFailure comparisonFailure) {
+                if (failure instanceof FileComparisonFailure) {
+                    FileComparisonFailure comparisonFailure = (FileComparisonFailure)failure;
                     notification = new ComparisonFailureData(comparisonFailure.getExpected(), comparisonFailure.getActual(),
                         comparisonFailure.getFilePath(), comparisonFailure.getActualFilePath()
                     );
