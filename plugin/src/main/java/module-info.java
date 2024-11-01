@@ -1,6 +1,6 @@
 /**
  * @author VISTALL
- * @since 27/01/2023
+ * @since 2023-01-27
  */
 module com.intellij.junit
 {
@@ -23,6 +23,7 @@ module com.intellij.junit
     requires forms.rt;
 
     opens com.intellij.execution.junit to
+        consulo.application.impl,
         consulo.component.impl,
         consulo.util.xml.serializer;
 
