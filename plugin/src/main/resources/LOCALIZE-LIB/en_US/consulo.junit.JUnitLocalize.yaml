@@ -2,3 +2,9 @@ junit.configuration.name:
   text: JUnit
 junit.configuration.description:
   text: JUnit test configuration
+inspections.migrate.assert.to.assertj.name:
+  text: "JUnit assertion can be 'assertThat()' call"
+inspections.migrate.assert.to.assertj.static.import.option:
+  text: "Statically import AssertJ's methods"
+inspections.migrate.assert.to.assertj.description:
+  text: "Assert expression <code>#ref</code> can be replaced with ''{0}'' call #loc"
