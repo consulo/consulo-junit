@@ -8,6 +8,7 @@ import consulo.annotation.component.ExtensionImpl;
 import consulo.application.WriteAction;
 import consulo.configurable.ConfigurableBuilder;
 import consulo.configurable.UnnamedConfigurable;
+import consulo.java.analysis.impl.localize.JavaInspectionsLocalize;
 import consulo.junit.localize.JUnitLocalize;
 import consulo.language.ast.IElementType;
 import consulo.language.editor.inspection.*;
@@ -48,8 +49,21 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
 
     @Nonnull
     @Override
+    public String getGroupDisplayName() {
+        return JavaInspectionsLocalize.groupNamesJunitIssues().get();
+    }
+
+    @Nonnull
+    @Override
     public String getDisplayName() {
         return JUnitLocalize.inspectionsMigrateAssertToAssertjName().get();
+    }
+
+    @Override
+    @Nonnull
+    public String getID()
+    {
+        return "JUnitMigrateAssertToAssertj";
     }
 
     @Override
