@@ -6,16 +6,17 @@ import com.intellij.java.language.psi.util.InheritanceUtil;
 import consulo.annotation.access.RequiredReadAction;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.application.WriteAction;
+import consulo.configurable.ConfigurableBuilder;
+import consulo.configurable.UnnamedConfigurable;
 import consulo.junit.localize.JUnitLocalize;
 import consulo.language.ast.IElementType;
-import consulo.language.editor.inspection.LocalInspectionToolSession;
-import consulo.language.editor.inspection.LocalQuickFix;
-import consulo.language.editor.inspection.ProblemDescriptor;
-import consulo.language.editor.inspection.ProblemsHolder;
+import consulo.language.editor.inspection.*;
 import consulo.language.editor.localize.CommonQuickFixLocalize;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiElementVisitor;
+import consulo.language.psi.scope.GlobalSearchScope;
 import consulo.project.Project;
+import consulo.util.xml.serializer.XmlSerializerUtil;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -62,14 +63,14 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
         @Nonnull ProblemsHolder holder,
         boolean isOnTheFly,
         LocalInspectionToolSession session,
-        Object state
+        Object inspectionState
     ) {
         PsiClass assertionsClass = JavaPsiFacade.getInstance(holder.getProject())
             .findClass(ORG_ASSERTJ_ASSERTIONS, holder.getFile().getResolveScope());
         if (assertionsClass == null) {
             return PsiElementVisitor.EMPTY_VISITOR;
         }
-        return new AssertJAssertionsConverterVisitor(holder);
+        return new MyVisitor(holder, ((MyInspectionState)inspectionState).isStaticImport());
     }
 
     @RequiredReadAction
@@ -84,11 +85,50 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
             && (InheritanceUtil.isInheritor(psiClass, JAVA_UTIL_COLLECTION) || InheritanceUtil.isInheritor(psiClass, JAVA_UTIL_MAP));
     }
 
-    private static class AssertJAssertionsConverterVisitor extends JavaElementVisitor {
-        private final ProblemsHolder holder;
+    @Nonnull
+    @Override
+    public InspectionToolState<?> createStateProvider() {
+        return new MyInspectionState();
+    }
 
-        AssertJAssertionsConverterVisitor(ProblemsHolder holder) {
-            this.holder = holder;
+    protected static class MyInspectionState implements InspectionToolState<MyInspectionState> {
+        private boolean myStaticImport = true;
+
+        public boolean isStaticImport() {
+            return myStaticImport;
+        }
+
+        public void setStaticImport(boolean staticImport) {
+            myStaticImport = staticImport;
+        }
+
+        @Nullable
+        @Override
+        public UnnamedConfigurable createConfigurable() {
+            return ConfigurableBuilder.newBuilder()
+                .checkBox(JUnitLocalize.inspectionsMigrateAssertToAssertjStaticImportOption(), this::isStaticImport, this::setStaticImport)
+                .buildUnnamed();
+        }
+
+        @Nullable
+        @Override
+        public MyInspectionState getState() {
+            return this;
+        }
+
+        @Override
+        public void loadState(MyInspectionState state) {
+            XmlSerializerUtil.copyBean(state, this);
+        }
+    }
+
+    private static class MyVisitor extends JavaElementVisitor {
+        private final ProblemsHolder myHolder;
+        private final boolean myStaticImport;
+
+        MyVisitor(ProblemsHolder holder, boolean staticImport) {
+            myHolder = holder;
+            myStaticImport = staticImport;
         }
 
         @Override
@@ -115,9 +155,9 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
                 }
             }
 
-            holder.newProblem(JUnitLocalize.inspectionsMigrateAssertToAssertjDescription("assertThat()"))
+            myHolder.newProblem(JUnitLocalize.inspectionsMigrateAssertToAssertjDescription("assertThat()"))
                 .range(expression)
-                .withFix(new MigrateToAssertThatQuickFix())
+                .withFix(new MyQuickFix(myStaticImport))
                 .create();
         }
 
@@ -140,7 +180,7 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
             Set.of(ORG_JUNIT_ASSERT, JUNIT_FRAMEWORK_ASSERT, ORG_JUNIT_JUPITER_API_ASSERTIONS);
     }
 
-    private static class MigrateToAssertThatQuickFix implements LocalQuickFix {
+    private static class MyQuickFix implements LocalQuickFix {
         private static final Map<IElementType, IElementType> NEGATE_COMPARISON = Map.of(
             JavaTokenType.EQEQ, JavaTokenType.NE,
             JavaTokenType.NE, JavaTokenType.EQEQ,
@@ -177,6 +217,12 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
             JavaTokenType.GT, "hasSizeGreaterThan"
         );
 
+        private final boolean myStaticImport;
+
+        private MyQuickFix(boolean staticImport) {
+            myStaticImport = staticImport;
+        }
+
         @Nonnull
         @Override
         public String getFamilyName() {
@@ -194,7 +240,7 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
             }
 
             PsiExpression[] args = expression.getArgumentList().getExpressions();
-            AssertJReplacer replacer = new AssertJReplacer(project, expression);
+            AssertJReplacer replacer = new AssertJReplacer(project, expression, myStaticImport);
 
             switch (methodName) {
                 case ASSERT_TRUE, ASSERT_FALSE -> {
@@ -289,12 +335,14 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
     private static class AssertJReplacer {
         private final Project myProject;
         private final PsiMethodCallExpression myExpression;
+        private final boolean myStaticImport;
         private final StringBuilder myCode = new StringBuilder();
         private PsiElement myDescription = null;
 
-        private AssertJReplacer(Project project, PsiMethodCallExpression expression) {
-            this.myProject = project;
-            this.myExpression = expression;
+        private AssertJReplacer(Project project, PsiMethodCallExpression expression, boolean staticImport) {
+            myProject = project;
+            myExpression = expression;
+            myStaticImport = staticImport;
         }
 
         public boolean isNotEmpty() {
@@ -314,6 +362,9 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
         @RequiredReadAction
         public AssertJReplacer assertThat(@Nonnull String methodName, @Nullable PsiElement expression) {
             if (expression != null) {
+                if (!myStaticImport) {
+                    myCode.append(ORG_ASSERTJ_ASSERTIONS).append('.');
+                }
                 myCode.append(methodName).append('(').append(expression.getText()).append(')');
             }
             return this;
@@ -342,12 +393,32 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
         }
 
         void replace() {
-            if (isNotEmpty()) {
-                PsiExpression newExpression = JavaPsiFacade.getElementFactory(myProject)
-                    .createExpressionFromText(myCode.toString(), myExpression);
-
-                WriteAction.run(() -> myExpression.replace(newExpression));
+            if (myCode.isEmpty()) {
+                return;
             }
+
+            PsiExpression newExpression = JavaPsiFacade.getElementFactory(myProject)
+                .createExpressionFromText(myCode.toString(), myExpression);
+
+            WriteAction.run(() -> {
+                PsiElement replacement = myExpression.replace(newExpression);
+
+                if (myStaticImport) {
+                    PsiReferenceExpression methodExpr = null;
+                    for (PsiMethodCallExpression methodCall = (PsiMethodCallExpression)replacement; ; ) {
+                        methodExpr = methodCall.getMethodExpression();
+                        if (methodExpr.getQualifierExpression() instanceof PsiMethodCallExpression subMethodCall) {
+                            methodCall = subMethodCall;
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    JavaPsiFacade facade = JavaPsiFacade.getInstance(myProject);
+                    PsiClass assertionsClass = facade.findClass(ORG_ASSERTJ_ASSERTIONS, GlobalSearchScope.allScope(myProject));
+                    methodExpr.bindToElementViaStaticImport(assertionsClass);
+                }
+            });
         }
     }
 }
