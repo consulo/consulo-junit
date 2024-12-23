@@ -17,6 +17,7 @@ import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiElementVisitor;
 import consulo.project.Project;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +42,7 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
     protected static final String ASSERT_NOT_SAME = "assertNotSame";
     protected static final String ASSERT_NULL = "assertNull";
     protected static final String ASSERT_SAME = "assertSame";
+    protected static final String ASSERT_THROWS = "assertThrows";
     protected static final String ASSERT_TRUE = "assertTrue";
 
     @Nonnull
@@ -104,9 +106,9 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
                 return;
             }
 
-            if (isBooleanAssert(methodName)) {
+            if (JUNIT_BOOLEAN_ASSERT_METHODS.contains(methodName)) {
                 PsiExpression[] args = expression.getArgumentList().getExpressions();
-                PsiExpression arg = args.length > 0 ? args[args.length - 1] : null;
+                PsiExpression arg = args.length > 0 ? args[0] : null;
                 if (!(arg instanceof PsiBinaryExpression || arg instanceof PsiInstanceOfExpression
                     || arg instanceof PsiMethodCallExpression methodCall && isCollectionMethodCall(methodCall, "isEmpty"))) {
                     return;
@@ -119,10 +121,6 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
                 .create();
         }
 
-        private boolean isBooleanAssert(String methodName) {
-            return ASSERT_TRUE.equals(methodName) || ASSERT_FALSE.equals(methodName);
-        }
-
         private static final Set<String> JUNIT_ASSERT_METHODS = Set.of(
             ASSERT_ARRAY_EQUALS,
             ASSERT_EQUALS,
@@ -132,8 +130,11 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
             ASSERT_NOT_SAME,
             ASSERT_NULL,
             ASSERT_SAME,
+            ASSERT_THROWS,
             ASSERT_TRUE
         );
+
+        private static final Set<String> JUNIT_BOOLEAN_ASSERT_METHODS = Set.of(ASSERT_FALSE, ASSERT_TRUE);
 
         private static final Set<String> JUNIT_ASSERT_CLASS_NAMES =
             Set.of(ORG_JUNIT_ASSERT, JUNIT_FRAMEWORK_ASSERT, ORG_JUNIT_JUPITER_API_ASSERTIONS);
@@ -193,14 +194,16 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
             }
 
             PsiExpression[] args = expression.getArgumentList().getExpressions();
-            PsiExpression lastArg = args[args.length - 1];
-
             AssertJReplacer replacer = new AssertJReplacer(project, expression);
 
             switch (methodName) {
                 case ASSERT_TRUE, ASSERT_FALSE -> {
+                    if (args.length == 2) {
+                        replacer.as(args[1]);
+                    }
+
                     boolean negate = ASSERT_FALSE.equals(methodName);
-                    if (lastArg instanceof PsiBinaryExpression binary) {
+                    if (args[0] instanceof PsiBinaryExpression binary) {
                         IElementType tokenType = binary.getOperationTokenType();
                         if (negate) {
                             tokenType = NEGATE_COMPARISON.get(tokenType);
@@ -210,53 +213,74 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
                             && isCollectionMethodCall(methodCall, "size")
                             && ASSERTJ_SIZE_COMPARISON.containsKey(tokenType)) {
 
-                            String comparisonMethod = ASSERTJ_SIZE_COMPARISON.get(tokenType);
-                            replacer.assertThat(
-                                methodCall.getMethodExpression().getQualifier(),
-                                comparisonMethod,
-                                binary.getROperand()
-                            );
+                            replacer.assertThat(methodCall.getMethodExpression().getQualifier())
+                                .call(ASSERTJ_SIZE_COMPARISON.get(tokenType), binary.getROperand());
                         }
                         else {
                             String comparisonMethod = ASSERTJ_COMPARISON.get(tokenType);
                             if (comparisonMethod != null) {
-                                replacer.assertThat(lOperand, comparisonMethod, binary.getROperand());
+                                replacer.assertThat(lOperand)
+                                    .call(comparisonMethod, binary.getROperand());
                             }
                         }
                     }
-                    else if (lastArg instanceof PsiInstanceOfExpression instanceOf) {
+                    else if (args[0] instanceof PsiInstanceOfExpression instanceOf) {
                         PsiTypeElement checkType = instanceOf.getCheckType();
                         assert checkType != null;
-                        replacer.assertThat(
-                            instanceOf.getOperand(),
-                            negate ? "isNotInstanceOf" : "isInstanceOf",
-                            checkType.getType().getCanonicalText() + ".class"
-                        );
+                        replacer.assertThat(instanceOf.getOperand())
+                            .call(
+                                negate ? "isNotInstanceOf" : "isInstanceOf",
+                                checkType.getType().getCanonicalText() + ".class"
+                            );
                     }
-                    else if (lastArg instanceof PsiMethodCallExpression methodCall
+                    else if (args[0] instanceof PsiMethodCallExpression methodCall
                         && isCollectionMethodCall(methodCall, "isEmpty")) {
 
-                        replacer.assertThat(
-                            methodCall.getMethodExpression().getQualifier(),
-                            negate ? "isNotEmpty" : "isEmpty"
-                        );
+                        replacer.assertThat(methodCall.getMethodExpression().getQualifier())
+                            .call(negate ? "isNotEmpty" : "isEmpty");
                     }
+
+                    replacer.replace();
                 }
 
                 case ASSERT_EQUALS, ASSERT_ARRAY_EQUALS, ASSERT_NOT_EQUALS, ASSERT_SAME, ASSERT_NOT_SAME -> {
+                    if (args.length == 3) {
+                        replacer.as(args[2]);
+                    }
+
                     if (ASSERT_EQUALS.equals(methodName)
-                        && lastArg instanceof PsiMethodCallExpression methodCall
+                        && args[1] instanceof PsiMethodCallExpression methodCall
                         && isCollectionMethodCall(methodCall, "size")) {
 
-                        replacer.assertThat(methodCall.getMethodExpression().getQualifier(), "hasSize", args[0]);
+                        replacer.assertThat(methodCall.getMethodExpression().getQualifier())
+                            .call("hasSize", args[0]);
                     }
                     else {
-                        replacer.assertThat(lastArg, ASSERTJ_EQUIVALENT.get(methodName), args[0]);
+                        replacer.assertThat(args[1])
+                            .call(ASSERTJ_EQUIVALENT.get(methodName), args[0]);
                     }
+
+                    replacer.replace();
                 }
 
                 case ASSERT_NULL, ASSERT_NOT_NULL -> {
-                    replacer.assertThat(lastArg, ASSERTJ_EQUIVALENT.get(methodName));
+                    if (args.length == 2) {
+                        replacer.as(args[1]);
+                    }
+
+                    replacer.assertThat(args[0])
+                        .call(ASSERTJ_EQUIVALENT.get(methodName))
+                        .replace();
+                }
+
+                case ASSERT_THROWS -> {
+                    if (args.length == 3) {
+                        replacer.as(args[2]);
+                    }
+
+                    replacer.assertThat("assertThatThrownBy", args[1])
+                        .call("isInstanceOf", args[0])
+                        .replace();
                 }
             }
         }
@@ -265,31 +289,65 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
     private static class AssertJReplacer {
         private final Project myProject;
         private final PsiMethodCallExpression myExpression;
+        private final StringBuilder myCode = new StringBuilder();
+        private PsiElement myDescription = null;
 
         private AssertJReplacer(Project project, PsiMethodCallExpression expression) {
             this.myProject = project;
             this.myExpression = expression;
         }
 
-        @RequiredReadAction
-        public void assertThat(PsiElement expression, String methodName) {
-            assertThat(expression, methodName, (String)null);
+        public boolean isNotEmpty() {
+            return !myCode.isEmpty();
+        }
+
+        public AssertJReplacer as(PsiElement description) {
+            myDescription = description;
+            return this;
         }
 
         @RequiredReadAction
-        public void assertThat(PsiElement actualExpr, String methodName, PsiElement expectedExpr) {
-            assertThat(actualExpr, methodName, expectedExpr != null ? expectedExpr.getText() : null);
+        public AssertJReplacer assertThat(@Nullable PsiElement expression) {
+            return assertThat("assertThat", expression);
         }
 
         @RequiredReadAction
-        public void assertThat(PsiElement actualExpr, String methodName, String expectedExpr) {
-            String code = "assertThat(" + actualExpr.getText() + ")." +
-                methodName + "(" + (expectedExpr == null ? "" : expectedExpr) + ")";
+        public AssertJReplacer assertThat(@Nonnull String methodName, @Nullable PsiElement expression) {
+            if (expression != null) {
+                myCode.append(methodName).append('(').append(expression.getText()).append(')');
+            }
+            return this;
+        }
 
-            PsiExpression newExpression = JavaPsiFacade.getElementFactory(myProject)
-                .createExpressionFromText(code, myExpression);
+        @RequiredReadAction
+        public AssertJReplacer call(@Nonnull String methodName) {
+            return call(methodName, (String)null);
+        }
 
-            WriteAction.run(() -> myExpression.replace(newExpression));
+        @RequiredReadAction
+        public AssertJReplacer call(@Nonnull String methodName, PsiElement expectedExpr) {
+            return call(methodName, expectedExpr != null ? expectedExpr.getText() : null);
+        }
+
+        @RequiredReadAction
+        public AssertJReplacer call(@Nonnull String methodName, String paramExpr) {
+            if (isNotEmpty()) {
+                if (myDescription != null) {
+                    myCode.append(".as(").append(myDescription.getText()).append(')');
+                    myDescription = null;
+                }
+                myCode.append('.').append(methodName).append('(').append(paramExpr == null ? "" : paramExpr).append(')');
+            }
+            return this;
+        }
+
+        void replace() {
+            if (isNotEmpty()) {
+                PsiExpression newExpression = JavaPsiFacade.getElementFactory(myProject)
+                    .createExpressionFromText(myCode.toString(), myExpression);
+
+                WriteAction.run(() -> myExpression.replace(newExpression));
+            }
         }
     }
 }
