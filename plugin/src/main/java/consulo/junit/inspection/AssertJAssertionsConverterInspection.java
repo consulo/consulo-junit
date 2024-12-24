@@ -6,18 +6,17 @@ import com.intellij.java.language.psi.util.InheritanceUtil;
 import consulo.annotation.access.RequiredReadAction;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.application.WriteAction;
-import consulo.configurable.ConfigurableBuilder;
-import consulo.configurable.UnnamedConfigurable;
 import consulo.java.analysis.impl.localize.JavaInspectionsLocalize;
 import consulo.junit.localize.JUnitLocalize;
 import consulo.language.ast.IElementType;
-import consulo.language.editor.inspection.*;
+import consulo.language.editor.inspection.LocalInspectionToolSession;
+import consulo.language.editor.inspection.LocalQuickFix;
+import consulo.language.editor.inspection.ProblemDescriptor;
+import consulo.language.editor.inspection.ProblemsHolder;
 import consulo.language.editor.localize.CommonQuickFixLocalize;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiElementVisitor;
-import consulo.language.psi.scope.GlobalSearchScope;
 import consulo.project.Project;
-import consulo.util.xml.serializer.XmlSerializerUtil;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -33,19 +32,19 @@ import static consulo.java.language.module.util.JavaClassNames.JAVA_UTIL_MAP;
  * @since 2024-12-15
  */
 @ExtensionImpl
-public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInspectionTool {
-    protected static final String ORG_ASSERTJ_ASSERTIONS = "org.assertj.core.api.Assertions";
+public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInspectionTool<AssertJAssertionsConverterInspectionState> {
+    private static final String ORG_ASSERTJ_ASSERTIONS = "org.assertj.core.api.Assertions";
 
-    protected static final String ASSERT_ARRAY_EQUALS = "assertArrayEquals";
-    protected static final String ASSERT_EQUALS = "assertEquals";
-    protected static final String ASSERT_FALSE = "assertFalse";
-    protected static final String ASSERT_NOT_EQUALS = "assertNotEquals";
-    protected static final String ASSERT_NOT_NULL = "assertNotNull";
-    protected static final String ASSERT_NOT_SAME = "assertNotSame";
-    protected static final String ASSERT_NULL = "assertNull";
-    protected static final String ASSERT_SAME = "assertSame";
-    protected static final String ASSERT_THROWS = "assertThrows";
-    protected static final String ASSERT_TRUE = "assertTrue";
+    private static final String ASSERT_ARRAY_EQUALS = "assertArrayEquals";
+    private static final String ASSERT_EQUALS = "assertEquals";
+    private static final String ASSERT_FALSE = "assertFalse";
+    private static final String ASSERT_NOT_EQUALS = "assertNotEquals";
+    private static final String ASSERT_NOT_NULL = "assertNotNull";
+    private static final String ASSERT_NOT_SAME = "assertNotSame";
+    private static final String ASSERT_NULL = "assertNull";
+    private static final String ASSERT_SAME = "assertSame";
+    private static final String ASSERT_THROWS = "assertThrows";
+    private static final String ASSERT_TRUE = "assertTrue";
 
     @Nonnull
     @Override
@@ -61,8 +60,7 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
 
     @Override
     @Nonnull
-    public String getID()
-    {
+    public String getID() {
         return "JUnitMigrateAssertToAssertj";
     }
 
@@ -77,14 +75,14 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
         @Nonnull ProblemsHolder holder,
         boolean isOnTheFly,
         LocalInspectionToolSession session,
-        Object inspectionState
+        AssertJAssertionsConverterInspectionState inspectionState
     ) {
         PsiClass assertionsClass = JavaPsiFacade.getInstance(holder.getProject())
             .findClass(ORG_ASSERTJ_ASSERTIONS, holder.getFile().getResolveScope());
         if (assertionsClass == null) {
             return PsiElementVisitor.EMPTY_VISITOR;
         }
-        return new MyVisitor(holder, ((MyInspectionState)inspectionState).isStaticImport());
+        return new MyVisitor(holder, inspectionState.isStaticImport());
     }
 
     @RequiredReadAction
@@ -101,39 +99,8 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
 
     @Nonnull
     @Override
-    public InspectionToolState<?> createStateProvider() {
-        return new MyInspectionState();
-    }
-
-    protected static class MyInspectionState implements InspectionToolState<MyInspectionState> {
-        private boolean myStaticImport = true;
-
-        public boolean isStaticImport() {
-            return myStaticImport;
-        }
-
-        public void setStaticImport(boolean staticImport) {
-            myStaticImport = staticImport;
-        }
-
-        @Nullable
-        @Override
-        public UnnamedConfigurable createConfigurable() {
-            return ConfigurableBuilder.newBuilder()
-                .checkBox(JUnitLocalize.inspectionsMigrateAssertToAssertjStaticImportOption(), this::isStaticImport, this::setStaticImport)
-                .buildUnnamed();
-        }
-
-        @Nullable
-        @Override
-        public MyInspectionState getState() {
-            return this;
-        }
-
-        @Override
-        public void loadState(MyInspectionState state) {
-            XmlSerializerUtil.copyBean(state, this);
-        }
+    public AssertJAssertionsConverterInspectionState createStateProvider() {
+        return new AssertJAssertionsConverterInspectionState();
     }
 
     private static class MyVisitor extends JavaElementVisitor {
@@ -429,8 +396,10 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
                         }
                     }
                     JavaPsiFacade facade = JavaPsiFacade.getInstance(myProject);
-                    PsiClass assertionsClass = facade.findClass(ORG_ASSERTJ_ASSERTIONS, GlobalSearchScope.allScope(myProject));
-                    methodExpr.bindToElementViaStaticImport(assertionsClass);
+                    PsiClass assertionsClass = facade.findClass(ORG_ASSERTJ_ASSERTIONS, replacement.getResolveScope());
+                    if (assertionsClass != null) {
+                        methodExpr.bindToElementViaStaticImport(assertionsClass);
+                    }
                 }
             });
         }
