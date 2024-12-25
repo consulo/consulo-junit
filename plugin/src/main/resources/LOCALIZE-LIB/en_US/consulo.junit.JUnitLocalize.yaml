@@ -3,7 +3,7 @@ junit.configuration.name:
 junit.configuration.description:
   text: JUnit test configuration
 inspections.migrate.assert.to.assertj.name:
-  text: "JUnit assertion can be 'assertThat()' call"
+  text: "AssertJ's 'assertThat' may be used instead of JUnit assertions"
 inspections.migrate.assert.to.assertj.static.import.option:
   text: "Statically import AssertJ's methods"
 inspections.migrate.assert.to.assertj.description:

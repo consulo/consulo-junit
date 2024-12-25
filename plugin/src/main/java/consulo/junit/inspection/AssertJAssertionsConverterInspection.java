@@ -66,7 +66,7 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
 
     @Override
     public boolean isEnabledByDefault() {
-        return true;
+        return false;
     }
 
     @Nonnull
