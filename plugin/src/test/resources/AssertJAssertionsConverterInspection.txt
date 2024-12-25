@@ -1,0 +1,44 @@
+assertEquals("foo", "foobar".substring(0, 3));
+assertEquals("foo", "foobar".substring(0, 3), "Strings should be empty");
+
+assertArrayEquals(new int[]{1, 2, 3}, new int[]{1, 2, 3});
+assertArrayEquals(new int[]{1, 2, 3}, new int[]{1, 2, 3}, "Arrays should be equal");
+
+assertNotEquals(new Object(), new Object());
+assertNotEquals(new Object(), new Object(), "Objects should be non-equal");
+
+assertEquals(0, new HashSet().size());
+assertEquals(0, new HashSet().size(), "Set should have zero size");
+
+int x = 5;
+assertFalse(x == 0);
+assertFalse(x == 0, "X should not be empty");
+assertTrue(x != 0);
+assertTrue(x > 0);
+assertTrue(x >= 0);
+assertFalse(x < 0);
+assertFalse(x <= 0);
+
+assertTrue("Foobar" instanceof String);
+assertTrue("Foobar" instanceof String, "Expecting String");
+
+assertTrue(new HashSet().isEmpty());
+assertTrue(new ArrayList().isEmpty());
+assertTrue(new HashMap().isEmpty());
+assertTrue(new HashMap().isEmpty(), "Map should be empty");
+
+assertTrue(new HashSet().size() == 0);
+assertTrue(new HashSet().size() == 0, "Set should have zero size");
+assertFalse(new ArrayList().size() > 1);
+assertFalse(new ArrayList().size() >= 1);
+assertTrue(new HashMap().size() < 1);
+assertTrue(new HashMap().size() <= 1);
+
+assertNull((Object) null);
+assertNull((Object) null, "Should be null");
+
+assertNotNull(new Object());
+assertNotNull(new Object(), "Should not be null");
+
+assertThrows(RuntimeException.class, () -> { throw new RuntimeException();});
+assertThrows(RuntimeException.class, () -> { throw new RuntimeException();}, "Should throw RuntimeException");
