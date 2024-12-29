@@ -22,7 +22,7 @@ import consulo.execution.action.ConfigurationFromContext;
 import consulo.language.psi.PsiElement;
 import consulo.util.lang.ref.Ref;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 @ExtensionImpl
 public class TestInClassConfigurationProducer extends JUnitConfigurationProducer

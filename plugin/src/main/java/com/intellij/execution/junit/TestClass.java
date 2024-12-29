@@ -33,7 +33,7 @@ import consulo.language.psi.PsiPackage;
 import consulo.process.ExecutionException;
 import consulo.util.lang.Comparing;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 class TestClass extends TestObject
 {

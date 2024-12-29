@@ -25,7 +25,7 @@ import consulo.execution.test.TestConsoleProperties;
 import consulo.module.Module;
 import consulo.ui.ex.ComponentContainer;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 public class RerunFailedTestsAction extends JavaRerunFailedTestsAction
 {

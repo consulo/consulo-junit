@@ -17,7 +17,7 @@ package com.intellij.execution.junit;
 
 import com.intellij.java.language.projectRoots.roots.ExternalLibraryDescriptor;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
 

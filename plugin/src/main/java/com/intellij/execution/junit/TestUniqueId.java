@@ -21,7 +21,7 @@ import consulo.language.psi.util.PsiTreeUtil;
 import consulo.process.ExecutionException;
 import consulo.project.Project;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.function.Function;
 

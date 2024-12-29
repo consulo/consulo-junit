@@ -36,8 +36,8 @@ import consulo.process.ExecutionException;
 import consulo.project.Project;
 import consulo.ui.ex.action.ActionsBundle;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.Collection;
 
 public class TestMethods extends TestMethod

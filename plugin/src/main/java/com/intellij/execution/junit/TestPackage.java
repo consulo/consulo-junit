@@ -48,7 +48,7 @@ import consulo.util.lang.ref.Ref;
 import consulo.junit.JUnitProperties;
 import org.jetbrains.annotations.TestOnly;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;

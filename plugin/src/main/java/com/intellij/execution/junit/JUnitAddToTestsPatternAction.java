@@ -20,7 +20,7 @@ import com.intellij.java.execution.impl.actions.AbstractAddToTestsPatternAction;
 import consulo.execution.action.RunConfigurationProducer;
 import consulo.execution.configuration.ConfigurationType;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Set;
 
 public class JUnitAddToTestsPatternAction extends AbstractAddToTestsPatternAction<JUnitConfiguration>

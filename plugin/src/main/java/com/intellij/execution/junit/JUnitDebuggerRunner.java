@@ -19,7 +19,7 @@ import com.intellij.java.execution.impl.JavaTestFrameworkDebuggerRunner;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.execution.configuration.RunProfile;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 /**
  * @author egor

@@ -26,7 +26,7 @@ import consulo.annotation.component.ExtensionImpl;
 import consulo.java.analysis.codeInspection.CantBeStaticCondition;
 import consulo.language.psi.PsiElement;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 
 @ExtensionImpl
 public class JUnitCantBeStaticExtension implements CantBeStaticCondition {
