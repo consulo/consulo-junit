@@ -1,0 +1,35 @@
+<html>
+    <body>
+        Reports calls to <code>Assert.assertEquals()</code>, <code>Assert.assertTrue()</code>, etc. methods
+        which can be migrated to AssertJ's self-describing <code>Assertions.assertThat()</code> chain calls.
+        <p>For example:</p>
+        <pre><code lang="java">
+    public class SubstantialTest {
+        @Test
+        public void test() {
+            assertTrue("Foobar" instanceof String);
+            assertFalse(new HashMap().size() > 1);
+            assertEquals("foo", "foobar".substring(0, 3));
+            assertNull(null, "Null must be null");
+            assertNotNull(new Object());
+        }
+    }
+        </code></pre>
+        <p>A quick-fix is provided to perform the migration:</p>
+        <pre><code lang="java">
+    public class SubstantialTest {
+        @Test
+        public void testContents(Collection&lt;String&gt; c, String s) {
+            assertThat("Foobar").isInstanceOf(String.class);
+            assertThat(new HashMap()).hasSizeLessThanOrEqualTo(1);
+            assertThat("foobar".substring(0, 3)).isEqualTo("foo");
+            assertThat(null).as("Null must be null").isNull();
+            assertThat(new Object()).isNotNull();
+        }
+    }
+        </code></pre>
+        <!-- tooltip end -->
+        <p>This inspection requires that the AssertJ library is available on the classpath.
+        <p>Use the <b>Statically import AssertJ's methods</b> option to specify if you want the quick-fix to statically import the AssertJ methods.
+    </body>
+</html>
