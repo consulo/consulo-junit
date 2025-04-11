@@ -16,28 +16,31 @@
 package com.intellij.execution.junit;
 
 import com.intellij.java.execution.impl.testframework.AbstractInClassConfigurationProducer;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.execution.action.ConfigurationContext;
 import consulo.language.psi.PsiElement;
-import consulo.util.lang.ref.Ref;
+import consulo.util.lang.ref.SimpleReference;
 
 //to be delete in 2018
 @Deprecated
-public class TestMethodConfigurationProducer extends AbstractInClassConfigurationProducer<JUnitConfiguration>
-{
-	public TestMethodConfigurationProducer()
-	{
-		super(JUnitConfigurationType.getInstance());
-	}
+public class TestMethodConfigurationProducer extends AbstractInClassConfigurationProducer<JUnitConfiguration> {
+    public TestMethodConfigurationProducer() {
+        super(JUnitConfigurationType.getInstance());
+    }
 
-	@Override
-	protected boolean setupConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context, Ref<PsiElement> sourceElement)
-	{
-		return super.setupConfigurationFromContext(configuration, context, sourceElement);
-	}
+    @Override
+    @RequiredReadAction
+    protected boolean setupConfigurationFromContext(
+        JUnitConfiguration configuration,
+        ConfigurationContext context,
+        SimpleReference<PsiElement> sourceElement
+    ) {
+        return super.setupConfigurationFromContext(configuration, context, sourceElement);
+    }
 
-	@Override
-	public boolean isConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context)
-	{
-		return super.isConfigurationFromContext(configuration, context);
-	}
+    @Override
+    @RequiredReadAction
+    public boolean isConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context) {
+        return super.isConfigurationFromContext(configuration, context);
+    }
 }

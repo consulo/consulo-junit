@@ -14,54 +14,49 @@ import consulo.language.util.ModuleUtilCore;
 import consulo.module.Module;
 import consulo.module.content.ModuleRootManager;
 import consulo.project.Project;
-import consulo.util.lang.ref.Ref;
+import consulo.util.lang.ref.SimpleReference;
 import consulo.virtualFileSystem.VirtualFile;
 
-public abstract class AbstractAllInDirectoryConfigurationProducer extends JUnitConfigurationProducer
-{
-	protected AbstractAllInDirectoryConfigurationProducer(ConfigurationType configurationType)
-	{
-		super(configurationType);
-	}
+public abstract class AbstractAllInDirectoryConfigurationProducer extends JUnitConfigurationProducer {
+    protected AbstractAllInDirectoryConfigurationProducer(ConfigurationType configurationType) {
+        super(configurationType);
+    }
 
-	@Override
-	protected boolean setupConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context, Ref<PsiElement> sourceElement)
-	{
-		final Project project = configuration.getProject();
-		final PsiElement element = context.getPsiLocation();
-		if(!(element instanceof PsiDirectory))
-		{
-			return false;
-		}
-		final PsiJavaPackage aPackage = JavaRuntimeConfigurationProducerBase.checkPackage(element);
-		if(aPackage == null)
-		{
-			return false;
-		}
-		final VirtualFile virtualFile = ((PsiDirectory) element).getVirtualFile();
-		final Module module = ModuleUtilCore.findModuleForFile(virtualFile, project);
-		if(module == null)
-		{
-			return false;
-		}
-		if(!ModuleRootManager.getInstance(module).getFileIndex().isInTestSourceContent(virtualFile))
-		{
-			return false;
-		}
-		int testRootCount = ModuleRootManager.getInstance(module).getContentFolders(LanguageContentFolderScopes.onlyTest()).length;
-		if(testRootCount < 2)
-		{
-			return false;
-		}
-		if(!LocationUtil.isJarAttached(context.getLocation(), aPackage, JUnitUtil.TEST_CASE_CLASS))
-		{
-			return false;
-		}
-		setupConfigurationModule(context, configuration);
-		final JUnitConfiguration.Data data = configuration.getPersistentData();
-		data.setDirName(virtualFile.getPath());
-		data.TEST_OBJECT = JUnitConfiguration.TEST_DIRECTORY;
-		configuration.setGeneratedName();
-		return true;
-	}
+    @Override
+    protected boolean setupConfigurationFromContext(
+        JUnitConfiguration configuration,
+        ConfigurationContext context,
+        SimpleReference<PsiElement> sourceElement
+    ) {
+        Project project = configuration.getProject();
+        PsiElement element = context.getPsiLocation();
+        if (!(element instanceof PsiDirectory)) {
+            return false;
+        }
+        PsiJavaPackage aPackage = JavaRuntimeConfigurationProducerBase.checkPackage(element);
+        if (aPackage == null) {
+            return false;
+        }
+        VirtualFile virtualFile = ((PsiDirectory)element).getVirtualFile();
+        Module module = ModuleUtilCore.findModuleForFile(virtualFile, project);
+        if (module == null) {
+            return false;
+        }
+        if (!ModuleRootManager.getInstance(module).getFileIndex().isInTestSourceContent(virtualFile)) {
+            return false;
+        }
+        int testRootCount = ModuleRootManager.getInstance(module).getContentFolders(LanguageContentFolderScopes.onlyTest()).length;
+        if (testRootCount < 2) {
+            return false;
+        }
+        if (!LocationUtil.isJarAttached(context.getLocation(), aPackage, JUnitUtil.TEST_CASE_CLASS)) {
+            return false;
+        }
+        setupConfigurationModule(context, configuration);
+        JUnitConfiguration.Data data = configuration.getPersistentData();
+        data.setDirName(virtualFile.getPath());
+        data.TEST_OBJECT = JUnitConfiguration.TEST_DIRECTORY;
+        configuration.setGeneratedName();
+        return true;
+    }
 }

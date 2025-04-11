@@ -16,30 +16,33 @@
 package com.intellij.execution.junit;
 
 import com.intellij.java.execution.impl.testframework.AbstractInClassConfigurationProducer;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.execution.action.ConfigurationContext;
 import consulo.language.psi.PsiElement;
-import consulo.util.lang.ref.Ref;
+import consulo.util.lang.ref.SimpleReference;
 
 //to be deleted in 2018
 @Deprecated
-public class TestClassConfigurationProducer extends AbstractInClassConfigurationProducer<JUnitConfiguration>
-{
-	public TestClassConfigurationProducer()
-	{
-		super(JUnitConfigurationType.getInstance());
-	}
+public class TestClassConfigurationProducer extends AbstractInClassConfigurationProducer<JUnitConfiguration> {
+    public TestClassConfigurationProducer() {
+        super(JUnitConfigurationType.getInstance());
+    }
 
-	@SuppressWarnings("RedundantMethodOverride") // binary compatibility
-	@Override
-	public boolean isConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context)
-	{
-		return super.isConfigurationFromContext(configuration, context);
-	}
+    @Override
+    @RequiredReadAction
+    @SuppressWarnings("RedundantMethodOverride") // binary compatibility
+    public boolean isConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context) {
+        return super.isConfigurationFromContext(configuration, context);
+    }
 
-	@SuppressWarnings("RedundantMethodOverride") // binary compatibility
-	@Override
-	protected boolean setupConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context, Ref<PsiElement> sourceElement)
-	{
-		return super.setupConfigurationFromContext(configuration, context, sourceElement);
-	}
+    @Override
+    @RequiredReadAction
+    @SuppressWarnings("RedundantMethodOverride") // binary compatibility
+    protected boolean setupConfigurationFromContext(
+        JUnitConfiguration configuration,
+        ConfigurationContext context,
+        SimpleReference<PsiElement> sourceElement
+    ) {
+        return super.setupConfigurationFromContext(configuration, context, sourceElement);
+    }
 }
