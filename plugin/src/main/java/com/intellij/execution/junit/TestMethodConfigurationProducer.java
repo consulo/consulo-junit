@@ -16,9 +16,10 @@
 package com.intellij.execution.junit;
 
 import com.intellij.java.execution.impl.testframework.AbstractInClassConfigurationProducer;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.execution.action.ConfigurationContext;
 import consulo.language.psi.PsiElement;
-import consulo.util.lang.ref.Ref;
+import consulo.util.lang.ref.SimpleReference;
 
 //to be delete in 2018
 @Deprecated
@@ -28,15 +29,17 @@ public class TestMethodConfigurationProducer extends AbstractInClassConfiguratio
     }
 
     @Override
+    @RequiredReadAction
     protected boolean setupConfigurationFromContext(
         JUnitConfiguration configuration,
         ConfigurationContext context,
-        Ref<PsiElement> sourceElement
+        SimpleReference<PsiElement> sourceElement
     ) {
         return super.setupConfigurationFromContext(configuration, context, sourceElement);
     }
 
     @Override
+    @RequiredReadAction
     public boolean isConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context) {
         return super.isConfigurationFromContext(configuration, context);
     }

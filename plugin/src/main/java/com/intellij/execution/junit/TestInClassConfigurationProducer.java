@@ -16,12 +16,13 @@
 package com.intellij.execution.junit;
 
 import com.intellij.java.execution.impl.testframework.AbstractInClassConfigurationProducer;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.execution.action.ConfigurationContext;
 import consulo.execution.action.ConfigurationFromContext;
 import consulo.language.psi.PsiElement;
-import consulo.util.lang.ref.Ref;
-
+import consulo.ui.annotation.RequiredUIAccess;
+import consulo.util.lang.ref.SimpleReference;
 import jakarta.annotation.Nonnull;
 
 @ExtensionImpl
@@ -33,15 +34,17 @@ public class TestInClassConfigurationProducer extends JUnitConfigurationProducer
     }
 
     @Override
+    @RequiredReadAction
     protected boolean setupConfigurationFromContext(
         JUnitConfiguration configuration,
         ConfigurationContext context,
-        Ref<PsiElement> sourceElement
+        SimpleReference<PsiElement> sourceElement
     ) {
         return myDelegate.setupConfigurationFromContext(configuration, context, sourceElement);
     }
 
     @Override
+    @RequiredUIAccess
     public void onFirstRun(
         @Nonnull ConfigurationFromContext configuration,
         @Nonnull ConfigurationContext fromContext,
@@ -56,10 +59,11 @@ public class TestInClassConfigurationProducer extends JUnitConfigurationProducer
         }
 
         @Override
+        @RequiredReadAction
         protected boolean setupConfigurationFromContext(
             JUnitConfiguration configuration,
             ConfigurationContext context,
-            Ref<PsiElement> sourceElement
+            SimpleReference<PsiElement> sourceElement
         ) {
             return super.setupConfigurationFromContext(configuration, context, sourceElement);
         }

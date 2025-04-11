@@ -21,7 +21,7 @@ import com.intellij.java.execution.impl.JavaTestConfigurationBase;
 import com.intellij.java.execution.impl.testDiscovery.TestDiscoveryConfigurationProducer;
 import com.intellij.java.language.psi.PsiMethod;
 import consulo.execution.action.PsiLocation;
-import consulo.util.lang.Pair;
+import consulo.util.lang.Couple;
 
 public class JUnitTestDiscoveryConfigurationProducer extends TestDiscoveryConfigurationProducer {
     protected JUnitTestDiscoveryConfigurationProducer() {
@@ -34,10 +34,10 @@ public class JUnitTestDiscoveryConfigurationProducer extends TestDiscoveryConfig
     }
 
     @Override
-    protected Pair<String, String> getPosition(JavaTestConfigurationBase configuration) {
+    protected Couple<String> getPosition(JavaTestConfigurationBase configuration) {
         final JUnitConfiguration.Data data = ((JUnitConfiguration)configuration).getPersistentData();
         if (data.TEST_OBJECT.equals(JUnitConfiguration.BY_SOURCE_POSITION)) {
-            return Pair.create(data.getMainClassName(), data.getMethodName());
+            return Couple.of(data.getMainClassName(), data.getMethodName());
         }
         return null;
     }

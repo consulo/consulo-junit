@@ -14,7 +14,7 @@ import consulo.language.util.ModuleUtilCore;
 import consulo.module.Module;
 import consulo.module.content.ModuleRootManager;
 import consulo.project.Project;
-import consulo.util.lang.ref.Ref;
+import consulo.util.lang.ref.SimpleReference;
 import consulo.virtualFileSystem.VirtualFile;
 
 public abstract class AbstractAllInDirectoryConfigurationProducer extends JUnitConfigurationProducer {
@@ -26,19 +26,19 @@ public abstract class AbstractAllInDirectoryConfigurationProducer extends JUnitC
     protected boolean setupConfigurationFromContext(
         JUnitConfiguration configuration,
         ConfigurationContext context,
-        Ref<PsiElement> sourceElement
+        SimpleReference<PsiElement> sourceElement
     ) {
-        final Project project = configuration.getProject();
-        final PsiElement element = context.getPsiLocation();
+        Project project = configuration.getProject();
+        PsiElement element = context.getPsiLocation();
         if (!(element instanceof PsiDirectory)) {
             return false;
         }
-        final PsiJavaPackage aPackage = JavaRuntimeConfigurationProducerBase.checkPackage(element);
+        PsiJavaPackage aPackage = JavaRuntimeConfigurationProducerBase.checkPackage(element);
         if (aPackage == null) {
             return false;
         }
-        final VirtualFile virtualFile = ((PsiDirectory)element).getVirtualFile();
-        final Module module = ModuleUtilCore.findModuleForFile(virtualFile, project);
+        VirtualFile virtualFile = ((PsiDirectory)element).getVirtualFile();
+        Module module = ModuleUtilCore.findModuleForFile(virtualFile, project);
         if (module == null) {
             return false;
         }
@@ -53,7 +53,7 @@ public abstract class AbstractAllInDirectoryConfigurationProducer extends JUnitC
             return false;
         }
         setupConfigurationModule(context, configuration);
-        final JUnitConfiguration.Data data = configuration.getPersistentData();
+        JUnitConfiguration.Data data = configuration.getPersistentData();
         data.setDirName(virtualFile.getPath());
         data.TEST_OBJECT = JUnitConfiguration.TEST_DIRECTORY;
         configuration.setGeneratedName();

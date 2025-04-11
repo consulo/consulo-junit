@@ -20,12 +20,13 @@ import com.intellij.java.execution.impl.junit2.PsiMemberParameterizedLocation;
 import com.intellij.java.execution.impl.testframework.AbstractPatternBasedConfigurationProducer;
 import com.intellij.java.language.psi.PsiMember;
 import com.intellij.java.language.psi.PsiMethod;
+import consulo.annotation.access.RequiredReadAction;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.execution.action.ConfigurationContext;
 import consulo.execution.action.Location;
 import consulo.language.psi.PsiElement;
 import consulo.module.Module;
-import consulo.util.lang.ref.Ref;
+import consulo.util.lang.ref.SimpleReference;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -37,32 +38,33 @@ public class PatternConfigurationProducer extends AbstractPatternBasedConfigurat
     }
 
     @Override
-    protected String getMethodPresentation(PsiMember psiMember) {
-        return psiMember instanceof PsiMethod
-            ? JUnitConfiguration.Data.getMethodPresentation((PsiMethod)psiMember)
-            : super.getMethodPresentation(psiMember);
+    protected String getMethodPresentation(PsiMember member) {
+        return member instanceof PsiMethod method
+            ? JUnitConfiguration.Data.getMethodPresentation(method)
+            : super.getMethodPresentation(member);
     }
 
     @Override
+    @RequiredReadAction
     protected boolean setupConfigurationFromContext(
         JUnitConfiguration configuration,
         ConfigurationContext context,
-        Ref<PsiElement> sourceElement
+        SimpleReference<PsiElement> sourceElement
     ) {
-        final LinkedHashSet<String> classes = new LinkedHashSet<>();
-        final PsiElement element = checkPatterns(context, classes);
+        LinkedHashSet<String> classes = new LinkedHashSet<>();
+        PsiElement element = checkPatterns(context, classes);
         if (element == null) {
             return false;
         }
         sourceElement.set(element);
-        final JUnitConfiguration.Data data = configuration.getPersistentData();
+        JUnitConfiguration.Data data = configuration.getPersistentData();
         data.setPatterns(classes);
         data.TEST_OBJECT = JUnitConfiguration.TEST_PATTERN;
         data.setScope(setupPackageConfiguration(context, configuration, data.getScope()));
         configuration.setGeneratedName();
-        final Location contextLocation = context.getLocation();
-        if (contextLocation instanceof PsiMemberParameterizedLocation) {
-            final String paramSetName = ((PsiMemberParameterizedLocation)contextLocation).getParamSetName();
+        Location contextLocation = context.getLocation();
+        if (contextLocation instanceof PsiMemberParameterizedLocation memberParameterizedLocation) {
+            String paramSetName = memberParameterizedLocation.getParamSetName();
             if (paramSetName != null) {
                 configuration.setProgramParameters(paramSetName);
             }
@@ -71,19 +73,21 @@ public class PatternConfigurationProducer extends AbstractPatternBasedConfigurat
     }
 
     @Override
+    @RequiredReadAction
     protected Module findModule(JUnitConfiguration configuration, Module contextModule) {
-        final Set<String> patterns = configuration.getPersistentData().getPatterns();
+        Set<String> patterns = configuration.getPersistentData().getPatterns();
         return findModule(configuration, contextModule, patterns);
     }
 
     @Override
+    @RequiredReadAction
     public boolean isConfigurationFromContext(JUnitConfiguration unitConfiguration, ConfigurationContext context) {
-        final TestObject testobject = unitConfiguration.getTestObject();
-        if (testobject instanceof TestsPattern) {
+        TestObject testObject = unitConfiguration.getTestObject();
+        if (testObject instanceof TestsPattern) {
             if (differentParamSet(unitConfiguration, context.getLocation())) {
                 return false;
             }
-            final Set<String> patterns = unitConfiguration.getPersistentData().getPatterns();
+            Set<String> patterns = unitConfiguration.getPersistentData().getPatterns();
             if (isConfiguredFromContext(context, patterns)) {
                 return true;
             }

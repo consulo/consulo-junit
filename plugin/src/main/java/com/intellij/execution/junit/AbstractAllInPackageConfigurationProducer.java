@@ -10,7 +10,7 @@ import consulo.execution.action.ConfigurationContext;
 import consulo.execution.action.ConfigurationFromContext;
 import consulo.execution.configuration.ConfigurationType;
 import consulo.language.psi.PsiElement;
-import consulo.util.lang.ref.Ref;
+import consulo.util.lang.ref.SimpleReference;
 
 public abstract class AbstractAllInPackageConfigurationProducer extends JUnitConfigurationProducer {
     protected AbstractAllInPackageConfigurationProducer(ConfigurationType configurationType) {
@@ -21,7 +21,7 @@ public abstract class AbstractAllInPackageConfigurationProducer extends JUnitCon
     protected boolean setupConfigurationFromContext(
         JUnitConfiguration configuration,
         ConfigurationContext context,
-        Ref<PsiElement> sourceElement
+        SimpleReference<PsiElement> sourceElement
     ) {
         PsiJavaPackage psiPackage = JavaRuntimeConfigurationProducerBase.checkPackage(context.getPsiLocation());
         if (psiPackage == null) {
@@ -37,7 +37,7 @@ public abstract class AbstractAllInPackageConfigurationProducer extends JUnitCon
         )) {
             return false;
         }
-        final JUnitConfiguration.Data data = configuration.getPersistentData();
+        JUnitConfiguration.Data data = configuration.getPersistentData();
         data.PACKAGE_NAME = psiPackage.getQualifiedName();
         data.TEST_OBJECT = JUnitConfiguration.TEST_PACKAGE;
         data.setScope(setupPackageConfiguration(context, configuration, data.getScope()));
@@ -47,6 +47,7 @@ public abstract class AbstractAllInPackageConfigurationProducer extends JUnitCon
 
     @Override
     public boolean isPreferredConfiguration(ConfigurationFromContext self, ConfigurationFromContext other) {
-        return !other.isProducedBy(AbstractAllInDirectoryConfigurationProducer.class) && !other.isProducedBy(PatternConfigurationProducer.class);
+        return !other.isProducedBy(AbstractAllInDirectoryConfigurationProducer.class)
+            && !other.isProducedBy(PatternConfigurationProducer.class);
     }
 }

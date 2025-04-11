@@ -12,8 +12,7 @@ import consulo.language.psi.PsiElement;
 import consulo.language.psi.scope.GlobalSearchScope;
 import consulo.module.Module;
 import consulo.project.Project;
-import consulo.util.lang.ref.Ref;
-
+import consulo.util.lang.ref.SimpleReference;
 import jakarta.annotation.Nonnull;
 
 import java.util.Arrays;
@@ -29,19 +28,19 @@ public class UniqueIdConfigurationProducer extends JUnitConfigurationProducer {
     protected boolean setupConfigurationFromContext(
         JUnitConfiguration configuration,
         ConfigurationContext context,
-        Ref<PsiElement> sourceElement
+        SimpleReference<PsiElement> sourceElement
     ) {
-        final Project project = configuration.getProject();
+        Project project = configuration.getProject();
         DataContext dataContext = context.getDataContext();
         AbstractTestProxy[] testProxies = dataContext.getData(AbstractTestProxy.KEY_OF_ARRAY);
         if (testProxies == null) {
             return false;
         }
-        RunConfiguration runConfiguration = dataContext.getData(RunConfiguration.DATA_KEY);
-        if (!(runConfiguration instanceof JUnitConfiguration)) {
+        RunConfiguration runConfiguration = dataContext.getData(RunConfiguration.KEY);
+        if (!(runConfiguration instanceof JUnitConfiguration jUnitConfiguration)) {
             return false;
         }
-        Module module = ((JUnitConfiguration)runConfiguration).getConfigurationModule().getModule();
+        Module module = jUnitConfiguration.getConfigurationModule().getModule();
         configuration.setModule(module);
         GlobalSearchScope searchScope =
             module != null ? GlobalSearchScope.moduleWithDependenciesScope(module) : GlobalSearchScope.projectScope(project);
@@ -52,7 +51,7 @@ public class UniqueIdConfigurationProducer extends JUnitConfigurationProducer {
         if (nodeIds == null || nodeIds.length == 0) {
             return false;
         }
-        final JUnitConfiguration.Data data = configuration.getPersistentData();
+        JUnitConfiguration.Data data = configuration.getPersistentData();
         data.setUniqueIds(nodeIds);
         data.TEST_OBJECT = JUnitConfiguration.TEST_UNIQUE_ID;
         configuration.setGeneratedName();
