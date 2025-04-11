@@ -22,22 +22,22 @@ import consulo.util.lang.ref.Ref;
 
 //to be delete in 2018
 @Deprecated
-public class TestMethodConfigurationProducer extends AbstractInClassConfigurationProducer<JUnitConfiguration>
-{
-	public TestMethodConfigurationProducer()
-	{
-		super(JUnitConfigurationType.getInstance());
-	}
+public class TestMethodConfigurationProducer extends AbstractInClassConfigurationProducer<JUnitConfiguration> {
+    public TestMethodConfigurationProducer() {
+        super(JUnitConfigurationType.getInstance());
+    }
 
-	@Override
-	protected boolean setupConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context, Ref<PsiElement> sourceElement)
-	{
-		return super.setupConfigurationFromContext(configuration, context, sourceElement);
-	}
+    @Override
+    protected boolean setupConfigurationFromContext(
+        JUnitConfiguration configuration,
+        ConfigurationContext context,
+        Ref<PsiElement> sourceElement
+    ) {
+        return super.setupConfigurationFromContext(configuration, context, sourceElement);
+    }
 
-	@Override
-	public boolean isConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context)
-	{
-		return super.isConfigurationFromContext(configuration, context);
-	}
+    @Override
+    public boolean isConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context) {
+        return super.isConfigurationFromContext(configuration, context);
+    }
 }

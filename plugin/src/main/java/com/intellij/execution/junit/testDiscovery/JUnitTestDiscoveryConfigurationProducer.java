@@ -23,27 +23,22 @@ import com.intellij.java.language.psi.PsiMethod;
 import consulo.execution.action.PsiLocation;
 import consulo.util.lang.Pair;
 
-public class JUnitTestDiscoveryConfigurationProducer extends TestDiscoveryConfigurationProducer
-{
-	protected JUnitTestDiscoveryConfigurationProducer()
-	{
-		super(JUnitConfigurationType.getInstance());
-	}
+public class JUnitTestDiscoveryConfigurationProducer extends TestDiscoveryConfigurationProducer {
+    protected JUnitTestDiscoveryConfigurationProducer() {
+        super(JUnitConfigurationType.getInstance());
+    }
 
-	@Override
-	protected void setPosition(JavaTestConfigurationBase configuration, PsiLocation<PsiMethod> position)
-	{
-		((JUnitConfiguration) configuration).beFromSourcePosition(position);
-	}
+    @Override
+    protected void setPosition(JavaTestConfigurationBase configuration, PsiLocation<PsiMethod> position) {
+        ((JUnitConfiguration)configuration).beFromSourcePosition(position);
+    }
 
-	@Override
-	protected Pair<String, String> getPosition(JavaTestConfigurationBase configuration)
-	{
-		final JUnitConfiguration.Data data = ((JUnitConfiguration) configuration).getPersistentData();
-		if(data.TEST_OBJECT.equals(JUnitConfiguration.BY_SOURCE_POSITION))
-		{
-			return Pair.create(data.getMainClassName(), data.getMethodName());
-		}
-		return null;
-	}
+    @Override
+    protected Pair<String, String> getPosition(JavaTestConfigurationBase configuration) {
+        final JUnitConfiguration.Data data = ((JUnitConfiguration)configuration).getPersistentData();
+        if (data.TEST_OBJECT.equals(JUnitConfiguration.BY_SOURCE_POSITION)) {
+            return Pair.create(data.getMainClassName(), data.getMethodName());
+        }
+        return null;
+    }
 }

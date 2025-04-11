@@ -25,38 +25,43 @@ import consulo.util.lang.ref.Ref;
 import jakarta.annotation.Nonnull;
 
 @ExtensionImpl
-public class TestInClassConfigurationProducer extends JUnitConfigurationProducer
-{
-	private JUnitInClassConfigurationProducerDelegate myDelegate = new JUnitInClassConfigurationProducerDelegate();
+public class TestInClassConfigurationProducer extends JUnitConfigurationProducer {
+    private JUnitInClassConfigurationProducerDelegate myDelegate = new JUnitInClassConfigurationProducerDelegate();
 
-	public TestInClassConfigurationProducer()
-	{
-		super(JUnitConfigurationType.getInstance());
-	}
+    public TestInClassConfigurationProducer() {
+        super(JUnitConfigurationType.getInstance());
+    }
 
-	@Override
-	protected boolean setupConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context, Ref<PsiElement> sourceElement)
-	{
-		return myDelegate.setupConfigurationFromContext(configuration, context, sourceElement);
-	}
+    @Override
+    protected boolean setupConfigurationFromContext(
+        JUnitConfiguration configuration,
+        ConfigurationContext context,
+        Ref<PsiElement> sourceElement
+    ) {
+        return myDelegate.setupConfigurationFromContext(configuration, context, sourceElement);
+    }
 
-	@Override
-	public void onFirstRun(@Nonnull ConfigurationFromContext configuration, @Nonnull ConfigurationContext fromContext, @Nonnull Runnable performRunnable)
-	{
-		myDelegate.onFirstRun(configuration, fromContext, performRunnable);
-	}
+    @Override
+    public void onFirstRun(
+        @Nonnull ConfigurationFromContext configuration,
+        @Nonnull ConfigurationContext fromContext,
+        @Nonnull Runnable performRunnable
+    ) {
+        myDelegate.onFirstRun(configuration, fromContext, performRunnable);
+    }
 
-	private static class JUnitInClassConfigurationProducerDelegate extends AbstractInClassConfigurationProducer<JUnitConfiguration>
-	{
-		public JUnitInClassConfigurationProducerDelegate()
-		{
-			super(JUnitConfigurationType.getInstance());
-		}
+    private static class JUnitInClassConfigurationProducerDelegate extends AbstractInClassConfigurationProducer<JUnitConfiguration> {
+        public JUnitInClassConfigurationProducerDelegate() {
+            super(JUnitConfigurationType.getInstance());
+        }
 
-		@Override
-		protected boolean setupConfigurationFromContext(JUnitConfiguration configuration, ConfigurationContext context, Ref<PsiElement> sourceElement)
-		{
-			return super.setupConfigurationFromContext(configuration, context, sourceElement);
-		}
-	}
+        @Override
+        protected boolean setupConfigurationFromContext(
+            JUnitConfiguration configuration,
+            ConfigurationContext context,
+            Ref<PsiElement> sourceElement
+        ) {
+            return super.setupConfigurationFromContext(configuration, context, sourceElement);
+        }
+    }
 }
