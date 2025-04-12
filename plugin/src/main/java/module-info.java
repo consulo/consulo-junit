@@ -13,6 +13,8 @@ open module com.intellij.junit
     requires consulo.java.execution.impl;
     requires consulo.java;
 
+    requires com.intellij.junit.api;
+
     requires com.intellij.xml;
 
     requires com.intellij.junit5.rt;

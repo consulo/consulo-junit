@@ -1,4 +1,4 @@
-package consulo.junit.inspection;
+package consulo.junit.impl.inspection;
 
 import com.intellij.execution.junit.JUnitUtil;
 import com.intellij.java.analysis.codeInspection.ex.EntryPointProvider;

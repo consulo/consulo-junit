@@ -1,4 +1,4 @@
-package consulo.junit.inspection;
+package consulo.junit.impl.inspection;
 
 import consulo.configurable.ConfigurableBuilder;
 import consulo.configurable.UnnamedConfigurable;

@@ -233,7 +233,6 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 		//add standard engines only if no engine api is present
 		if(!hasPackageWithDirectories(psiFacade, "org.junit.platform.engine", globalSearchScope))
 		{
-
 			if(!hasPackageWithDirectories(psiFacade, "org.junit.jupiter.engine", globalSearchScope) && hasPackageWithDirectories(psiFacade, JUnitUtil.TEST5_PACKAGE_FQN, globalSearchScope))
 			{
 				PsiClass testAnnotation = DumbService.getInstance(project).computeWithAlternativeResolveEnabled(() -> psiFacade.findClass(JUnitUtil.TEST5_ANNOTATION, globalSearchScope));

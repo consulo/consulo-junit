@@ -45,7 +45,7 @@ import consulo.project.DumbService;
 import consulo.project.Project;
 import consulo.util.lang.Comparing;
 import consulo.util.lang.ref.Ref;
-import consulo.junit.JUnitProperties;
+import consulo.junit.impl.JUnitProperties;
 import org.jetbrains.annotations.TestOnly;
 
 import jakarta.annotation.Nullable;
