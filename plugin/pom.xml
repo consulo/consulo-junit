@@ -96,6 +96,12 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>com.intellij.junit.maven.impl</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>consulo.internal</groupId>
             <artifactId>forms_rt</artifactId>
             <scope>provided</scope>

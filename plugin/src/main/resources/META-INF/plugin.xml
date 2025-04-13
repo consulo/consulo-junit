@@ -15,26 +15,29 @@
   -->
 
 <consulo-plugin url="https://github.com/consulo/consulo-junit">
-	<id>com.intellij.junit</id>
-	<name>JUnit</name>
-	<description/>
-	<version>SNAPSHOT</version>
-	<vendor>JetBrains</vendor>
-	<category>Test Frameworks</category>
-	<depends>consulo.java</depends>
-	<tags>
-		<tag>test.framework</tag>
-	</tags>
+    <id>com.intellij.junit</id>
+    <name>JUnit</name>
+    <description/>
+    <version>SNAPSHOT</version>
+    <vendor>JetBrains</vendor>
+    <category>Test Frameworks</category>
+    <depends>consulo.java</depends>
+    <depends optional="true">org.jetbrains.idea.maven</depends>
+    
+    <tags>
+        <tag>test.framework</tag>
+    </tags>
 
-	<actions>
-		<group>
-			<action class="com.intellij.execution.junit.JUnitExcludeFromRunAction" text="Exclude from suite" id="excludeFromSuite"/>
-			<separator/>
-			<add-to-group relative-to-action="openAssertEqualsDiff" anchor="after" group-id="TestTreePopupMenu"/>
-		</group>
-		<group>
-			<action class="com.intellij.execution.junit.JUnitAddToTestsPatternAction" id="AddToISuite" text="Add to temp suite"/>
-			<add-to-group anchor="first" group-id="RunContextGroup"/>
-		</group>
-	</actions>
+    <actions>
+        <group>
+            <action class="com.intellij.execution.junit.JUnitExcludeFromRunAction" text="Exclude from suite" id="excludeFromSuite"/>
+            <separator/>
+            <add-to-group relative-to-action="openAssertEqualsDiff" anchor="after" group-id="TestTreePopupMenu"/>
+        </group>
+
+        <group>
+            <action class="com.intellij.execution.junit.JUnitAddToTestsPatternAction" id="AddToISuite" text="Add to temp suite"/>
+            <add-to-group anchor="first" group-id="RunContextGroup"/>
+        </group>
+    </actions>
 </consulo-plugin>
