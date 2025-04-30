@@ -29,34 +29,33 @@ import consulo.project.Project;
 import jakarta.annotation.Nonnull;
 
 @ExtensionImpl
-public class JUnitConfigurationType extends SimpleConfigurationType
-{
-	public JUnitConfigurationType()
-	{
-		super("JUnit", JUnitLocalize.junitConfigurationName(), JUnitLocalize.junitConfigurationDescription(), PlatformIconGroup.runconfigurationsJunit());
-	}
+public class JUnitConfigurationType extends SimpleConfigurationType {
+    public JUnitConfigurationType() {
+        super(
+            "JUnit",
+            JUnitLocalize.junitConfigurationName(),
+            JUnitLocalize.junitConfigurationDescription(),
+            PlatformIconGroup.runconfigurationsJunit()
+        );
+    }
 
-	@Override
-	public RunConfiguration createTemplateConfiguration(Project project)
-	{
-		return new JUnitConfiguration("", project, this);
-	}
+    @Override
+    public RunConfiguration createTemplateConfiguration(Project project) {
+        return new JUnitConfiguration("", project, this);
+    }
 
-	@Override
-	public void onNewConfigurationCreated(@Nonnull RunConfiguration configuration)
-	{
-		((ModuleBasedConfiguration) configuration).onNewConfigurationCreated();
-	}
+    @Override
+    public void onNewConfigurationCreated(@Nonnull RunConfiguration configuration) {
+        ((ModuleBasedConfiguration)configuration).onNewConfigurationCreated();
+    }
 
-	@Override
-	public boolean isApplicable(@Nonnull Project project)
-	{
-		return ModuleExtensionHelper.getInstance(project).hasModuleExtension(JavaModuleExtension.class);
-	}
+    @Override
+    public boolean isApplicable(@Nonnull Project project) {
+        return ModuleExtensionHelper.getInstance(project).hasModuleExtension(JavaModuleExtension.class);
+    }
 
-	@Nonnull
-	public static JUnitConfigurationType getInstance()
-	{
-		return EP_NAME.findExtensionOrFail(JUnitConfigurationType.class);
-	}
+    @Nonnull
+    public static JUnitConfigurationType getInstance() {
+        return EP_NAME.findExtensionOrFail(JUnitConfigurationType.class);
+    }
 }
