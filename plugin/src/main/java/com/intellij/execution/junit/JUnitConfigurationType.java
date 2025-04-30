@@ -17,7 +17,7 @@
 package com.intellij.execution.junit;
 
 import consulo.annotation.component.ExtensionImpl;
-import consulo.execution.configuration.ModuleBasedConfiguration;
+import consulo.application.Application;import consulo.execution.configuration.ConfigurationType;import consulo.execution.configuration.ModuleBasedConfiguration;
 import consulo.execution.configuration.RunConfiguration;
 import consulo.execution.configuration.SimpleConfigurationType;
 import consulo.java.language.module.extension.JavaModuleExtension;
@@ -56,6 +56,7 @@ public class JUnitConfigurationType extends SimpleConfigurationType {
 
     @Nonnull
     public static JUnitConfigurationType getInstance() {
-        return EP_NAME.findExtensionOrFail(JUnitConfigurationType.class);
+        return Application.get().getExtensionPoint(ConfigurationType.class)
+            .findExtensionOrFail(JUnitConfigurationType.class);
     }
 }
