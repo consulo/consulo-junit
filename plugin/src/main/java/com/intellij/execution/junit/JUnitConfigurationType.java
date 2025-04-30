@@ -17,7 +17,7 @@
 package com.intellij.execution.junit;
 
 import consulo.annotation.component.ExtensionImpl;
-import consulo.execution.configuration.ModuleBasedConfiguration;
+import consulo.application.Application;import consulo.execution.configuration.ConfigurationType;import consulo.execution.configuration.ModuleBasedConfiguration;
 import consulo.execution.configuration.RunConfiguration;
 import consulo.execution.configuration.SimpleConfigurationType;
 import consulo.java.language.module.extension.JavaModuleExtension;
@@ -29,34 +29,34 @@ import consulo.project.Project;
 import jakarta.annotation.Nonnull;
 
 @ExtensionImpl
-public class JUnitConfigurationType extends SimpleConfigurationType
-{
-	public JUnitConfigurationType()
-	{
-		super("JUnit", JUnitLocalize.junitConfigurationName(), JUnitLocalize.junitConfigurationDescription(), PlatformIconGroup.runconfigurationsJunit());
-	}
+public class JUnitConfigurationType extends SimpleConfigurationType {
+    public JUnitConfigurationType() {
+        super(
+            "JUnit",
+            JUnitLocalize.junitConfigurationName(),
+            JUnitLocalize.junitConfigurationDescription(),
+            PlatformIconGroup.runconfigurationsJunit()
+        );
+    }
 
-	@Override
-	public RunConfiguration createTemplateConfiguration(Project project)
-	{
-		return new JUnitConfiguration("", project, this);
-	}
+    @Override
+    public RunConfiguration createTemplateConfiguration(Project project) {
+        return new JUnitConfiguration("", project, this);
+    }
 
-	@Override
-	public void onNewConfigurationCreated(@Nonnull RunConfiguration configuration)
-	{
-		((ModuleBasedConfiguration) configuration).onNewConfigurationCreated();
-	}
+    @Override
+    public void onNewConfigurationCreated(@Nonnull RunConfiguration configuration) {
+        ((ModuleBasedConfiguration)configuration).onNewConfigurationCreated();
+    }
 
-	@Override
-	public boolean isApplicable(@Nonnull Project project)
-	{
-		return ModuleExtensionHelper.getInstance(project).hasModuleExtension(JavaModuleExtension.class);
-	}
+    @Override
+    public boolean isApplicable(@Nonnull Project project) {
+        return ModuleExtensionHelper.getInstance(project).hasModuleExtension(JavaModuleExtension.class);
+    }
 
-	@Nonnull
-	public static JUnitConfigurationType getInstance()
-	{
-		return EP_NAME.findExtensionOrFail(JUnitConfigurationType.class);
-	}
+    @Nonnull
+    public static JUnitConfigurationType getInstance() {
+        return Application.get().getExtensionPoint(ConfigurationType.class)
+            .findExtensionOrFail(JUnitConfigurationType.class);
+    }
 }
