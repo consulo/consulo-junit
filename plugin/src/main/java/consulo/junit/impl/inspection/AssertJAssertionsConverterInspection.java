@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.siyeh.ig.junit.JUnitCommonClassNames.*;
-import static consulo.java.language.module.util.JavaClassNames.JAVA_UTIL_COLLECTION;
-import static consulo.java.language.module.util.JavaClassNames.JAVA_UTIL_MAP;
 
 /**
  * @author UNV
@@ -94,7 +92,8 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
 
         PsiClass psiClass = methodExpr.resolve() instanceof PsiMethod method ? method.getContainingClass() : null;
         return psiClass != null
-            && (InheritanceUtil.isInheritor(psiClass, JAVA_UTIL_COLLECTION) || InheritanceUtil.isInheritor(psiClass, JAVA_UTIL_MAP));
+            && (InheritanceUtil.isInheritor(psiClass, CommonClassNames.JAVA_UTIL_COLLECTION)
+            || InheritanceUtil.isInheritor(psiClass, CommonClassNames.JAVA_UTIL_MAP));
     }
 
     @Nonnull
