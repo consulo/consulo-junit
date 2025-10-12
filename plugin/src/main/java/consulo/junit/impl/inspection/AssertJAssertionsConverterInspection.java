@@ -16,9 +16,11 @@ import consulo.language.editor.inspection.ProblemsHolder;
 import consulo.language.editor.localize.CommonQuickFixLocalize;
 import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiElementVisitor;
+import consulo.localize.LocalizeValue;
 import consulo.project.Project;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.intellij.lang.annotations.Pattern;
 
 import java.util.Map;
 import java.util.Set;
@@ -46,18 +48,19 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
 
     @Nonnull
     @Override
-    public String getGroupDisplayName() {
-        return JavaInspectionsLocalize.groupNamesJunitIssues().get();
+    public LocalizeValue getGroupDisplayName() {
+        return JavaInspectionsLocalize.groupNamesJunitIssues();
     }
 
     @Nonnull
     @Override
-    public String getDisplayName() {
-        return JUnitLocalize.inspectionsMigrateAssertToAssertjName().get();
+    public LocalizeValue getDisplayName() {
+        return JUnitLocalize.inspectionsMigrateAssertToAssertjName();
     }
 
-    @Override
     @Nonnull
+    @Override
+    @Pattern(VALID_ID_PATTERN)
     public String getID() {
         return "JUnitMigrateAssertToAssertj";
     }
@@ -205,8 +208,8 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
 
         @Nonnull
         @Override
-        public String getFamilyName() {
-            return CommonQuickFixLocalize.fixReplaceWithX("assertThat()").get();
+        public LocalizeValue getName() {
+            return CommonQuickFixLocalize.fixReplaceWithX("assertThat()");
         }
 
         @Override
@@ -352,7 +355,7 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
 
         @RequiredReadAction
         public AssertJReplacer call(@Nonnull String methodName) {
-            return call(methodName, (String)null);
+            return call(methodName, (String) null);
         }
 
         @RequiredReadAction
@@ -385,7 +388,7 @@ public class AssertJAssertionsConverterInspection extends BaseJavaBatchLocalInsp
 
                 if (myStaticImport) {
                     PsiReferenceExpression methodExpr = null;
-                    for (PsiMethodCallExpression methodCall = (PsiMethodCallExpression)replacement; ; ) {
+                    for (PsiMethodCallExpression methodCall = (PsiMethodCallExpression) replacement; ; ) {
                         methodExpr = methodCall.getMethodExpression();
                         if (methodExpr.getQualifierExpression() instanceof PsiMethodCallExpression subMethodCall) {
                             methodCall = subMethodCall;
