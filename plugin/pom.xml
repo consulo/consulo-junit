@@ -19,7 +19,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>consulo</groupId>
-        <artifactId>arch.ide-api-provided</artifactId>
+        <artifactId>arch.bind.java</artifactId>
         <version>3-SNAPSHOT</version>
         <relativePath/>
     </parent>
@@ -35,7 +35,7 @@
             <url>https://maven.consulo.dev/repository/snapshots/</url>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>interval:60</updatePolicy>
+                <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
     </repositories>
@@ -49,7 +49,6 @@
                 <configuration>
                     <dependencies>
                         <dependency>consulo.java</dependency>
-                        <dependency>com.intellij.xml</dependency>
                     </dependencies>
                     <packaging>
                         <skip>${dev.mode}</skip>
@@ -108,15 +107,56 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- platform (required transitively by consulo.java.execution.impl) -->
+        <dependency>
+            <groupId>consulo</groupId>
+            <artifactId>consulo-ide-impl</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>consulo</groupId>
+            <artifactId>consulo-execution-test-api</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>consulo</groupId>
+            <artifactId>consulo-execution-test-sm-api</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>consulo</groupId>
+            <artifactId>consulo-language-editor-refactoring-api</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>consulo</groupId>
+            <artifactId>consulo-compiler-api</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>consulo</groupId>
+            <artifactId>consulo-version-control-system-api</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- java -->
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>consulo.java</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>com.intellij.xml</artifactId>
+            <artifactId>com.intellij.xml.dom.api</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>

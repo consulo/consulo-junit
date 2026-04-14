@@ -43,7 +43,7 @@
     <dependencies>
         <dependency>
             <groupId>consulo</groupId>
-            <artifactId>consulo-ide-api</artifactId>
+            <artifactId>consulo-execution-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 

@@ -15,7 +15,7 @@
  */
 package com.intellij.execution.junit;
 
-import com.intellij.java.impl.openapi.roots.libraries.LibrariesHelper;
+import com.intellij.java.language.projectRoots.LibrariesHelper;
 import consulo.annotation.component.ExtensionImpl;
 import consulo.content.base.BinariesOrderRootType;
 import consulo.content.library.Library;

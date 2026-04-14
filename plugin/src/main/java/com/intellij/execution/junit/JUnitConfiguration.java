@@ -13,7 +13,7 @@ import com.intellij.java.execution.impl.JavaTestConfigurationBase;
 import com.intellij.java.execution.impl.RunConfigurationExtension;
 import com.intellij.java.execution.impl.junit.RefactoringListeners;
 import com.intellij.java.execution.impl.junit2.info.MethodLocation;
-import com.intellij.java.impl.codeInsight.MetaAnnotationUtil;
+import com.intellij.java.language.impl.codeInsight.MetaAnnotationUtil;
 import com.intellij.java.language.psi.*;
 import com.intellij.java.language.psi.util.ClassUtil;
 import com.intellij.java.language.psi.util.TypeConversionUtil;
