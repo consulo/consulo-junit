@@ -103,8 +103,6 @@ public class JUnit4Framework extends JavaTestFramework
 
 	@Nullable
     @Override
-    @RequiredUIAccess
-    @RequiredWriteAction
 	protected PsiMethod findOrCreateSetUpMethod(PsiClass clazz) throws IncorrectOperationException
 	{
 		String beforeClassAnnotationName = JUnitUtil.BEFORE_CLASS_ANNOTATION_NAME;
@@ -112,8 +110,6 @@ public class JUnit4Framework extends JavaTestFramework
 		return findOrCreateSetUpMethod(clazz, beforeClassAnnotationName, beforeAnnotationName);
 	}
 
-    @RequiredUIAccess
-    @RequiredWriteAction
     private PsiMethod findOrCreateSetUpMethod(PsiClass clazz, String beforeClassAnnotationName, String beforeAnnotationName)
 	{
 		PsiMethod method = findSetUpMethod(clazz);
