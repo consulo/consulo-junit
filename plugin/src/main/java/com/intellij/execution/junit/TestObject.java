@@ -81,7 +81,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
     private final JUnitConfiguration myConfiguration;
     protected File myListenersFile;
 
-    public static TestObject fromString(final String id, final JUnitConfiguration configuration, @Nonnull ExecutionEnvironment environment) {
+    public static TestObject fromString(String id, JUnitConfiguration configuration, @Nonnull ExecutionEnvironment environment) {
         if (JUnitConfiguration.TEST_METHOD.equals(id)) {
             return new TestMethod(configuration, environment);
         }
@@ -114,7 +114,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
     }
 
     public Module[] getModulesToCompile() {
-        final SourceScope sourceScope = getSourceScope();
+        SourceScope sourceScope = getSourceScope();
         return sourceScope != null ? sourceScope.getModulesToCompile() : Module.EMPTY_ARRAY;
     }
 
@@ -148,7 +148,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 
         String preferredRunner = getRunner();
         if (JUnitStarter.JUNIT5_PARAMETER.equals(preferredRunner)) {
-            final Project project = getConfiguration().getProject();
+            Project project = getConfiguration().getProject();
             GlobalSearchScope globalSearchScope = getScopeForJUnit(getConfiguration().getConfigurationModule().getModule(), project);
 
             JUnit5RuntimeAppender appender = project.getExtensionPoint(JUnit5RuntimeAppender.class)
@@ -170,7 +170,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
         javaParameters.setMainClass(JUnitConfiguration.JUNIT_START_CLASS);
         javaParameters.getProgramParametersList().add(JUnitStarter.IDE_VERSION + JUnitStarter.VERSION);
 
-        final StringBuilder buf = new StringBuilder();
+        StringBuilder buf = new StringBuilder();
         collectListeners(javaParameters, buf, JUnitListener.class, "\n");
         if (buf.length() > 0) {
             try {
@@ -203,16 +203,16 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
     @Nonnull
     protected ProcessHandler createHandler(Executor executor) throws ExecutionException {
         appendForkInfo(executor);
-        final String repeatMode = getConfiguration().getRepeatMode();
+        String repeatMode = getConfiguration().getRepeatMode();
         if (!RepeatCount.ONCE.equals(repeatMode)) {
-            final int repeatCount = getConfiguration().getRepeatCount();
-            final String countString = RepeatCount.N.equals(repeatMode) && repeatCount > 0 ? RepeatCount.getCountString(repeatCount) : repeatMode;
+            int repeatCount = getConfiguration().getRepeatCount();
+            String countString = RepeatCount.N.equals(repeatMode) && repeatCount > 0 ? RepeatCount.getCountString(repeatCount) : repeatMode;
             getJavaParameters().getProgramParametersList().add(countString);
         }
 
-        final ProcessHandler processHandler = ProcessHandlerBuilder.create(createCommandLine()).killable().build();
+        ProcessHandler processHandler = ProcessHandlerBuilder.create(createCommandLine()).killable().build();
         ProcessTerminatedListener.attach(processHandler);
-        final SearchForTestsTask searchForTestsTask = createSearchingForTestsTask();
+        SearchForTestsTask searchForTestsTask = createSearchingForTestsTask();
         if (searchForTestsTask != null) {
             searchForTestsTask.attachTaskToProcess(processHandler);
         }
@@ -240,20 +240,20 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
                 createTempFiles(javaParameters);
             }
 
-            final Map<Module, List<String>> perModule = forkPerModule() ? new TreeMap<>((o1, o2) -> StringUtil.compare(o1.getName(), o2.getName(), true)) : null;
+            Map<Module, List<String>> perModule = forkPerModule() ? new TreeMap<>((o1, o2) -> StringUtil.compare(o1.getName(), o2.getName(), true)) : null;
 
-            final List<String> testNames = new ArrayList<>();
+            List<String> testNames = new ArrayList<>();
 
             if (elements.isEmpty() && perModule != null) {
-                final SourceScope sourceScope = getSourceScope();
+                SourceScope sourceScope = getSourceScope();
                 Project project = getConfiguration().getProject();
                 if (sourceScope != null && packageName != null && JUnitStarter.JUNIT5_PARAMETER.equals(getRunner())) {
-                    final PsiPackage aPackage = JavaPsiFacade.getInstance(getConfiguration().getProject()).findPackage(packageName);
+                    PsiPackage aPackage = JavaPsiFacade.getInstance(getConfiguration().getProject()).findPackage(packageName);
                     if (aPackage != null) {
-                        final TestSearchScope scope = getScope();
+                        TestSearchScope scope = getScope();
                         if (scope != null) {
-                            final GlobalSearchScope configurationSearchScope = GlobalSearchScopesCore.projectTestScope(project).intersectWith(sourceScope.getGlobalSearchScope());
-                            final PsiDirectory[] directories = aPackage.getDirectories(configurationSearchScope);
+                            GlobalSearchScope configurationSearchScope = GlobalSearchScopesCore.projectTestScope(project).intersectWith(sourceScope.getGlobalSearchScope());
+                            PsiDirectory[] directories = aPackage.getDirectories(configurationSearchScope);
                             for (PsiDirectory directory : directories) {
                                 Module module = ModuleUtilCore.findModuleForFile(directory.getVirtualFile(), project);
                                 if (module != null) {
@@ -265,15 +265,15 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
                 }
             }
 
-            for (final T element : elements) {
-                final String name = nameFunction.apply(element);
+            for (T element : elements) {
+                String name = nameFunction.apply(element);
                 if (name == null) {
                     continue;
                 }
 
-                final PsiElement psiElement = retrievePsiElement(element);
+                PsiElement psiElement = retrievePsiElement(element);
                 if (perModule != null && psiElement != null) {
-                    final Module module = ModuleUtilCore.findModuleForPsiElement(psiElement);
+                    Module module = ModuleUtilCore.findModuleForPsiElement(psiElement);
                     if (module != null) {
                         List<String> list = perModule.get(module);
                         if (list == null) {
@@ -287,7 +287,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
                     testNames.add(name);
                 }
             }
-            final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+            JUnitConfiguration.Data data = getConfiguration().getPersistentData();
             if (perModule != null) {
                 for (List<String> perModuleClasses : perModule.values()) {
                     Collections.sort(perModuleClasses);
@@ -298,8 +298,8 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
                 Collections.sort(testNames); //sort tests in FQN order
             }
 
-            final String category = JUnitConfiguration.TEST_CATEGORY.equals(data.TEST_OBJECT) ? data.getCategory() : "";
-            final String filters = JUnitConfiguration.TEST_PATTERN.equals(data.TEST_OBJECT) ? data.getPatternPresentation() : "";
+            String category = JUnitConfiguration.TEST_CATEGORY.equals(data.TEST_OBJECT) ? data.getCategory() : "";
+            String filters = JUnitConfiguration.TEST_PATTERN.equals(data.TEST_OBJECT) ? data.getPatternPresentation() : "";
             JUnitStarter.printClassesList(testNames, packageName, category, filters, myTempFile);
 
             writeClassesPerModule(packageName, javaParameters, perModule);
@@ -368,12 +368,12 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
     }
 
     private String getRunnerInner() {
-        final GlobalSearchScope globalSearchScope = getScopeForJUnit(myConfiguration);
+        GlobalSearchScope globalSearchScope = getScopeForJUnit(myConfiguration);
         JUnitConfiguration.Data data = myConfiguration.getPersistentData();
         Project project = myConfiguration.getProject();
         boolean isMethodConfiguration = JUnitConfiguration.TEST_METHOD.equals(data.TEST_OBJECT);
         boolean isClassConfiguration = JUnitConfiguration.TEST_CLASS.equals(data.TEST_OBJECT);
-        final PsiClass psiClass = isMethodConfiguration || isClassConfiguration ? JavaExecutionUtil.findMainClass(project, data.getMainClassName(), globalSearchScope) : null;
+        PsiClass psiClass = isMethodConfiguration || isClassConfiguration ? JavaExecutionUtil.findMainClass(project, data.getMainClassName(), globalSearchScope) : null;
         if (psiClass != null) {
             if (JUnitUtil.isJUnit5TestClass(psiClass, false)) {
                 return JUnitStarter.JUNIT5_PARAMETER;
@@ -383,8 +383,8 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
                 return JUnitStarter.JUNIT4_PARAMETER;
             }
 
-            final String methodName = data.getMethodName();
-            final PsiMethod[] methods = psiClass.findMethodsByName(methodName, true);
+            String methodName = data.getMethodName();
+            PsiMethod[] methods = psiClass.findMethodsByName(methodName, true);
             for (PsiMethod method : methods) {
                 if (JUnitUtil.isTestAnnotated(method)) {
                     return JUnitStarter.JUNIT4_PARAMETER;

@@ -33,7 +33,7 @@ public class JUnit46ClassesRequestBuilder {
     private JUnit46ClassesRequestBuilder() {
     }
 
-    public static Request getClassesRequest(final String suiteName, Class[] classes, Map classMethods, Class category) {
+    public static Request getClassesRequest(String suiteName, Class[] classes, Map classMethods, Class category) {
         boolean canUseSuiteMethod = canUseSuiteMethod(classMethods);
         try {
             if (category != null) {
@@ -56,7 +56,7 @@ public class JUnit46ClassesRequestBuilder {
                 }
             }
             else {
-                final AllDefaultPossibilitiesBuilder builder = new AllDefaultPossibilitiesBuilder(canUseSuiteMethod);
+                AllDefaultPossibilitiesBuilder builder = new AllDefaultPossibilitiesBuilder(canUseSuiteMethod);
                 try {
                     Class.forName("org.junit.experimental.categories.Categories");
                     suite = new IdeaSuite48(builder, classes, suiteName, category);
@@ -73,9 +73,9 @@ public class JUnit46ClassesRequestBuilder {
     }
 
     private static List collectWrappedRunners(Class[] classes) throws InitializationError {
-        final List runners = new ArrayList();
-        final List nonSuiteClasses = new ArrayList();
-        final SuiteMethodBuilder suiteMethodBuilder = new SuiteMethodBuilder();
+        List runners = new ArrayList();
+        List nonSuiteClasses = new ArrayList();
+        SuiteMethodBuilder suiteMethodBuilder = new SuiteMethodBuilder();
         for (int i = 0, length = classes.length; i < length; i++) {
             Class aClass = classes[i];
             if (suiteMethodBuilder.hasSuiteMethod(aClass)) {

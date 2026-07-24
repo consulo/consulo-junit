@@ -35,8 +35,8 @@ public class TestUniqueId extends TestObject
 	@Override
 	protected OwnJavaParameters createJavaParameters() throws ExecutionException
 	{
-		final OwnJavaParameters javaParameters = super.createJavaParameters();
-		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		OwnJavaParameters javaParameters = super.createJavaParameters();
+		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
 		addClassesListToJavaParameters(Arrays.asList(data.getUniqueIds()), getUniqueIdPresentation(), "", true, javaParameters);
 		return javaParameters;
 	}
@@ -108,13 +108,13 @@ public class TestUniqueId extends TestObject
 	}
 
 	@Override
-	public RefactoringElementListener getListener(final PsiElement element, final JUnitConfiguration configuration)
+	public RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration)
 	{
 		return null;
 	}
 
 	@Override
-	public boolean isConfiguredByElement(final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
+	public boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
 	{
 
 		return false;

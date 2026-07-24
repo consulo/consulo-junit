@@ -140,7 +140,7 @@ public class JUnit5Framework extends JavaTestFramework
 				return existingMethod;
 			}
 		}
-		final PsiMethod testMethod = JUnitUtil.findFirstTestMethod(clazz);
+		PsiMethod testMethod = JUnitUtil.findFirstTestMethod(clazz);
 		if(testMethod != null)
 		{
 			method = (PsiMethod) clazz.addBefore(method, testMethod);
@@ -157,7 +157,7 @@ public class JUnit5Framework extends JavaTestFramework
 	@Override
 	public boolean isIgnoredMethod(PsiElement element)
 	{
-		final PsiMethod testMethod = element instanceof PsiMethod ? JUnitUtil.getTestMethod(element) : null;
+		PsiMethod testMethod = element instanceof PsiMethod ? JUnitUtil.getTestMethod(element) : null;
 		return testMethod != null && AnnotationUtil.isAnnotated(testMethod, JUnitUtil.IGNORE_ANNOTATION, 0);
 	}
 

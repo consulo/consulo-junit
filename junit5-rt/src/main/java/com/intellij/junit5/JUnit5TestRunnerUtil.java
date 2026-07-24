@@ -46,7 +46,7 @@ public class JUnit5TestRunnerUtil {
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(suiteClassNames[0].substring(1)));
                 try {
-                    final String packageName = reader.readLine();
+                    String packageName = reader.readLine();
                     if (packageName == null) {
                         return null;
                     }

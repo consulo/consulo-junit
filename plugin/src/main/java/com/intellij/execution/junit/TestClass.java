@@ -45,8 +45,8 @@ class TestClass extends TestObject
 	@Override
 	protected OwnJavaParameters createJavaParameters() throws ExecutionException
 	{
-		final OwnJavaParameters javaParameters = super.createJavaParameters();
-		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		OwnJavaParameters javaParameters = super.createJavaParameters();
+		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
 		javaParameters.getProgramParametersList().add(data.getMainClassName());
 		return javaParameters;
 	}
@@ -71,13 +71,13 @@ class TestClass extends TestObject
 	}
 
 	@Override
-	public RefactoringElementListener getListener(final PsiElement element, final JUnitConfiguration configuration)
+	public RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration)
 	{
 		return RefactoringListeners.getClassOrPackageListener(element, configuration.myClass);
 	}
 
 	@Override
-	public boolean isConfiguredByElement(final JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
+	public boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
 	{
 
 		if(testClass == null)
@@ -96,9 +96,9 @@ class TestClass extends TestObject
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
 		super.checkConfiguration();
-		final String testClassName = getConfiguration().getPersistentData().getMainClassName();
-		final JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
-		final PsiClass testClass = configurationModule.checkModuleAndClassName(testClassName, ExecutionBundle.message("no.test.class.specified.error.text"));
+		String testClassName = getConfiguration().getPersistentData().getMainClassName();
+		JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
+		PsiClass testClass = configurationModule.checkModuleAndClassName(testClassName, ExecutionBundle.message("no.test.class.specified.error.text"));
 		if(!JUnitUtil.isTestClass(testClass))
 		{
 			throw new RuntimeConfigurationWarning(ExecutionBundle.message("class.isnt.test.class.error.message", testClassName));

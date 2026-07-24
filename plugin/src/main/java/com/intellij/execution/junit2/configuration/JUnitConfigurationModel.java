@@ -61,7 +61,7 @@ public class JUnitConfigurationModel
 	private final Object[] myJUnitDocuments = new Object[6];
 	private final Project myProject;
 
-	public JUnitConfigurationModel(final Project project)
+	public JUnitConfigurationModel(Project project)
 	{
 		myProject = project;
 	}
@@ -81,29 +81,29 @@ public class JUnitConfigurationModel
 		return true;
 	}
 
-	private void fireTypeChanged(final int newType)
+	private void fireTypeChanged(int newType)
 	{
 		myListener.onTypeChanged(newType);
 	}
 
-	public void setListener(final JUnitConfigurable listener)
+	public void setListener(JUnitConfigurable listener)
 	{
 		myListener = listener;
 	}
 
-	public Object getJUnitDocument(final int i)
+	public Object getJUnitDocument(int i)
 	{
 		return myJUnitDocuments[i];
 	}
 
-	public void setJUnitDocument(final int i, Object doc)
+	public void setJUnitDocument(int i, Object doc)
 	{
 		myJUnitDocuments[i] = doc;
 	}
 
-	public void apply(final Module module, final JUnitConfiguration configuration)
+	public void apply(Module module, JUnitConfiguration configuration)
 	{
-		final boolean shouldUpdateName = configuration.isGeneratedName();
+		boolean shouldUpdateName = configuration.isGeneratedName();
 		applyTo(configuration.getPersistentData(), module);
 		if(shouldUpdateName && !JavaExecutionUtil.isNewName(configuration.getName()))
 		{
@@ -111,10 +111,10 @@ public class JUnitConfigurationModel
 		}
 	}
 
-	private void applyTo(final JUnitConfiguration.Data data, final Module module)
+	private void applyTo(JUnitConfiguration.Data data, Module module)
 	{
-		final String testObject = getTestObject();
-		final String className = getJUnitTextValue(CLASS);
+		String testObject = getTestObject();
+		String className = getJUnitTextValue(CLASS);
 		data.TEST_OBJECT = testObject;
 		if(testObject != JUnitConfiguration.TEST_PACKAGE && testObject != JUnitConfiguration.TEST_PATTERN && testObject != JUnitConfiguration.TEST_DIRECTORY && testObject != JUnitConfiguration
 				.TEST_CATEGORY && testObject != JUnitConfiguration.BY_SOURCE_CHANGES)
@@ -122,7 +122,7 @@ public class JUnitConfigurationModel
 			try
 			{
 				data.METHOD_NAME = getJUnitTextValue(METHOD);
-				final PsiClass testClass = !myProject.isDefault() && !StringUtil.isEmptyOrSpaces(className) ? JUnitUtil.findPsiClass(className, module, myProject) : null;
+				PsiClass testClass = !myProject.isDefault() && !StringUtil.isEmptyOrSpaces(className) ? JUnitUtil.findPsiClass(className, module, myProject) : null;
 				if(testClass != null && testClass.isValid())
 				{
 					data.setMainClass(testClass);
@@ -153,8 +153,8 @@ public class JUnitConfigurationModel
 			}
 			else
 			{
-				final LinkedHashSet<String> set = new LinkedHashSet<>();
-				final String[] patterns = getJUnitTextValue(PATTERN).split("\\|\\|");
+				LinkedHashSet<String> set = new LinkedHashSet<>();
+				String[] patterns = getJUnitTextValue(PATTERN).split("\\|\\|");
 				for(String pattern : patterns)
 				{
 					if(pattern.length() > 0)
@@ -174,14 +174,14 @@ public class JUnitConfigurationModel
 		return ourTestObjects.get(myType);
 	}
 
-	private String getJUnitTextValue(final int index)
+	private String getJUnitTextValue(int index)
 	{
 		return getDocumentText(index, myJUnitDocuments);
 	}
 
-	private static String getDocumentText(final int index, final Object[] documents)
+	private static String getDocumentText(int index, Object[] documents)
 	{
-		final Object document = documents[index];
+		Object document = documents[index];
 		if(document instanceof PlainDocument)
 		{
 			try
@@ -196,9 +196,9 @@ public class JUnitConfigurationModel
 		return ((Document) document).getText();
 	}
 
-	public void reset(final JUnitConfiguration configuration)
+	public void reset(JUnitConfiguration configuration)
 	{
-		final JUnitConfiguration.Data data = configuration.getPersistentData();
+		JUnitConfiguration.Data data = configuration.getPersistentData();
 		setTestType(data.TEST_OBJECT);
 		setJUnitTextValue(ALL_IN_PACKAGE, data.getPackageName());
 		setJUnitTextValue(CLASS, data.getMainClassName() != null ? data.getMainClassName().replaceAll("\\$", "\\.") : "");
@@ -208,14 +208,14 @@ public class JUnitConfigurationModel
 		setJUnitTextValue(CATEGORY, data.getCategory());
 	}
 
-	private void setJUnitTextValue(final int index, final String text)
+	private void setJUnitTextValue(int index, String text)
 	{
 		setDocumentText(index, text, myJUnitDocuments);
 	}
 
-	private void setDocumentText(final int index, final String text, final Object[] documents)
+	private void setDocumentText(int index, String text, Object[] documents)
 	{
-		final Object document = documents[index];
+		Object document = documents[index];
 		if(document instanceof PlainDocument)
 		{
 			try
@@ -234,7 +234,7 @@ public class JUnitConfigurationModel
 		}
 	}
 
-	private void setTestType(final String testObject)
+	private void setTestType(String testObject)
 	{
 		setType(ourTestObjects.indexOf(testObject));
 	}

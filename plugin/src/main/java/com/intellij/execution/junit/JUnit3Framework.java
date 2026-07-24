@@ -159,15 +159,15 @@ public class JUnit3Framework extends JavaTestFramework
     @RequiredWriteAction
 	protected PsiMethod findOrCreateSetUpMethod(PsiClass clazz) throws IncorrectOperationException
 	{
-		final PsiManager manager = clazz.getManager();
-		final PsiElementFactory factory = JavaPsiFacade.getInstance(manager.getProject()).getElementFactory();
+		PsiManager manager = clazz.getManager();
+		PsiElementFactory factory = JavaPsiFacade.getInstance(manager.getProject()).getElementFactory();
 
-		final PsiMethod patternMethod = createSetUpPatternMethod(factory);
+		PsiMethod patternMethod = createSetUpPatternMethod(factory);
 
-		final PsiClass baseClass = clazz.getSuperClass();
+		PsiClass baseClass = clazz.getSuperClass();
 		if(baseClass != null)
 		{
-			final PsiMethod baseMethod = baseClass.findMethodBySignature(patternMethod, false);
+			PsiMethod baseMethod = baseClass.findMethodBySignature(patternMethod, false);
 			if(baseMethod != null && baseMethod.isPublic())
 			{
 				PsiUtil.setModifierProperty(patternMethod, PsiModifier.PROTECTED, false);

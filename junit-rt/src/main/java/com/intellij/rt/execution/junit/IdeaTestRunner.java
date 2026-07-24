@@ -55,7 +55,7 @@ public interface IdeaTestRunner {
                     boolean success = true;
                     int i = 0;
                     while (i++ < count) {
-                        final int result = testRunner.startRunnerWithArgs(args, name, count, sendTree);
+                        int result = testRunner.startRunnerWithArgs(args, name, count, sendTree);
                         if (result == -2) {
                             return result;
                         }

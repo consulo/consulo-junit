@@ -110,7 +110,7 @@ public class JUnit4TestListener extends RunListener {
 
         myCurrentTest = description;
 
-        final String classFQN = JUnit4ReflectionUtil.getClassName(description);
+        String classFQN = JUnit4ReflectionUtil.getClassName(description);
 
         List<Description> parentsHierarchy = parents != null && !parents.isEmpty()
             ? parents.remove(0)
@@ -205,9 +205,9 @@ public class JUnit4TestListener extends RunListener {
         return myWaitingQueue.containsKey(description) && (myCurrentTest == null || !myCurrentTest.equals(description));
     }
 
-    private void testFinishedNoDumping(final String methodName) {
+    private void testFinishedNoDumping(String methodName) {
         if (methodName != null) {
-            final long duration = currentTime() - myCurrentTestStart;
+            long duration = currentTime() - myCurrentTestStart;
             myPrintStream.println("\n##teamcity[testFinished name=\'" + escapeName(methodName) +
                 (duration > 0 ? "\' duration=\'" + Long.toString(duration) : "") + "\']");
         }
@@ -220,7 +220,7 @@ public class JUnit4TestListener extends RunListener {
     }
 
     private void testFailure(Failure failure, Description description, String messageName) {
-        final boolean isIgnored = MapSerializerUtil.TEST_IGNORED.equals(messageName);
+        boolean isIgnored = MapSerializerUtil.TEST_IGNORED.equals(messageName);
         String methodName = getFullMethodName(description);
         if (methodName == null) { //class setUp/tearDown failed
             if (!isIgnored) {
@@ -268,7 +268,7 @@ public class JUnit4TestListener extends RunListener {
     }
 
     private void testFailure(Failure failure, Description description, String messageName, String methodName) {
-        final boolean isIgnored = MapSerializerUtil.TEST_IGNORED.equals(messageName);
+        boolean isIgnored = MapSerializerUtil.TEST_IGNORED.equals(messageName);
         if (startedInParallel(description)) {
             TestEvent testEvent = myWaitingQueue.get(description);
             if (testEvent == null) {
@@ -282,21 +282,21 @@ public class JUnit4TestListener extends RunListener {
 
         Map<String, String> attrs = new LinkedHashMap<>();
         attrs.put("name", methodName);
-        final long duration = currentTime() - myCurrentTestStart;
+        long duration = currentTime() - myCurrentTestStart;
         if (duration > 0) {
             attrs.put("duration", Long.toString(duration));
         }
         try {
             if (failure != null) {
-                final String trace = getTrace(failure);
-                final Throwable ex = failure.getException();
-                final ComparisonFailureData notification = ExpectedPatterns.createExceptionNotification(ex);
+                String trace = getTrace(failure);
+                Throwable ex = failure.getException();
+                ComparisonFailureData notification = ExpectedPatterns.createExceptionNotification(ex);
                 ComparisonFailureData.registerSMAttributes(notification, trace, failure.getMessage(), attrs, ex);
             }
         }
         catch (Throwable e) {
-            final StringWriter stringWriter = new StringWriter();
-            final PrintWriter writer = new PrintWriter(stringWriter);
+            StringWriter stringWriter = new StringWriter();
+            PrintWriter writer = new PrintWriter(stringWriter);
             e.printStackTrace(writer);
             ComparisonFailureData.registerSMAttributes(null, stringWriter.toString(), e.getMessage(), attrs, e);
         }
@@ -342,7 +342,7 @@ public class JUnit4TestListener extends RunListener {
 
     @Override
     public void testIgnored(Description description) {
-        final String methodName = getFullMethodName(description);
+        String methodName = getFullMethodName(description);
         if (methodName == null) {
             for (Description testDescription : description.getChildren()) {
                 testIgnored(testDescription, getFullMethodName(testDescription));
@@ -359,7 +359,7 @@ public class JUnit4TestListener extends RunListener {
         try {
             Ignore ignoredAnnotation = description.getAnnotation(Ignore.class);
             if (ignoredAnnotation != null) {
-                final String val = ignoredAnnotation.value();
+                String val = ignoredAnnotation.value();
                 if (val != null) {
                     attrs.put("message", val);
                 }
@@ -408,7 +408,7 @@ public class JUnit4TestListener extends RunListener {
                     testFailure(failure);
                 }
 
-                final String methodName = testEvent.getMethodName();
+                String methodName = testEvent.getMethodName();
                 testFinishedNoDumping(methodName != null ? methodName : getFullMethodName(description));
             }
         }
@@ -466,7 +466,7 @@ public class JUnit4TestListener extends RunListener {
         List<Description> pParents = new ArrayList<>(3);
         pParents.addAll(currentParents);
         if (parent != null) {
-            final String parentClassName = JUnit4ReflectionUtil.getClassName(parent);
+            String parentClassName = JUnit4ReflectionUtil.getClassName(parent);
             if (!myRootName.equals(parentClassName)) {
                 pParents.add(0, parent);
             }
@@ -502,8 +502,8 @@ public class JUnit4TestListener extends RunListener {
                 pass = true;
                 String locationHint = className;
                 if (isParameter(description)) {
-                    final String displayName = nextDescription.getDisplayName();
-                    final int paramIdx = displayName.indexOf(locationHint);
+                    String displayName = nextDescription.getDisplayName();
+                    int paramIdx = displayName.indexOf(locationHint);
                     if (paramIdx > -1) {
                         locationHint = displayName.substring(paramIdx + locationHint.length());
                         if (locationHint.startsWith("(") && locationHint.endsWith(")")) {
@@ -549,7 +549,7 @@ public class JUnit4TestListener extends RunListener {
         if (fqName == null) {
             return null;
         }
-        final int idx = fqName.indexOf("[");
+        int idx = fqName.indexOf("[");
         if (idx == 0) {
             //param name
             return fqName;

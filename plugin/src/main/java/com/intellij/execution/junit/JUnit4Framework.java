@@ -141,7 +141,7 @@ public class JUnit4Framework extends JavaTestFramework
 				return existingMethod;
 			}
 		}
-		final PsiMethod testMethod = JUnitUtil.findFirstTestMethod(clazz);
+		PsiMethod testMethod = JUnitUtil.findFirstTestMethod(clazz);
 		if(testMethod != null)
 		{
 			method = (PsiMethod) clazz.addBefore(method, testMethod);
@@ -158,7 +158,7 @@ public class JUnit4Framework extends JavaTestFramework
 	@Override
 	public boolean isIgnoredMethod(PsiElement element)
 	{
-		final PsiMethod testMethod = element instanceof PsiMethod ? JUnitUtil.getTestMethod(element) : null;
+		PsiMethod testMethod = element instanceof PsiMethod ? JUnitUtil.getTestMethod(element) : null;
 		return testMethod != null && AnnotationUtil.isAnnotated(testMethod, JUnitUtil.IGNORE_ANNOTATION, 0);
 	}
 
@@ -234,7 +234,7 @@ public class JUnit4Framework extends JavaTestFramework
 	@Override
 	public PsiMethod findParametersMethod(PsiClass clazz)
 	{
-		final PsiMethod[] methods = clazz.getAllMethods();
+		PsiMethod[] methods = clazz.getAllMethods();
 		for(PsiMethod method : methods)
 		{
 			if(method.isPublic() && method.isStatic() && AnnotationUtil.isAnnotated(method, "org.junit.runners.Parameterized.Parameters", 0))

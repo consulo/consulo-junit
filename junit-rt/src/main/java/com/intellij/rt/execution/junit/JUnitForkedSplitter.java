@@ -63,7 +63,7 @@ public class JUnitForkedSplitter extends ForkedSplitter {
         File tempFile = File.createTempFile("idea_junit", ".tmp");
         tempFile.deleteOnExit();
         JUnitStarter.printClassesList(classNames, packageName, "", "", tempFile);
-        final List childArgs = new ArrayList();
+        List childArgs = new ArrayList();
         childArgs.add("@" + tempFile.getAbsolutePath());
         childArgs.addAll(myNewArgs);
         return childArgs;

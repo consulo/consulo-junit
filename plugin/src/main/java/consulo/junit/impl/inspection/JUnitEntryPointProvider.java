@@ -44,10 +44,10 @@ public class JUnitEntryPointProvider implements EntryPointProvider<JUnitEntryPoi
   public boolean isEntryPoint(PsiElement psiElement, @Nonnull JUnitEntryPointState state) {
     if (state.ADD_JUNIT_TO_ENTRIES) {
       if (psiElement instanceof PsiClass) {
-        final PsiClass aClass = (PsiClass)psiElement;
+        PsiClass aClass = (PsiClass)psiElement;
         if (JUnitUtil.isTestClass(aClass, false, true)) {
           if (!PsiClassUtil.isRunnableClass(aClass, true, true)) {
-            final CommonProcessors.FindProcessor<PsiClass> findProcessor = new CommonProcessors.FindProcessor<PsiClass>() {
+            CommonProcessors.FindProcessor<PsiClass> findProcessor = new CommonProcessors.FindProcessor<PsiClass>() {
               @Override
               protected boolean accept(PsiClass psiClass) {
                 return !psiClass.hasModifierProperty(PsiModifier.ABSTRACT);
@@ -59,7 +59,7 @@ public class JUnitEntryPointProvider implements EntryPointProvider<JUnitEntryPoi
         }
       }
       else if (psiElement instanceof PsiMethod) {
-        final PsiMethod method = (PsiMethod)psiElement;
+        PsiMethod method = (PsiMethod)psiElement;
         if (method.isConstructor() && method.getParameterList().getParametersCount() == 0) {
           PsiClass psiClass = method.getContainingClass();
           return psiClass != null && JUnitUtil.isTestClass(psiClass);

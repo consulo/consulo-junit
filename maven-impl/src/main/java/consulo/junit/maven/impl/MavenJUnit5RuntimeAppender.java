@@ -53,7 +53,7 @@ public class MavenJUnit5RuntimeAppender implements JUnit5RuntimeAppender {
     }
 
     public static void appendJUnit5LauncherClasses(OwnJavaParameters javaParameters, Project project, GlobalSearchScope globalSearchScope) throws CantRunException {
-        final PathsList classPath = javaParameters.getClassPath();
+        PathsList classPath = javaParameters.getClassPath();
         JavaPsiFacade psiFacade = JavaPsiFacade.getInstance(project);
         PsiClass classFromCommon = DumbService.getInstance(project).computeWithAlternativeResolveEnabled(() -> psiFacade.findClass("org.junit.platform.commons.JUnitException", globalSearchScope));
         String launcherVersion = ObjectUtil.notNull(getVersion(classFromCommon), "1.0.0");

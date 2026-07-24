@@ -44,12 +44,12 @@ public class JUnit4IdeaTestRunner implements IdeaTestRunner {
     @Override
     public int startRunnerWithArgs(String[] args, String name, int count, boolean sendTree) {
         try {
-            final Request request = JUnit4TestRunnerUtil.buildRequest(args, name, sendTree);
+            Request request = JUnit4TestRunnerUtil.buildRequest(args, name, sendTree);
             if (request == null) {
                 return -2;
             }
 
-            final Runner testRunner = request.getRunner();
+            Runner testRunner = request.getRunner();
             Description description = getDescription(request, testRunner);
             if (description == null) {
                 return -2;
@@ -62,13 +62,13 @@ public class JUnit4IdeaTestRunner implements IdeaTestRunner {
                 while (--count > 0);
             }
 
-            final JUnitCore runner = new JUnitCore();
+            JUnitCore runner = new JUnitCore();
             runner.addListener(myTestsListener);
             for (Object myListener : myListeners) {
-                final IDEAJUnitListener junitListener = (IDEAJUnitListener) Class.forName((String) myListener).newInstance();
+                IDEAJUnitListener junitListener = (IDEAJUnitListener) Class.forName((String) myListener).newInstance();
                 runner.addListener(new MyCustomRunListenerWrapper(junitListener, description.getDisplayName()));
             }
-            final Result result = runner.run(testRunner);
+            Result result = runner.run(testRunner);
             return result.wasSuccessful() ? 0 : -1;
         }
         catch (Exception e) {
@@ -104,15 +104,15 @@ public class JUnit4IdeaTestRunner implements IdeaTestRunner {
             field = FilterRequest.class.getDeclaredField("filter");
         }
         field.setAccessible(true);
-        final Filter filter = (Filter)field.get(request);
-        final String filterDescription = filter.describe();
+        Filter filter = (Filter)field.get(request);
+        String filterDescription = filter.describe();
         if (filterDescription != null) {
             boolean isMethodFilter = filterDescription.startsWith("Method");
             if (isMethodFilter && canCompress(description)) {
                 return description.getChildren().get(0);
             }
             try {
-                final Description failedTestsDescription = Description.createSuiteDescription(filterDescription, null);
+                Description failedTestsDescription = Description.createSuiteDescription(filterDescription, null);
                 if (filterDescription.startsWith("Tests") || filterDescription.startsWith("Ignored")) {
                     for (Description childDescription : description.getChildren()) {
                         if (filter.shouldRun(childDescription)) {
@@ -146,7 +146,7 @@ public class JUnit4IdeaTestRunner implements IdeaTestRunner {
             field = ClassRequest.class.getDeclaredField("testClass");
         }
         field.setAccessible(true);
-        final Description methodDescription = Description.createSuiteDescription((Class)field.get(request));
+        Description methodDescription = Description.createSuiteDescription((Class)field.get(request));
         for (Description childDescription : description.getChildren()) {
             methodDescription.addChild(childDescription);
         }
@@ -156,11 +156,11 @@ public class JUnit4IdeaTestRunner implements IdeaTestRunner {
 
     @Override
     public Object getTestToStart(String[] args, String name) {
-        final Request request = JUnit4TestRunnerUtil.buildRequest(args, name, false);
+        Request request = JUnit4TestRunnerUtil.buildRequest(args, name, false);
         if (request == null) {
             return null;
         }
-        final Runner testRunner = request.getRunner();
+        Runner testRunner = request.getRunner();
         try {
             return getDescription(request, testRunner);
         }
@@ -184,8 +184,8 @@ public class JUnit4IdeaTestRunner implements IdeaTestRunner {
 
     @Override
     public String getStartDescription(Object child) {
-        final Description description = (Description)child;
-        final String methodName = description.getMethodName();
+        Description description = (Description)child;
+        String methodName = description.getMethodName();
         return methodName != null ? description.getClassName() + "," + methodName : description.getClassName();
     }
 
@@ -222,8 +222,8 @@ public class JUnit4IdeaTestRunner implements IdeaTestRunner {
 
         @Override
         public void testFinished(Description description) throws Exception {
-            final String className = JUnit4ReflectionUtil.getClassName(description);
-            final String methodName = JUnit4ReflectionUtil.getMethodName(description);
+            String className = JUnit4ReflectionUtil.getClassName(description);
+            String methodName = JUnit4ReflectionUtil.getMethodName(description);
             if (myJunitListener instanceof IDEAJUnitListenerEx) {
                 ((IDEAJUnitListenerEx) myJunitListener).testFinished(className, methodName, mySuccess);
             }

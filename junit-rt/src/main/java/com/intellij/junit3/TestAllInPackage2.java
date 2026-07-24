@@ -23,10 +23,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class TestAllInPackage2 extends TestSuite {
-    public TestAllInPackage2(JUnit3IdeaTestRunner runner, final String name, String[] classMethodNames) {
+    public TestAllInPackage2(JUnit3IdeaTestRunner runner, String name, String[] classMethodNames) {
         super(name);
         int testClassCount = 0;
-        final Set<String> allNames = new HashSet<>(Arrays.asList(classMethodNames));
+        Set<String> allNames = new HashSet<>(Arrays.asList(classMethodNames));
         for (int i = 0; i < classMethodNames.length; i++) {
             String classMethodName = classMethodNames[i];
             Test suite = TestRunnerUtil.createClassOrMethodSuite(runner, classMethodName);
@@ -65,8 +65,8 @@ public class TestAllInPackage2 extends TestSuite {
     private static void skipSuiteComponents(Set allNames, Test suite) {
         if (suite instanceof TestRunnerUtil.SuiteMethodWrapper) {
             TestRunnerUtil.SuiteMethodWrapper suiteMethodWrapper = (TestRunnerUtil.SuiteMethodWrapper)suite;
-            final Test test = suiteMethodWrapper.getSuite();
-            final String currentSuiteName = suiteMethodWrapper.getClassName();
+            Test test = suiteMethodWrapper.getSuite();
+            String currentSuiteName = suiteMethodWrapper.getClassName();
             skipSubtests(allNames, test, currentSuiteName);
         }
     }
@@ -76,7 +76,7 @@ public class TestAllInPackage2 extends TestSuite {
             TestSuite testSuite = (TestSuite)test;
             for (int idx = 0; idx < testSuite.testCount(); idx++) {
                 Test childTest = testSuite.testAt(idx);
-                final String testName = childTest.toString();
+                String testName = childTest.toString();
                 if (!currentSuiteName.equals(testName)) {
                     allNames.remove(testName);
                 }

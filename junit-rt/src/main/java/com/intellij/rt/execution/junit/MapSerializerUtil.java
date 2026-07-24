@@ -44,7 +44,7 @@ public class MapSerializerUtil {
 
   public static final EscapeInfoProvider STD_ESCAPER = new EscapeInfoProvider() {
     @Override
-    public char escape(final char c) {
+    public char escape(char c) {
       switch (c) {
         case '\n': return 'n';
         case '\r': return 'r';
@@ -72,7 +72,7 @@ public class MapSerializerUtil {
    * @param p escape info provider.
    * @return escaped string.
    */
-  public static String escapeStr(final String str, EscapeInfoProvider p) {
+  public static String escapeStr(String str, EscapeInfoProvider p) {
     if (str == null) return null;
     int finalCount = calcFinalEscapedStringCount(str, p);
 
@@ -82,7 +82,7 @@ public class MapSerializerUtil {
     int resultPos = 0;
     for (int i = 0; i < str.length(); i++) {
       char c = str.charAt(i);
-      final char escaped = p.escape(c);
+      char escaped = p.escape(c);
       if (escaped != 0) {
         resultChars[resultPos++] = p.escapeCharacter();
         resultChars[resultPos++] = escaped;
@@ -98,7 +98,7 @@ public class MapSerializerUtil {
     return new String(resultChars);
   }
 
-  private static int calcFinalEscapedStringCount(final String name, final EscapeInfoProvider p) {
+  private static int calcFinalEscapedStringCount(String name, EscapeInfoProvider p) {
     int result = 0;
     for (int i = 0; i < name.length(); i++) {
       char c = name.charAt(i);
@@ -113,10 +113,10 @@ public class MapSerializerUtil {
     return result;
   }
 
-  public static String asString(final String messageName, final Map attributes) {
+  public static String asString(String messageName, Map attributes) {
     String text = "##teamcity[" + messageName;
     for (Iterator iterator = attributes.keySet().iterator(); iterator.hasNext(); ) {
-      final Object attrName = iterator.next();
+      Object attrName = iterator.next();
       text += " " + attrName + "='" + escapeStr((String)attributes.get(attrName), STD_ESCAPER) + "'";
     }
     text += "]";

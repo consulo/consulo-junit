@@ -38,7 +38,7 @@ class IdeaSuite extends Suite {
         myName = name;
     }
 
-    public IdeaSuite(final RunnerBuilder builder, Class[] classes, String name) throws InitializationError {
+    public IdeaSuite(RunnerBuilder builder, Class[] classes, String name) throws InitializationError {
         super(builder, classes);
         myName = name;
     }
@@ -47,7 +47,7 @@ class IdeaSuite extends Suite {
     public Description getDescription() {
         Description description = Description.createSuiteDescription(myName, getTestClass().getAnnotations());
         try {
-            final Method getFilteredChildrenMethod = ParentRunner.class.getDeclaredMethod("getFilteredChildren", new Class[0]);
+            Method getFilteredChildrenMethod = ParentRunner.class.getDeclaredMethod("getFilteredChildren", new Class[0]);
             getFilteredChildrenMethod.setAccessible(true);
             Collection filteredChildren = (Collection)getFilteredChildrenMethod.invoke(this);
             for (Object child : filteredChildren) {
@@ -62,9 +62,9 @@ class IdeaSuite extends Suite {
 
     @Override
     protected Description describeChild(Runner child) {
-        final Description superDescription = super.describeChild(child);
+        Description superDescription = super.describeChild(child);
         if (child instanceof ClassAwareSuiteMethod) {
-            final Description description = Description.createSuiteDescription(((ClassAwareSuiteMethod)child).getKlass());
+            Description description = Description.createSuiteDescription(((ClassAwareSuiteMethod)child).getKlass());
             ArrayList children = superDescription.getChildren();
             for (Object aChildren : children) {
                 description.addChild((Description) aChildren);
@@ -76,7 +76,7 @@ class IdeaSuite extends Suite {
 
     @Override
     protected List<Runner> getChildren() {
-        final List<Runner> children = new ArrayList<>(super.getChildren());
+        List<Runner> children = new ArrayList<>(super.getChildren());
         boolean containsSuiteInside = false;
         for (Runner child : children) {
             if (isSuite(child)) {
@@ -88,11 +88,11 @@ class IdeaSuite extends Suite {
             return children;
         }
         try {
-            final Set allNames = new HashSet();
-            for (final Runner child : children) {
+            Set allNames = new HashSet();
+            for (Runner child : children) {
                 allNames.add(describeChild(child).getDisplayName());
             }
-            for (final Runner child : children) {
+            for (Runner child : children) {
                 if (isSuite(child)) {
                     skipSuiteComponents(allNames, child);
                 }
@@ -117,26 +117,26 @@ class IdeaSuite extends Suite {
     private void skipSuiteComponents(Set allNames, Object child) {
         try {
             if (child instanceof Suite) {
-                final Method getChildrenMethod = Suite.class.getDeclaredMethod("getChildren", new Class[0]);
+                Method getChildrenMethod = Suite.class.getDeclaredMethod("getChildren", new Class[0]);
                 getChildrenMethod.setAccessible(true);
-                final List tests = (List)getChildrenMethod.invoke(child);
+                List tests = (List)getChildrenMethod.invoke(child);
                 for (Object test : tests) {
-                    final String displayName = describeChild((Runner) test).getDisplayName();
+                    String displayName = describeChild((Runner) test).getDisplayName();
                     if (allNames.contains(displayName)) {
                         allNames.remove(displayName);
                     }
                 }
             }
             else if (child instanceof SuiteMethod) {
-                final Method getChildrenMethod = JUnit38ClassRunner.class.getDeclaredMethod("getTest", new Class[0]);
+                Method getChildrenMethod = JUnit38ClassRunner.class.getDeclaredMethod("getTest", new Class[0]);
                 getChildrenMethod.setAccessible(true);
-                final Test test = (Test)getChildrenMethod.invoke(child);
+                Test test = (Test)getChildrenMethod.invoke(child);
                 if (test instanceof TestSuite) {
-                    final Enumeration tests = ((TestSuite)test).tests();
+                    Enumeration tests = ((TestSuite)test).tests();
                     while (tests.hasMoreElements()) {
-                        final Test t = (Test)tests.nextElement();
+                        Test t = (Test)tests.nextElement();
                         if (t instanceof TestSuite) {
-                            final String testDescription = ((TestSuite)t).getName();
+                            String testDescription = ((TestSuite)t).getName();
                             if (allNames.contains(testDescription)) {
                                 allNames.remove(testDescription);
                             }

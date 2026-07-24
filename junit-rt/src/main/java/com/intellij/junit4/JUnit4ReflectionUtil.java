@@ -30,7 +30,7 @@ public class JUnit4ReflectionUtil {
             return description.getClassName();
         }
         catch (NoSuchMethodError e) {
-            final String displayName = description.getDisplayName();
+            String displayName = description.getDisplayName();
             Matcher matcher = Pattern.compile("(.*)\\((.*)\\)").matcher(displayName);
             return matcher.matches() ? matcher.group(2) : displayName;
         }
@@ -41,7 +41,7 @@ public class JUnit4ReflectionUtil {
             return description.getMethodName();
         }
         catch (NoSuchMethodError e) {
-            final String displayName = description.getDisplayName();
+            String displayName = description.getDisplayName();
             Matcher matcher = Pattern.compile("(.*)\\((.*)\\)").matcher(displayName);
             if (matcher.matches()) {
                 return matcher.group(1);

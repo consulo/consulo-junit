@@ -98,7 +98,7 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
 
     @Override
     public String getStartDescription(Object child) {
-        final Test test = (Test) child;
+        Test test = (Test) child;
         return test instanceof TestCase
             ? test.getClass().getName() + "," + ((TestCase) test).getName()
             : test.toString();
@@ -144,7 +144,7 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
 
     @Override
     public TestResult doRun(Test suite, boolean wait) {  //todo
-        final TestResult testResult = super.doRun(suite, wait);
+        TestResult testResult = super.doRun(suite, wait);
         myTestsListener.finishSuite();
 
         return testResult;
@@ -183,14 +183,14 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
         }
 
         private void testFailure(Throwable failure, String messageName, String methodName) {
-            final Map attrs = new HashMap();
+            Map attrs = new HashMap();
             attrs.put("name", methodName);
-            final long duration = System.currentTimeMillis() - myCurrentTestStart;
+            long duration = System.currentTimeMillis() - myCurrentTestStart;
             if (duration > 0) {
                 attrs.put("duration", Long.toString(duration));
             }
             try {
-                final String trace = getTrace(failure);
+                String trace = getTrace(failure);
                 ComparisonFailureData notification = null;
                 if (failure instanceof FileComparisonFailure) {
                     FileComparisonFailure comparisonFailure = (FileComparisonFailure) failure;
@@ -208,8 +208,8 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
                 ComparisonFailureData.registerSMAttributes(notification, trace, failure.getMessage(), attrs, failure);
             }
             catch (Throwable e) {
-                final StringWriter stringWriter = new StringWriter();
-                final PrintWriter writer = new PrintWriter(stringWriter);
+                StringWriter stringWriter = new StringWriter();
+                PrintWriter writer = new PrintWriter(stringWriter);
                 e.printStackTrace(writer);
                 ComparisonFailureData.registerSMAttributes(null, stringWriter.toString(), e.getMessage(), attrs, e);
             }
@@ -226,14 +226,14 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
         }
 
         private static String getMethodName(Test test) {
-            final String toString = test.toString();
-            final int braceIdx = toString.indexOf("(");
+            String toString = test.toString();
+            int braceIdx = toString.indexOf("(");
             return braceIdx > 0 ? toString.substring(0, braceIdx) : toString;
         }
 
         private static String getClassName(Test test) {
-            final String toString = test.toString();
-            final int braceIdx = toString.indexOf("(");
+            String toString = test.toString();
+            int braceIdx = toString.indexOf("(");
             return braceIdx > 0 && toString.endsWith(")")
                 ? toString.substring(braceIdx + 1, toString.length() - 1)
                 : null;
@@ -246,7 +246,7 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
 
         @Override
         public void endTest(Test test) {
-            final long duration = System.currentTimeMillis() - myCurrentTestStart;
+            long duration = System.currentTimeMillis() - myCurrentTestStart;
             System.out.println("\n##teamcity[testFinished name=\'" + escapeName(getMethodName(test)) +
                 (duration > 0 ? "\' duration=\'" + Long.toString(duration) : "") + "\']");
         }
@@ -254,7 +254,7 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
         @Override
         public void startTest(Test test) {
             myCurrentTestStart = System.currentTimeMillis();
-            final String className = getClassName(test);
+            String className = getClassName(test);
             if (className != null && !className.equals(myClassName)) {
                 finishSuite();
                 myClassName = className;
@@ -263,7 +263,7 @@ public class JUnit3IdeaTestRunner extends TestRunner implements IdeaTestRunner {
                         "\' locationHint=\'java:suite://" + escapeName(className) + "\']"
                 );
             }
-            final String methodName = getMethodName(test);
+            String methodName = getMethodName(test);
             System.out.println(
                 "##teamcity[testStarted name=\'" + escapeName(methodName) +
                     "\' locationHint=\'java:test://" + escapeName(className + "." + methodName) + "\']"

@@ -44,12 +44,12 @@ public class JUnitConsoleProperties extends JavaAwareTestConsoleProperties<JUnit
 	@Override
 	protected GlobalSearchScope initScope()
 	{
-		final JUnitConfiguration.Data persistentData = getConfiguration().getPersistentData();
-		final String testObject = persistentData.TEST_OBJECT;
+		JUnitConfiguration.Data persistentData = getConfiguration().getPersistentData();
+		String testObject = persistentData.TEST_OBJECT;
 		//ignore invisible setting
 		if(JUnitConfiguration.TEST_CATEGORY.equals(testObject) || JUnitConfiguration.TEST_PATTERN.equals(testObject) || JUnitConfiguration.TEST_PACKAGE.equals(testObject))
 		{
-			final SourceScope sourceScope = persistentData.getScope().getSourceScope(getConfiguration());
+			SourceScope sourceScope = persistentData.getScope().getSourceScope(getConfiguration());
 			return sourceScope != null ? sourceScope.getGlobalSearchScope() : GlobalSearchScope.allScope(getProject());
 		}
 		else
@@ -81,7 +81,7 @@ public class JUnitConsoleProperties extends JavaAwareTestConsoleProperties<JUnit
 	@Override
 	public boolean isUndefined()
 	{
-		final String mode = getConfiguration().getRepeatMode();
+		String mode = getConfiguration().getRepeatMode();
 		return RepeatCount.UNLIMITED.equals(mode) || RepeatCount.UNTIL_FAILURE.equals(mode);
 	}
 }

@@ -59,20 +59,20 @@ public class JUnit4TestRunnerUtil {
                     BufferedReader reader =
                         new BufferedReader(new InputStreamReader(new FileInputStream(suiteClassName.substring(1)), "UTF-8"));
                     try {
-                        final String packageName = reader.readLine();
+                        String packageName = reader.readLine();
                         if (packageName == null) {
                             return null;
                         }
 
-                        final String categoryName = reader.readLine();
-                        final Class category = categoryName != null && categoryName.length() > 0 ? loadTestClass(categoryName) : null;
-                        final String filters = reader.readLine();
+                        String categoryName = reader.readLine();
+                        Class category = categoryName != null && categoryName.length() > 0 ? loadTestClass(categoryName) : null;
+                        String filters = reader.readLine();
 
                         String line;
 
                         while ((line = reader.readLine()) != null) {
                             String className = line;
-                            final int idx = line.indexOf(',');
+                            int idx = line.indexOf(',');
                             if (idx != -1) {
                                 className = line.substring(0, idx);
                                 Set<String> methodNames = classMethods.get(className);
@@ -117,11 +117,11 @@ public class JUnit4TestRunnerUtil {
                                             methods.contains(methodName.substring(0, methodName.length() - name.length()));
                                     }
 
-                                    final Class testClass = description.getTestClass();
+                                    Class testClass = description.getTestClass();
                                     if (testClass != null) {
-                                        final RunWith classAnnotation = (RunWith) testClass.getAnnotation(RunWith.class);
+                                        RunWith classAnnotation = (RunWith) testClass.getAnnotation(RunWith.class);
                                         if (classAnnotation != null && Parameterized.class.isAssignableFrom(classAnnotation.value())) {
-                                            final int idx = methodName.indexOf("[");
+                                            int idx = methodName.indexOf("[");
                                             if (idx > -1) {
                                                 return methods.contains(methodName.substring(0, idx));
                                             }
@@ -150,16 +150,16 @@ public class JUnit4TestRunnerUtil {
             else {
                 int index = suiteClassName.indexOf(',');
                 if (index != -1) {
-                    final Class clazz = loadTestClass(suiteClassName.substring(0, index));
+                    Class clazz = loadTestClass(suiteClassName.substring(0, index));
                     final String methodName = suiteClassName.substring(index + 1);
                     RunWith clazzAnnotation = (RunWith) clazz.getAnnotation(RunWith.class);
-                    final Description testMethodDescription = Description.createTestDescription(clazz, methodName);
+                    Description testMethodDescription = Description.createTestDescription(clazz, methodName);
                     if (clazzAnnotation == null) { //do not override external runners
                         try {
-                            final Method method = clazz.getMethod(methodName, null);
+                            Method method = clazz.getMethod(methodName, null);
                             if (method != null && notForked && (method.getAnnotation(Ignore.class) != null
                                 || clazz.getAnnotation(Ignore.class) != null)) { //override ignored case only
-                                final Request classRequest =
+                                Request classRequest =
                                     JUnit45ClassesRequestBuilder.createIgnoreIgnoredClassRequest(clazz, true);
                                 final Filter ignoredTestFilter = Filter.matchMethodDescription(testMethodDescription);
                                 return classRequest.filterWith(new Filter() {
@@ -180,7 +180,7 @@ public class JUnit4TestRunnerUtil {
                         }
                     }
                     else {
-                        final Request request = getParameterizedRequest(name, methodName, clazz, clazzAnnotation);
+                        Request request = getParameterizedRequest(name, methodName, clazz, clazzAnnotation);
                         if (request != null) {
                             return request;
                         }
@@ -219,10 +219,10 @@ public class JUnit4TestRunnerUtil {
                     });
                 }
                 else if (name != null && suiteClassNames.length == 1) {
-                    final Class clazz = loadTestClass(suiteClassName);
+                    Class clazz = loadTestClass(suiteClassName);
                     if (clazz != null) {
                         RunWith clazzAnnotation = (RunWith) clazz.getAnnotation(RunWith.class);
-                        final Request request = getParameterizedRequest(name, null, clazz, clazzAnnotation);
+                        Request request = getParameterizedRequest(name, null, clazz, clazzAnnotation);
                         if (request != null) {
                             return request;
                         }
@@ -233,7 +233,7 @@ public class JUnit4TestRunnerUtil {
         }
 
         if (result.size() == 1) {
-            final Class clazz = result.get(0);
+            Class clazz = result.get(0);
             try {
                 if (clazz.getAnnotation(Ignore.class) != null) { //override ignored case only
                     return JUnit45ClassesRequestBuilder.createIgnoreIgnoredClassRequest(clazz, false);
@@ -257,21 +257,21 @@ public class JUnit4TestRunnerUtil {
         return null;
       }
 
-        final Class runnerClass = clazzAnnotation.value();
+        Class runnerClass = clazzAnnotation.value();
         if (Parameterized.class.isAssignableFrom(runnerClass)) {
             try {
                 if (methodName != null) {
-                    final Method method = clazz.getMethod(methodName, new Class[0]);
+                    Method method = clazz.getMethod(methodName, new Class[0]);
                     if (method != null && !method.isAnnotationPresent(Test.class) && TestCase.class.isAssignableFrom(clazz)) {
                         return Request.runner(JUnit45ClassesRequestBuilder.createIgnoreAnnotationAndJUnit4ClassRunner(clazz));
                     }
                 }
                 Class.forName("org.junit.runners.BlockJUnit4ClassRunner"); //ignore for junit4.4 and <
-                final Constructor runnerConstructor = runnerClass.getConstructor(new Class[]{Class.class});
+                Constructor runnerConstructor = runnerClass.getConstructor(new Class[]{Class.class});
                 return Request.runner((Runner)runnerConstructor.newInstance(clazz)).filterWith(new Filter() {
                     @Override
                     public boolean shouldRun(Description description) {
-                        final String descriptionMethodName = description.getMethodName();
+                        String descriptionMethodName = description.getMethodName();
                         //filter by params
                         if (parameterString != null && descriptionMethodName != null && !descriptionMethodName.endsWith(parameterString)) {
                             return false;
@@ -318,7 +318,7 @@ public class JUnit4TestRunnerUtil {
     }
 
     private static void appendTestClass(Vector<Class> result, String className) {
-        final Class aClass = loadTestClass(className);
+        Class aClass = loadTestClass(className);
         if (!result.contains(aClass)) {  //do not append classes twice: rerun failed tests from one test suite
             result.addElement(aClass);
         }

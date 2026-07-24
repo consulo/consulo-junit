@@ -35,7 +35,7 @@ public class TestBySource extends JUnitTestDiscoveryRunnableState
 	@Override
 	protected Pair<String, String> getPosition()
 	{
-		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
 		return Pair.create(data.getMainClassName(), data.getMethodName());
 	}
 }

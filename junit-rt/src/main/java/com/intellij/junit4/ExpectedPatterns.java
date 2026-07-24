@@ -53,7 +53,7 @@ public class ExpectedPatterns extends AbstractExpectedPatterns {
             return ComparisonFailureData.create(assertion);
         }
         try {
-            final Throwable cause = assertion.getCause();
+            Throwable cause = assertion.getCause();
             if (isComparisonFailure(cause)) {
                 return ComparisonFailureData.create(cause);
             }
@@ -61,7 +61,7 @@ public class ExpectedPatterns extends AbstractExpectedPatterns {
         catch (Throwable ignore) {
         }
 
-        final String message = assertion.getMessage();
+        String message = assertion.getMessage();
         if (message != null && acceptedByThreshold(message.length())) {
             try {
                 return createExceptionNotification(message);
@@ -83,7 +83,7 @@ public class ExpectedPatterns extends AbstractExpectedPatterns {
         if (aClass == null) {
             return false;
         }
-        final String throwableClassName = aClass.getName();
+        String throwableClassName = aClass.getName();
         if (throwableClassName.equals(JUNIT_FRAMEWORK_COMPARISON_NAME) || throwableClassName.equals(ORG_JUNIT_COMPARISON_NAME)) {
             return true;
         }
@@ -93,7 +93,7 @@ public class ExpectedPatterns extends AbstractExpectedPatterns {
     private static boolean acceptedByThreshold(int messageLength) {
         int threshold = 10000;
         try {
-            final String property = System.getProperty(MESSAGE_LENGTH_FOR_PATTERN_MATCHING);
+            String property = System.getProperty(MESSAGE_LENGTH_FOR_PATTERN_MATCHING);
             if (property != null) {
                 try {
                     threshold = Integer.parseInt(property);

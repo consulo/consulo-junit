@@ -54,8 +54,8 @@ public class JUnitStarter {
             argList.addElement(arg);
         }
 
-        final ArrayList listeners = new ArrayList();
-        final String[] name = new String[1];
+        ArrayList listeners = new ArrayList();
+        String[] name = new String[1];
 
         String agentName = processParameters(argList, listeners, name);
 
@@ -72,7 +72,7 @@ public class JUnitStarter {
         System.exit(exitCode);
     }
 
-    private static String processParameters(Vector args, final List listeners, String[] params) {
+    private static String processParameters(Vector args, List listeners, String[] params) {
         String agentName = isJUnit5Preferred() ? JUNIT5_RUNNER_NAME : JUNIT4_RUNNER_NAME;
         Vector result = new Vector(args.size());
         for (int i = 0; i < args.size(); i++) {
@@ -99,7 +99,7 @@ public class JUnitStarter {
                     continue;
                 }
                 else if (arg.startsWith("@@@")) {
-                    final int pos = arg.indexOf(',');
+                    int pos = arg.indexOf(',');
                     ourForkMode = arg.substring(3, pos);
                     ourCommandFileName = arg.substring(pos + 1);
                     continue;
@@ -107,7 +107,7 @@ public class JUnitStarter {
                 else if (arg.startsWith("@@")) {
                     if (new File(arg.substring(2)).exists()) {
                         try {
-                            final BufferedReader reader = new BufferedReader(new FileReader(arg.substring(2)));
+                            BufferedReader reader = new BufferedReader(new FileReader(arg.substring(2)));
                             String line;
                             while ((line = reader.readLine()) != null) {
                                 listeners.add(line);
@@ -120,10 +120,10 @@ public class JUnitStarter {
                     continue;
                 }
                 else if (arg.startsWith(SOCKET)) {
-                    final int port = Integer.parseInt(arg.substring(SOCKET.length()));
+                    int port = Integer.parseInt(arg.substring(SOCKET.length()));
                     try {
-                        final Socket socket = new Socket(InetAddress.getByName("127.0.0.1"), port);  //start collecting tests
-                        final DataInputStream os = new DataInputStream(socket.getInputStream());
+                        Socket socket = new Socket(InetAddress.getByName("127.0.0.1"), port);  //start collecting tests
+                        DataInputStream os = new DataInputStream(socket.getInputStream());
                         try {
                             os.readBoolean();//wait for ready flag
                         }
@@ -138,7 +138,7 @@ public class JUnitStarter {
                     continue;
                 }
 
-                final int count = RepeatCount.getCount(arg);
+                int count = RepeatCount.getCount(arg);
                 if (count != 0) {
                     ourRepeatCount = arg;
                     ourCount = count;
@@ -173,7 +173,7 @@ public class JUnitStarter {
         }
 
         try {
-            final String forceJUnit3 = System.getProperty("idea.force.junit3");
+            String forceJUnit3 = System.getProperty("idea.force.junit3");
           if (forceJUnit3 != null && Boolean.valueOf(forceJUnit3)) {
             return JUNIT3_RUNNER_NAME;
           }
@@ -184,12 +184,12 @@ public class JUnitStarter {
     }
 
     public static boolean isJUnit5Preferred() {
-        final String useJUnit5 = System.getProperty(JUNIT5_KEY);
+        String useJUnit5 = System.getProperty(JUNIT5_KEY);
         if (useJUnit5 == null) {
             return false;
         }
         else {
-            final Boolean boolValue = Boolean.valueOf(useJUnit5);
+            Boolean boolValue = Boolean.valueOf(useJUnit5);
             return boolValue != null && boolValue;
         }
     }
@@ -238,7 +238,7 @@ public class JUnitStarter {
 
     private static int prepareStreamsAndStart(
         String[] args,
-        final String agentName,
+        String agentName,
         ArrayList listeners,
         String name
     ) {
@@ -246,7 +246,7 @@ public class JUnitStarter {
             IdeaTestRunner testRunner = (IdeaTestRunner)getAgentClass(agentName).newInstance();
             if (ourCommandFileName != null) {
                 if (!"none".equals(ourForkMode) || ourWorkingDirs != null && new File(ourWorkingDirs).length() > 0) {
-                    final List newArgs = new ArrayList();
+                    List newArgs = new ArrayList();
                     newArgs.add(agentName);
                     newArgs.addAll(listeners);
                     return new JUnitForkedSplitter(ourWorkingDirs, ourForkMode, newArgs)
@@ -273,7 +273,7 @@ public class JUnitStarter {
         String filters,
         File tempFile
     ) throws IOException {
-        final PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8"));
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(tempFile), "UTF-8"));
 
         try {
             writer.println(packageName); //package name

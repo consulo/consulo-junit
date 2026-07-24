@@ -54,12 +54,12 @@ public class TestMethods extends TestMethod
 	@Override
 	protected OwnJavaParameters createJavaParameters() throws ExecutionException
 	{
-		final OwnJavaParameters javaParameters = super.createDefaultJavaParameters();
-		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		final RunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
-		final Project project = configurationModule.getProject();
-		final Module module = configurationModule.getModule();
-		final GlobalSearchScope searchScope = module != null ? GlobalSearchScope.moduleRuntimeScope(module, true) : GlobalSearchScope.allScope(project);
+		OwnJavaParameters javaParameters = super.createDefaultJavaParameters();
+		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		RunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
+		Project project = configurationModule.getProject();
+		Module module = configurationModule.getModule();
+		GlobalSearchScope searchScope = module != null ? GlobalSearchScope.moduleRuntimeScope(module, true) : GlobalSearchScope.allScope(project);
 		addClassesListToJavaParameters(myFailedTests, testInfo -> testInfo != null ? getTestPresentation(testInfo, project, searchScope) : null, data.getPackageName(), true, javaParameters);
 
 		return javaParameters;
@@ -84,7 +84,7 @@ public class TestMethods extends TestMethod
 	@Override
 	public SourceScope getSourceScope()
 	{
-		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
 		return data.getScope().getSourceScope(getConfiguration());
 	}
 
@@ -97,8 +97,8 @@ public class TestMethods extends TestMethod
 	@Nullable
 	public static String getTestPresentation(AbstractTestProxy testInfo, Project project, GlobalSearchScope searchScope)
 	{
-		final Location location = testInfo.getLocation(project, searchScope);
-		final PsiElement element = location != null ? location.getPsiElement() : null;
+		Location location = testInfo.getLocation(project, searchScope);
+		PsiElement element = location != null ? location.getPsiElement() : null;
 		if(element instanceof PsiMethod)
 		{
 			String nodeId = TestUniqueId.getEffectiveNodeId(testInfo, project, searchScope);
@@ -107,12 +107,12 @@ public class TestMethods extends TestMethod
 				return TestUniqueId.getUniqueIdPresentation().apply(nodeId);
 			}
 
-			final PsiClass containingClass = location instanceof MethodLocation ? ((MethodLocation) location).getContainingClass() : location instanceof PsiMemberParameterizedLocation ? (
+			PsiClass containingClass = location instanceof MethodLocation ? ((MethodLocation) location).getContainingClass() : location instanceof PsiMemberParameterizedLocation ? (
 					(PsiMemberParameterizedLocation) location).getContainingClass() : ((PsiMethod) element).getContainingClass();
 			if(containingClass != null)
 			{
-				final String proxyName = testInfo.getName();
-				final String methodWithSignaturePresentation = JUnitConfiguration.Data.getMethodPresentation(((PsiMethod) element));
+				String proxyName = testInfo.getName();
+				String methodWithSignaturePresentation = JUnitConfiguration.Data.getMethodPresentation(((PsiMethod) element));
 				return JavaExecutionUtil.getRuntimeQualifiedName(containingClass) + "," + (proxyName.contains(methodWithSignaturePresentation) ? proxyName.substring(proxyName.indexOf
 						(methodWithSignaturePresentation)) : methodWithSignaturePresentation);
 			}

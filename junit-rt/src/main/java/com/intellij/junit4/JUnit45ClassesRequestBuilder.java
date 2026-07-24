@@ -91,8 +91,8 @@ public class JUnit45ClassesRequestBuilder {
                                     return new BlockJUnit4ClassRunner(testClass) {
                                         @Override
                                         protected void runChild(FrameworkMethod method, RunNotifier notifier) {
-                                            final Description description = describeChild(method);
-                                            final EachTestNotifier eachNotifier = new EachTestNotifier(notifier, description);
+                                            Description description = describeChild(method);
+                                            EachTestNotifier eachNotifier = new EachTestNotifier(notifier, description);
                                             eachNotifier.fireTestStarted();
                                             try {
                                                 methodBlock(method).evaluate();

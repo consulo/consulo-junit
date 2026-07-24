@@ -53,20 +53,20 @@ class TestCategory extends TestPackage
 	{
 		JavaParametersUtil.checkAlternativeJRE(getConfiguration());
 		ProgramParametersUtil.checkWorkingDirectoryExist(getConfiguration(), getConfiguration().getProject(), getConfiguration().getConfigurationModule().getModule());
-		final String category = getConfiguration().getPersistentData().getCategory();
+		String category = getConfiguration().getPersistentData().getCategory();
 		if(category == null || category.isEmpty())
 		{
 			throw new RuntimeConfigurationError("Category is not specified");
 		}
-		final JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
+		JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
 		if(getSourceScope() == null)
 		{
 			configurationModule.checkForWarning();
 		}
-		final Module module = configurationModule.getModule();
+		Module module = configurationModule.getModule();
 		if(module != null)
 		{
-			final PsiClass psiClass = JavaExecutionUtil.findMainClass(getConfiguration().getProject(), category, GlobalSearchScope.moduleWithDependenciesAndLibrariesScope(module));
+			PsiClass psiClass = JavaExecutionUtil.findMainClass(getConfiguration().getProject(), category, GlobalSearchScope.moduleWithDependenciesAndLibrariesScope(module));
 			if(psiClass == null)
 			{
 				throw new RuntimeConfigurationWarning(ExecutionBundle.message("class.not.found.in.module.error.message", category, configurationModule.getModuleName()));
@@ -87,7 +87,7 @@ class TestCategory extends TestPackage
 	}
 
 	@Override
-	public RefactoringElementListener getListener(final PsiElement element, final JUnitConfiguration configuration)
+	public RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration)
 	{
 		return RefactoringListeners.getClassOrPackageListener(element, configuration.myCategory);
 	}

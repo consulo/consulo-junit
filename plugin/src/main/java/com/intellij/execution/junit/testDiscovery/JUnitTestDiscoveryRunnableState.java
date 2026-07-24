@@ -68,13 +68,13 @@ abstract class JUnitTestDiscoveryRunnableState extends TestObject
 	{
 		if(pattern instanceof String)
 		{
-			final String className = StringUtil.getPackageName((String) pattern, ',');
+			String className = StringUtil.getPackageName((String) pattern, ',');
 			if(!pattern.equals(className))
 			{
-				final Project project = getConfiguration().getProject();
-				final JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
-				final SourceScope sourceScope = getSourceScope();
-				final GlobalSearchScope globalSearchScope = sourceScope != null ? sourceScope.getGlobalSearchScope() : GlobalSearchScope.projectScope(project);
+				Project project = getConfiguration().getProject();
+				JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
+				SourceScope sourceScope = getSourceScope();
+				GlobalSearchScope globalSearchScope = sourceScope != null ? sourceScope.getGlobalSearchScope() : GlobalSearchScope.projectScope(project);
 				return facade.findClass(className, globalSearchScope);
 			}
 		}
@@ -114,7 +114,7 @@ abstract class JUnitTestDiscoveryRunnableState extends TestObject
 	@Override
 	protected OwnJavaParameters createJavaParameters() throws ExecutionException
 	{
-		final OwnJavaParameters javaParameters = super.createJavaParameters();
+		OwnJavaParameters javaParameters = super.createJavaParameters();
 		createTempFiles(javaParameters);
 
 		createServerSocket(javaParameters);

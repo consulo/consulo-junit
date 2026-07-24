@@ -37,7 +37,7 @@ public class IdeaSuite48 extends IdeaSuite {
     private void filterByCategory(Class category) throws InitializationError {
         if (category != null) {
             try {
-                final Categories.CategoryFilter categoryFilter = Categories.CategoryFilter.include(category);
+                Categories.CategoryFilter categoryFilter = Categories.CategoryFilter.include(category);
                 filter(categoryFilter);
             }
             catch (NoTestsRemainException e) {

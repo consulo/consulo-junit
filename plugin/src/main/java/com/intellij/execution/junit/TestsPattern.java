@@ -70,7 +70,7 @@ public class TestsPattern extends TestPackage
 		boolean hasPattern = false;
 		for(String className : data.getPatterns())
 		{
-			final PsiClass psiClass = getTestClass(project, className);
+			PsiClass psiClass = getTestClass(project, className);
 			if(psiClass != null)
 			{
 				if(JUnitUtil.isTestClass(psiClass))
@@ -96,7 +96,7 @@ public class TestsPattern extends TestPackage
 				@Override
 				protected void onFound() throws ExecutionException
 				{
-					final Function<String, String> nameFunction = StringUtil.isEmpty(data.METHOD_NAME) ? Function.identity() : className -> className;
+					Function<String, String> nameFunction = StringUtil.isEmpty(data.METHOD_NAME) ? Function.identity() : className -> className;
 					addClassesListToJavaParameters(classNames, nameFunction, "", false, getJavaParameters());
 				}
 			};
@@ -135,22 +135,22 @@ public class TestsPattern extends TestPackage
 	@Override
 	public RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration)
 	{
-		final RefactoringElementListenerComposite composite = new RefactoringElementListenerComposite();
-		final JUnitConfiguration.Data data = configuration.getPersistentData();
+		RefactoringElementListenerComposite composite = new RefactoringElementListenerComposite();
+		JUnitConfiguration.Data data = configuration.getPersistentData();
 		final Set<String> patterns = data.getPatterns();
-		for(final String pattern : patterns)
+		for(String pattern : patterns)
 		{
 			final PsiClass testClass = getTestClass(configuration.getProject(), pattern.trim());
 			if(testClass != null && testClass.equals(element))
 			{
-				final RefactoringElementListener listeners = RefactoringListeners.getListeners(testClass, new RefactoringListeners.Accessor<PsiClass>()
+				RefactoringElementListener listeners = RefactoringListeners.getListeners(testClass, new RefactoringListeners.Accessor<PsiClass>()
 				{
 					private String myOldName = testClass.getQualifiedName();
 
 					@Override
 					public void setName(String qualifiedName)
 					{
-						final Set<String> replaced = new LinkedHashSet<>();
+						Set<String> replaced = new LinkedHashSet<>();
 						for(String currentPattern : patterns)
 						{
 							if(myOldName.equals(currentPattern))
@@ -203,17 +203,17 @@ public class TestsPattern extends TestPackage
 	@Override
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
-		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		final Set<String> patterns = data.getPatterns();
+		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		Set<String> patterns = data.getPatterns();
 		if(patterns.isEmpty())
 		{
 			throw new RuntimeConfigurationWarning("No pattern selected");
 		}
-		final GlobalSearchScope searchScope = GlobalSearchScope.allScope(getConfiguration().getProject());
+		GlobalSearchScope searchScope = GlobalSearchScope.allScope(getConfiguration().getProject());
 		for(String pattern : patterns)
 		{
-			final String className = pattern.contains(",") ? StringUtil.getPackageName(pattern, ',') : pattern;
-			final PsiClass psiClass = JavaExecutionUtil.findMainClass(getConfiguration().getProject(), className, searchScope);
+			String className = pattern.contains(",") ? StringUtil.getPackageName(pattern, ',') : pattern;
+			PsiClass psiClass = JavaExecutionUtil.findMainClass(getConfiguration().getProject(), className, searchScope);
 			if(psiClass != null && !JUnitUtil.isTestClass(psiClass))
 			{
 				throw new RuntimeConfigurationWarning("Class " + className + " not a test");

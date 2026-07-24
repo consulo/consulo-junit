@@ -35,7 +35,7 @@ public class JUnitTestDiscoveryConfigurationProducer extends TestDiscoveryConfig
 
     @Override
     protected Couple<String> getPosition(JavaTestConfigurationBase configuration) {
-        final JUnitConfiguration.Data data = ((JUnitConfiguration)configuration).getPersistentData();
+        JUnitConfiguration.Data data = ((JUnitConfiguration)configuration).getPersistentData();
         if (data.TEST_OBJECT.equals(JUnitConfiguration.BY_SOURCE_POSITION)) {
             return Couple.of(data.getMainClassName(), data.getMethodName());
         }

@@ -96,7 +96,7 @@ public class TestRunnerUtil {
         else {
             TestSuite suite = new TestSuite();
             for (int i = 0; i < result.size(); i++) {
-                final Test test = (Test)result.elementAt(i);
+                Test test = (Test)result.elementAt(i);
                 suite.addTest(test);
             }
             return suite;
@@ -141,8 +141,8 @@ public class TestRunnerUtil {
                         }
                         test = new SuiteMethodWrapper(test, suiteClassName);
                     }
-                    catch (final InvocationTargetException e) {
-                        final String message = MessageFormat.format(
+                    catch (InvocationTargetException e) {
+                        String message = MessageFormat.format(
                             ourBundle.getString("junit.failed.to.invoke.suite"),
                             testClass + " " + e.getTargetException().toString()
                         );
@@ -243,7 +243,7 @@ public class TestRunnerUtil {
         private final String myMessage;
         private final Throwable myThrowable;
 
-        public FailedTestCase(final Class testClass, final String methodName, final String message, final Throwable e) {
+        public FailedTestCase(Class testClass, String methodName, String message, Throwable e) {
             super(testClass.getName());
             myMethodName = methodName;
             myMessage = message;

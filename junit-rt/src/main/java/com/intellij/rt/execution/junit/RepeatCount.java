@@ -62,7 +62,7 @@ public abstract class RepeatCount
 			return -2;
 		}
 
-		final String prefix = "@" + N;
+		String prefix = "@" + N;
 		if(countString.startsWith(prefix))
 		{
 			try

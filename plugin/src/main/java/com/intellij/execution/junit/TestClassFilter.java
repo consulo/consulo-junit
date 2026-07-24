@@ -45,7 +45,7 @@ public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 	private final Project myProject;
 	private final GlobalSearchScope myScope;
 
-    private TestClassFilter(@Nullable PsiClass base, final GlobalSearchScope scope)
+    private TestClassFilter(@Nullable PsiClass base, GlobalSearchScope scope)
 	{
 		myBase = base;
 		myProject = scope.getProject();
@@ -63,15 +63,15 @@ public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 	}
 
 	@Override
-    public boolean isAccepted(final PsiClass aClass)
+    public boolean isAccepted(PsiClass aClass)
 	{
         return ReadAction.compute(() ->
 		{
 			if(aClass.getQualifiedName() != null && (myBase != null && aClass.isInheritor(myBase, true) && ConfigurationUtil.PUBLIC_INSTANTIATABLE_CLASS.test(aClass) || JUnitUtil.isTestClass
 					(aClass)))
 			{
-				final CompilerManager compilerConfiguration = CompilerManager.getInstance(getProject());
-				final VirtualFile virtualFile = PsiUtilCore.getVirtualFile(aClass);
+				CompilerManager compilerConfiguration = CompilerManager.getInstance(getProject());
+				VirtualFile virtualFile = PsiUtilCore.getVirtualFile(aClass);
 				if(virtualFile == null)
 				{
 					return false;
@@ -83,35 +83,35 @@ public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 		});
 	}
 
-	public TestClassFilter intersectionWith(final GlobalSearchScope scope)
+	public TestClassFilter intersectionWith(GlobalSearchScope scope)
 	{
 		return new TestClassFilter(myBase, myScope.intersectWith(scope));
 	}
 
-	public static TestClassFilter create(final SourceScope sourceScope, final Module module)
+	public static TestClassFilter create(SourceScope sourceScope, Module module)
 	{
-		final PsiClass testCase = getTestCase(sourceScope, module);
+		PsiClass testCase = getTestCase(sourceScope, module);
 		return new TestClassFilter(testCase, sourceScope.getGlobalSearchScope());
 	}
 
 	@Nullable
-	private static PsiClass getTestCase(final SourceScope sourceScope, final Module module)
+	private static PsiClass getTestCase(SourceScope sourceScope, Module module)
 	{
 		return ReadAction.compute(() -> module == null ? JUnitUtil.getTestCaseClass(sourceScope) : JUnitUtil.getTestCaseClass(module));
 	}
 
-	public static TestClassFilter create(final SourceScope sourceScope, Module module, final String pattern)
+	public static TestClassFilter create(final SourceScope sourceScope, Module module, String pattern)
 	{
 		final PsiClass testCase = getTestCase(sourceScope, module);
 		Predicate<String> predicate = getClassNamePredicate(pattern);
 		return new TestClassFilter(testCase, sourceScope.getGlobalSearchScope())
 		{
 			@Override
-			public boolean isAccepted(final PsiClass aClass)
+			public boolean isAccepted(PsiClass aClass)
 			{
 				if(super.isAccepted(aClass))
 				{
-					final String qualifiedName = ReadAction.compute(aClass::getQualifiedName);
+					String qualifiedName = ReadAction.compute(aClass::getQualifiedName);
 					return predicate.test(qualifiedName);
 				}
 				return false;
@@ -135,11 +135,11 @@ public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 
 	public static Predicate<String> getClassNamePredicate(String pattern)
 	{
-		final String[] patterns = pattern.split("\\|\\|");
-		final List<Pattern> compilePatterns = new ArrayList<>();
+		String[] patterns = pattern.split("\\|\\|");
+		List<Pattern> compilePatterns = new ArrayList<>();
 		for(String p : patterns)
 		{
-			final Pattern compilePattern = getCompilePattern(p);
+			Pattern compilePattern = getCompilePattern(p);
 			if(compilePattern != null)
 			{
 				compilePatterns.add(compilePattern);

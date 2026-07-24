@@ -22,7 +22,7 @@ public class JUnitForkedStarter {
     public static void main(String[] args) throws Exception {
         List argList = new ArrayList();
         for (int i = 0; i < args.length; i++) {
-            final int count = RepeatCount.getCount(args[i]);
+            int count = RepeatCount.getCount(args[i]);
             if (count != 0) {
                 JUnitStarter.ourCount = count;
                 continue;
@@ -30,9 +30,9 @@ public class JUnitForkedStarter {
             argList.add(args[i]);
         }
         args = (String[])argList.toArray(new String[argList.size()]);
-        final String[] childTestDescription = {args[0]};
-        final String argentName = args[1];
-        final ArrayList listeners = new ArrayList();
+        String[] childTestDescription = {args[0]};
+        String argentName = args[1];
+        ArrayList listeners = new ArrayList();
         for (int i = 2, argsLength = args.length; i < argsLength; i++) {
             listeners.add(args[i]);
         }

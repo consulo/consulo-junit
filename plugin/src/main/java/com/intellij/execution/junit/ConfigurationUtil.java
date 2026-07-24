@@ -38,14 +38,14 @@ import java.util.Set;
 
 public class ConfigurationUtil {
     // return true if there is JUnit4 test
-    public static boolean findAllTestClasses(final TestClassFilter testClassFilter, @Nullable final Module module, final Set<PsiClass> found) {
-        final PsiManager manager = testClassFilter.getPsiManager();
+    public static boolean findAllTestClasses(final TestClassFilter testClassFilter, @Nullable Module module, final Set<PsiClass> found) {
+        PsiManager manager = testClassFilter.getPsiManager();
 
-        final Project project = manager.getProject();
+        Project project = manager.getProject();
         GlobalSearchScope projectScopeWithoutLibraries = GlobalSearchScope.projectScope(project);
-        final GlobalSearchScope scope = projectScopeWithoutLibraries.intersectWith(testClassFilter.getScope());
+        GlobalSearchScope scope = projectScopeWithoutLibraries.intersectWith(testClassFilter.getScope());
 
-        final PsiClass base = testClassFilter.getBase();
+        PsiClass base = testClassFilter.getBase();
         if (base != null) {
             ClassInheritorsSearch.search(base, scope, true, true, false).forEach(new ReadActionProcessor<PsiClass>() {
                 @Override
@@ -59,11 +59,11 @@ public class ConfigurationUtil {
         }
 
         // classes having suite() method
-        final PsiMethod[] suiteMethods = ReadAction.compute(() -> PsiShortNamesCache.getInstance(project).getMethodsByName(JUnitUtil.SUITE_METHOD_NAME, scope));
-        for (final PsiMethod method : suiteMethods) {
+        PsiMethod[] suiteMethods = ReadAction.compute(() -> PsiShortNamesCache.getInstance(project).getMethodsByName(JUnitUtil.SUITE_METHOD_NAME, scope));
+        for (PsiMethod method : suiteMethods) {
             ApplicationManager.getApplication().runReadAction(() ->
             {
-                final PsiClass containingClass = method.getContainingClass();
+                PsiClass containingClass = method.getContainingClass();
                 if (containingClass == null) {
                     return;
                 }
@@ -88,15 +88,15 @@ public class ConfigurationUtil {
         return hasJunit4;
     }
 
-    private static boolean addAnnotatedMethodsAnSubclasses(final GlobalSearchScope scope,
+    private static boolean addAnnotatedMethodsAnSubclasses(GlobalSearchScope scope,
                                                            final TestClassFilter testClassFilter,
-                                                           @Nullable final Module module,
+                                                           @Nullable Module module,
                                                            final Set<PsiClass> found,
                                                            final Set<PsiClass> processed,
-                                                           final String annotation,
-                                                           final Project project) {
+                                                           String annotation,
+                                                           Project project) {
         // annotated with @Test
-        final PsiClass testAnnotation = ReadAction.compute(() -> JavaPsiFacade.getInstance(project).findClass(annotation, GlobalSearchScope.allScope(project)));
+        PsiClass testAnnotation = ReadAction.compute(() -> JavaPsiFacade.getInstance(project).findClass(annotation, GlobalSearchScope.allScope(project)));
 
         if (testAnnotation == null) {
             return false;
@@ -110,7 +110,7 @@ public class ConfigurationUtil {
                 if (!processed.add(annotated)) { // don't process the same class twice regardless of it being in the scope
                     return true;
                 }
-                final VirtualFile file = PsiUtilCore.getVirtualFile(annotated);
+                VirtualFile file = PsiUtilCore.getVirtualFile(annotated);
                 if (file != null && scope.contains(file) && testClassFilter.isAccepted(annotated)) {
                     if (!found.add(annotated)) {
                         return true;

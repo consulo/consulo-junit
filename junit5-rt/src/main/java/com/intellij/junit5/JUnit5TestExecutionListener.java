@@ -135,8 +135,8 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
 
     @Override
     public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
-        final TestExecutionResult.Status status = testExecutionResult.getStatus();
-        final Throwable throwableOptional = testExecutionResult.getThrowable().orElse(null);
+        TestExecutionResult.Status status = testExecutionResult.getStatus();
+        Throwable throwableOptional = testExecutionResult.getThrowable().orElse(null);
         executionFinished(testIdentifier, status, throwableOptional, null);
         mySuccessful &= TestExecutionResult.Status.SUCCESSFUL == testExecutionResult.getStatus();
     }
@@ -147,9 +147,9 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
         Throwable throwableOptional,
         String reason
     ) {
-        final String displayName = testIdentifier.getDisplayName();
+        String displayName = testIdentifier.getDisplayName();
         if (testIdentifier.isTest()) {
-            final long duration = getDuration();
+            long duration = getDuration();
             if (status == TestExecutionResult.Status.FAILED) {
                 testFailure(testIdentifier, MapSerializerUtil.TEST_FAILED, throwableOptional, duration, reason, true);
             }
@@ -186,7 +186,7 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
                     myPrintStream.println("\n##teamcity[testFinished" + nameAndId + "]");
                 }
 
-                final Set<TestIdentifier> descendants =
+                Set<TestIdentifier> descendants =
                     myTestPlan != null ? myTestPlan.getDescendants(testIdentifier) : Collections.emptySet();
                 if (!descendants.isEmpty() && myFinishCount == 0) {
                     for (TestIdentifier childIdentifier : descendants) {
@@ -257,7 +257,7 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
         String reason,
         boolean includeThrowable
     ) {
-        final Map<String, String> attrs = new LinkedHashMap<>();
+        Map<String, String> attrs = new LinkedHashMap<>();
         attrs.put("name", methodName);
         attrs.put("id", id);
         attrs.put("nodeId", id);
@@ -278,8 +278,8 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
                 }
                 else if (ex instanceof AssertionFailedError
                     && ((AssertionFailedError)ex).isActualDefined() && ((AssertionFailedError)ex).isExpectedDefined()) {
-                    final ValueWrapper actual = ((AssertionFailedError)ex).getActual();
-                    final ValueWrapper expected = ((AssertionFailedError)ex).getExpected();
+                    ValueWrapper actual = ((AssertionFailedError)ex).getActual();
+                    ValueWrapper expected = ((AssertionFailedError)ex).getExpected();
                     failureData = new ComparisonFailureData(expected.getStringRepresentation(), actual.getStringRepresentation());
                 }
                 else {
@@ -313,8 +313,8 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
     }
 
     protected String getTrace(Throwable ex) {
-        final StringWriter stringWriter = new StringWriter();
-        final PrintWriter writer = new PrintWriter(stringWriter);
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter writer = new PrintWriter(stringWriter);
         ex.printStackTrace(writer);
         return stringWriter.toString();
     }
@@ -350,7 +350,7 @@ public class JUnit5TestExecutionListener implements TestExecutionListener {
     }
 
     private void sendTreeUnderRoot(TestPlan testPlan, TestIdentifier root, HashSet<TestIdentifier> visited) {
-        final String idAndName = idAndName(root);
+        String idAndName = idAndName(root);
         if (root.isContainer()) {
             myPrintStream.println("##teamcity[suiteTreeStarted" + idAndName + " " + getLocationHint(root) + "]");
             for (TestIdentifier childIdentifier : testPlan.getChildren(root)) {

@@ -51,13 +51,13 @@ public class JUnit5IdeaTestRunner implements IdeaTestRunner {
         try {
             JUnit5TestExecutionListener listener = myExecutionListeners.get(0);
             listener.initializeIdSuffix(!sendTree);
-            final String[] packageNameRef = new String[1];
-            final LauncherDiscoveryRequest discoveryRequest = JUnit5TestRunnerUtil.buildRequest(args, packageNameRef);
+            String[] packageNameRef = new String[1];
+            LauncherDiscoveryRequest discoveryRequest = JUnit5TestRunnerUtil.buildRequest(args, packageNameRef);
             myTestPlan = myLauncher.discover(discoveryRequest);
             List<TestExecutionListener> listeners = new ArrayList<>();
             listeners.add(listener);
             for (Object listenerClassName : myListeners) {
-                final IDEAJUnitListener junitListener = (IDEAJUnitListener)Class.forName((String)listenerClassName).newInstance();
+                IDEAJUnitListener junitListener = (IDEAJUnitListener)Class.forName((String)listenerClassName).newInstance();
                 listeners.add(new MyCustomListenerWrapper(junitListener));
             }
             if (sendTree) {
@@ -93,10 +93,10 @@ public class JUnit5IdeaTestRunner implements IdeaTestRunner {
 
     @Override
     public Object getTestToStart(String[] args, String name) {
-        final LauncherDiscoveryRequest discoveryRequest = JUnit5TestRunnerUtil.buildRequest(args, new String[1]);
+        LauncherDiscoveryRequest discoveryRequest = JUnit5TestRunnerUtil.buildRequest(args, new String[1]);
         Launcher launcher = LauncherFactory.create();
         myTestPlan = launcher.discover(discoveryRequest);
-        final Set<TestIdentifier> roots = myTestPlan.getRoots();
+        Set<TestIdentifier> roots = myTestPlan.getRoots();
         if (roots.isEmpty()) {
             return null;
         }
@@ -113,9 +113,9 @@ public class JUnit5IdeaTestRunner implements IdeaTestRunner {
 
     @Override
     public String getStartDescription(Object child) {
-        final TestIdentifier testIdentifier = (TestIdentifier)child;
-        final String className = JUnit5TestExecutionListener.getClassName(testIdentifier);
-        final String methodSignature = JUnit5TestExecutionListener.getMethodSignature(testIdentifier);
+        TestIdentifier testIdentifier = (TestIdentifier)child;
+        String className = JUnit5TestExecutionListener.getClassName(testIdentifier);
+        String methodSignature = JUnit5TestExecutionListener.getMethodSignature(testIdentifier);
         if (methodSignature != null) {
             return className + "," + methodSignature;
         }
@@ -137,8 +137,8 @@ public class JUnit5IdeaTestRunner implements IdeaTestRunner {
         @Override
         public void executionStarted(TestIdentifier testIdentifier) {
             if (testIdentifier.isTest()) {
-                final String className = JUnit5TestExecutionListener.getClassName(testIdentifier);
-                final String methodName = JUnit5TestExecutionListener.getMethodName(testIdentifier);
+                String className = JUnit5TestExecutionListener.getClassName(testIdentifier);
+                String methodName = JUnit5TestExecutionListener.getMethodName(testIdentifier);
                 myJunitListener.testStarted(className, methodName);
             }
         }
@@ -146,8 +146,8 @@ public class JUnit5IdeaTestRunner implements IdeaTestRunner {
         @Override
         public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
             if (testIdentifier.isTest()) {
-                final String className = JUnit5TestExecutionListener.getClassName(testIdentifier);
-                final String methodName = JUnit5TestExecutionListener.getMethodName(testIdentifier);
+                String className = JUnit5TestExecutionListener.getClassName(testIdentifier);
+                String methodName = JUnit5TestExecutionListener.getMethodName(testIdentifier);
                 if (myJunitListener instanceof IDEAJUnitListenerEx) {
                     ((IDEAJUnitListenerEx)myJunitListener).testFinished(
                         className,
