@@ -76,7 +76,11 @@ public class TestClassFilter implements ClassFilter.ClassFilterWithScope
 				{
 					return false;
 				}
-				return !compilerConfiguration.isExcludedFromCompilation(virtualFile) && !ProjectRootManager.getInstance(myProject).getFileIndex().isUnderContentFolderType(virtualFile,
+				if(virtualFile.isInLocalFileSystem() && compilerConfiguration.isExcludedFromCompilation(virtualFile.toNioPath()))
+				{
+					return false;
+				}
+				return !ProjectRootManager.getInstance(myProject).getFileIndex().isUnderContentFolderType(virtualFile,
 						ProductionResourceContentFolderTypeProvider.getInstance());
 			}
 			return false;
