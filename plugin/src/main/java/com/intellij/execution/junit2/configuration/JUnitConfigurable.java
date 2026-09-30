@@ -17,14 +17,17 @@
 package com.intellij.execution.junit2.configuration;
 
 import com.intellij.execution.junit.JUnitConfiguration;
-import com.intellij.execution.junit.JUnitConfigurationType;
 import com.intellij.execution.junit.JUnitUtil;
 import com.intellij.execution.junit.TestClassFilter;
-import com.intellij.java.execution.ShortenCommandLine;
-import com.intellij.java.execution.impl.MethodBrowser;
+import com.intellij.java.execution.impl.MethodListDlg;
 import com.intellij.java.execution.impl.testDiscovery.TestDiscoveryExtension;
-import com.intellij.java.execution.impl.ui.*;
-import com.intellij.java.language.impl.ui.EditorTextFieldWithBrowseButton;
+import com.intellij.java.execution.impl.ui.ClassBrowser;
+import com.intellij.java.execution.impl.ui.CommonJavaParametersLayout;
+import com.intellij.java.execution.impl.ui.UnifiedConfigurationModuleSelector;
+import com.intellij.java.execution.impl.ui.UnifiedJrePathEditor;
+import com.intellij.java.execution.impl.ui.UnifiedShortenCommandLineModeCombo;
+import com.intellij.java.language.impl.JavaFileType;
+import com.intellij.java.language.impl.ui.JavaReferenceEditorUtil;
 import com.intellij.java.language.impl.ui.PackageChooser;
 import com.intellij.java.language.impl.ui.PackageChooserFactory;
 import com.intellij.java.language.psi.JavaCodeFragment;
@@ -33,1526 +36,765 @@ import com.intellij.java.language.psi.PsiJavaPackage;
 import com.intellij.java.language.psi.PsiMethod;
 import com.intellij.java.language.util.ClassFilter;
 import com.intellij.rt.execution.junit.RepeatCount;
-import com.intellij.uiDesigner.core.GridConstraints;
-import com.intellij.uiDesigner.core.GridLayoutManager;
-import com.intellij.uiDesigner.core.Spacer;
-import consulo.execution.ExecutionBundle;
+import consulo.application.concurrent.coroutine.ReadLock;
+import consulo.configurable.ConfigurationException;
+import consulo.document.Document;
 import consulo.execution.configuration.ui.SettingsEditor;
+import consulo.execution.localize.ExecutionLocalize;
 import consulo.execution.test.SourceScope;
 import consulo.execution.test.TestSearchScope;
-import consulo.execution.ui.awt.BrowseModuleValueActionListener;
-import consulo.execution.ui.awt.RawCommandLineEditor;
 import consulo.fileChooser.FileChooserDescriptor;
 import consulo.fileChooser.FileChooserDescriptorFactory;
-import consulo.fileChooser.FileChooserFactory;
-import consulo.fileChooser.IdeaFileChooser;
-import consulo.language.editor.ui.awt.EditorTextField;
-import consulo.language.plain.PlainTextLanguage;
-import consulo.language.psi.PsiElement;
+import consulo.fileChooser.FileChooserTextBoxBuilder;
+import consulo.java.execution.localize.JavaExecutionLocalize;
+import consulo.junit.localize.JUnitLocalize;
+import consulo.language.editor.completion.CompletionResultSet;
+import consulo.language.editor.completion.lookup.LookupElementBuilder;
+import consulo.language.editor.ui.EditorBox;
+import consulo.language.editor.ui.EditorBoxBuilderFactory;
+import consulo.language.editor.ui.awt.TextFieldCompletionProvider;
 import consulo.language.psi.PsiPackage;
 import consulo.language.psi.scope.GlobalSearchScope;
+import consulo.localize.LocalizeValue;
 import consulo.module.Module;
-import consulo.module.ui.awt.ModuleDescriptionsComboBox;
 import consulo.platform.base.icon.PlatformIconGroup;
 import consulo.project.Project;
-import consulo.ui.ex.awt.*;
-import consulo.util.collection.primitive.ints.IntList;
-import consulo.util.collection.primitive.ints.IntLists;
-import consulo.util.io.FileUtil;
+import consulo.ui.ComboBox;
+import consulo.ui.Component;
+import consulo.ui.HasSuffixComponent;
+import consulo.ui.IntBox;
+import consulo.ui.Label;
+import consulo.ui.RadioGroup;
+import consulo.ui.Space;
+import consulo.ui.TextBox;
+import consulo.ui.UIAction;
+import consulo.ui.annotation.RequiredUIAccess;
+import consulo.ui.ex.action.ActionGroup;
+import consulo.ui.ex.action.ActionToolbar;
+import consulo.ui.ex.action.ActionToolbarFactory;
+import consulo.ui.ex.action.AnAction;
+import consulo.ui.ex.action.DumbAwareAction;
+import consulo.ui.ex.awtUnsafe.TargetAWT;
+import consulo.ui.ex.dialog.DialogService;
+import consulo.ui.image.Image;
+import consulo.ui.layout.VerticalLayout;
+import consulo.ui.model.FlatDataModel;
+import consulo.ui.model.MutableFlatDataModel;
+import consulo.ui.util.FormBuilder;
+import consulo.util.concurrent.coroutine.Coroutine;
+import consulo.util.concurrent.coroutine.CoroutineScope;
 import consulo.util.lang.StringUtil;
-import consulo.util.lang.function.Condition;
 import consulo.versionControlSystem.change.ChangeListManager;
 import consulo.versionControlSystem.change.LocalChangeList;
-import consulo.virtualFileSystem.VirtualFile;
+import org.jspecify.annotations.Nullable;
 
-import jakarta.annotation.Nonnull;
-import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.text.Document;
-import javax.swing.text.PlainDocument;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Arrays;
+import javax.swing.JComponent;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.ResourceBundle;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEditor<T> implements PanelWithAnchor {
-    private static final List<IntList> ourEnabledFields = Arrays.asList(
-        IntLists.newArrayList(new int[]{0}),
-        IntLists.newArrayList(new int[]{1}),
-        IntLists.newArrayList(new int[]{
-            1,
-            2
-        }),
-        IntLists.newArrayList(new int[]{3}),
-        IntLists.newArrayList(new int[]{4}),
-        IntLists.newArrayList(new int[]{5}),
-        IntLists.newArrayList(new int[]{
-            1,
-            2
-        }),
-        IntLists.newArrayList(new int[]{6})
-    );
-    private static final String[] FORK_MODE_ALL = {
+public class JUnitConfigurable<T extends JUnitConfiguration> extends SettingsEditor<T> {
+    private static final int[][] ourEnabledFields = {
+        {JUnitConfigurationModel.ALL_IN_PACKAGE},
+        {JUnitConfigurationModel.CLASS},
+        {JUnitConfigurationModel.CLASS, JUnitConfigurationModel.METHOD},
+        {JUnitConfigurationModel.PATTERN},
+        {JUnitConfigurationModel.DIR},
+        {JUnitConfigurationModel.CATEGORY},
+        {},
+        {JUnitConfigurationModel.CLASS, JUnitConfigurationModel.METHOD},
+        {}
+    };
+    private static final List<String> FORK_MODE_ALL = List.of(
         JUnitConfiguration.FORK_NONE,
         JUnitConfiguration.FORK_METHOD,
         JUnitConfiguration.FORK_KLASS
-    };
-    private static final String[] FORK_MODE = {
+    );
+    private static final List<String> FORK_MODE = List.of(
         JUnitConfiguration.FORK_NONE,
         JUnitConfiguration.FORK_METHOD
-    };
-    private final ConfigurationModuleSelector myModuleSelector;
-    private final LabeledComponent[] myTestLocations = new LabeledComponent[6];
-    private final JUnitConfigurationModel myModel;
-    private final BrowseModuleValueActionListener[] myBrowsers;
-    private JComponent myPackagePanel;
-    private LabeledComponent<EditorTextFieldWithBrowseButton> myPackage;
-    private LabeledComponent<TextFieldWithBrowseButton> myDir;
-    private LabeledComponent<JPanel> myPattern;
-    private LabeledComponent<EditorTextFieldWithBrowseButton> myClass;
-    private LabeledComponent<EditorTextFieldWithBrowseButton> myMethod;
-    private LabeledComponent<EditorTextFieldWithBrowseButton> myCategory;
-    // Fields
-    private JPanel myWholePanel;
-    private LabeledComponent<ModuleDescriptionsComboBox> myModule;
-    private CommonJavaParametersPanel myCommonJavaParameters;
-    private JRadioButton myWholeProjectScope;
-    private JRadioButton mySingleModuleScope;
-    private JRadioButton myModuleWDScope;
-    private TextFieldWithBrowseButton myPatternTextField;
-    private JrePathEditor myJrePathEditor;
-    private LabeledComponent<ShortenCommandLineModeCombo> myShortenClasspathModeCombo;
-    private JComboBox myForkCb;
-    private JBLabel myTestLabel;
-    private JComboBox myTypeChooser;
-    private JBLabel mySearchForTestsLabel;
-    private JPanel myScopesPanel;
-    private JComboBox myRepeatCb;
-    private JTextField myRepeatCountField;
-    private LabeledComponent<JComboBox<String>> myChangeListLabeledComponent;
-    private LabeledComponent<RawCommandLineEditor> myUniqueIdField;
-    private Project myProject;
-    private JComponent anchor;
+    );
+    private static final String ALL_CHANGE_LISTS = "All";
 
-    public JUnitConfigurable(final Project project) {
+    private final Project myProject;
+
+    private @Nullable JUnitParametersLayout myLayout;
+
+    public JUnitConfigurable(Project project) {
         myProject = project;
-        myModel = new JUnitConfigurationModel(project);
-        $$$setupUI$$$();
-        myModuleSelector = new ConfigurationModuleSelector(project, getModulesComponent());
-        myJrePathEditor.setDefaultJreSelector(DefaultJreSelector.fromModuleDependencies(getModulesComponent(), false));
-        myCommonJavaParameters.setModuleContext(myModuleSelector.getModule());
-        myCommonJavaParameters.setHasModuleMacro();
-        myModule.getComponent().addActionListener(e -> myCommonJavaParameters.setModuleContext(myModuleSelector.getModule()));
-        myBrowsers = new BrowseModuleValueActionListener[]{
-            new PackageChooserActionListener(project),
-            new TestClassBrowser(project),
-            new MethodBrowser(project) {
-                @Override
-                protected Condition<PsiMethod> getFilter(PsiClass testClass) {
-                    return new JUnitUtil.TestMethodFilter(testClass);
-                }
+    }
 
-                @Override
-                protected String getClassName() {
-                    return JUnitConfigurable.this.getClassName();
-                }
+    @Override
+    @RequiredUIAccess
+    protected Component createUIComponent() {
+        JUnitParametersLayout layout = new JUnitParametersLayout();
+        myLayout = layout;
+        layout.build();
+        layout.initialize();
+        return layout.getComponent();
+    }
 
-                @Override
-                protected ConfigurationModuleSelector getModuleSelector() {
-                    return myModuleSelector;
-                }
-            },
-            new TestsChooserActionListener(project),
-            new BrowseModuleValueActionListener(project) {
-                @Override
-                protected String showDialog() {
-                    VirtualFile virtualFile =
-                        IdeaFileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null);
-                    if (virtualFile != null) {
-                        return FileUtil.toSystemDependentName(virtualFile.getPath());
-                    }
-                    return null;
-                }
-            },
-            new CategoryBrowser(project),
-            null
+    @Override
+    @RequiredUIAccess
+    protected void resetEditorFrom(T configuration) {
+        JUnitParametersLayout layout = myLayout;
+        if (layout != null) {
+            layout.reset(configuration);
+        }
+    }
+
+    @Override
+    @RequiredUIAccess
+    protected void applyEditorTo(T configuration) throws ConfigurationException {
+        JUnitParametersLayout layout = myLayout;
+        if (layout != null) {
+            layout.apply(configuration);
+        }
+    }
+
+    @RequiredUIAccess
+    public void onTypeChanged(int newType) {
+        JUnitParametersLayout layout = myLayout;
+        if (layout != null) {
+            layout.onTypeChanged(newType);
+        }
+    }
+
+    private static LocalizeValue getTypeName(int type) {
+        return switch (type) {
+            case JUnitConfigurationModel.ALL_IN_PACKAGE -> JUnitLocalize.junitConfigurationKindAllInPackage();
+            case JUnitConfigurationModel.DIR -> JUnitLocalize.junitConfigurationKindAllInDirectory();
+            case JUnitConfigurationModel.PATTERN -> JUnitLocalize.junitConfigurationKindByPattern();
+            case JUnitConfigurationModel.CLASS -> JUnitLocalize.junitConfigurationKindClass();
+            case JUnitConfigurationModel.METHOD -> JUnitLocalize.junitConfigurationKindMethod();
+            case JUnitConfigurationModel.CATEGORY -> JUnitLocalize.junitConfigurationKindCategory();
+            case JUnitConfigurationModel.UNIQUE_ID -> JUnitLocalize.junitConfigurationKindByUniqueId();
+            case JUnitConfigurationModel.BY_SOURCE_POSITION -> JUnitLocalize.junitConfigurationKindBySourcePosition();
+            case JUnitConfigurationModel.BY_SOURCE_CHANGES -> JUnitLocalize.junitConfigurationKindBySourceChanges();
+            default -> LocalizeValue.empty();
         };
-        // Garbage support
-        DefaultComboBoxModel aModel = new DefaultComboBoxModel();
-        aModel.addElement(JUnitConfigurationModel.ALL_IN_PACKAGE);
-        aModel.addElement(JUnitConfigurationModel.DIR);
-        aModel.addElement(JUnitConfigurationModel.PATTERN);
-        aModel.addElement(JUnitConfigurationModel.CLASS);
-        aModel.addElement(JUnitConfigurationModel.METHOD);
-        aModel.addElement(JUnitConfigurationModel.CATEGORY);
-        aModel.addElement(JUnitConfigurationModel.UNIQUE_ID);
-        if (TestDiscoveryExtension.TESTDISCOVERY_ENABLED) {
-            aModel.addElement(JUnitConfigurationModel.BY_SOURCE_POSITION);
-            aModel.addElement(JUnitConfigurationModel.BY_SOURCE_CHANGES);
+    }
+
+    private static LocalizeValue getForkModeName(@Nullable String forkMode) {
+        if (JUnitConfiguration.FORK_METHOD.equals(forkMode)) {
+            return JUnitLocalize.junitConfigurationForkModeMethod();
         }
-        myTypeChooser.setModel(aModel);
-        myTypeChooser.setRenderer(new ListCellRendererWrapper<Integer>() {
-            @Override
-            public void customize(JList list, Integer value, int index, boolean selected, boolean hasFocus) {
-                switch (value) {
-                    case JUnitConfigurationModel.ALL_IN_PACKAGE:
-                        setText("All in package");
-                        break;
-                    case JUnitConfigurationModel.DIR:
-                        setText("All in directory");
-                        break;
-                    case JUnitConfigurationModel.PATTERN:
-                        setText("Pattern");
-                        break;
-                    case JUnitConfigurationModel.CLASS:
-                        setText("Class");
-                        break;
-                    case JUnitConfigurationModel.METHOD:
-                        setText("Method");
-                        break;
-                    case JUnitConfigurationModel.CATEGORY:
-                        setText("Category");
-                        break;
-                    case JUnitConfigurationModel.UNIQUE_ID:
-                        setText("UniqueId");
-                        break;
-                    case JUnitConfigurationModel.BY_SOURCE_POSITION:
-                        setText("Through source location");
-                        break;
-                    case JUnitConfigurationModel.BY_SOURCE_CHANGES:
-                        setText("Over changes in sources");
-                        break;
-                }
+        if (JUnitConfiguration.FORK_KLASS.equals(forkMode)) {
+            return JUnitLocalize.junitConfigurationForkModeClass();
+        }
+        return JUnitLocalize.junitConfigurationForkModeNone();
+    }
+
+    private static LocalizeValue getRepeatModeName(@Nullable String repeatMode) {
+        if (RepeatCount.N.equals(repeatMode)) {
+            return JUnitLocalize.junitConfigurationRepeatModeNTimes();
+        }
+        if (RepeatCount.UNTIL_FAILURE.equals(repeatMode)) {
+            return JUnitLocalize.junitConfigurationRepeatModeUntilFailure();
+        }
+        if (RepeatCount.UNLIMITED.equals(repeatMode)) {
+            return JUnitLocalize.junitConfigurationRepeatModeUntilStopped();
+        }
+        return JUnitLocalize.junitConfigurationRepeatModeOnce();
+    }
+
+    private record Row(Label label, Component field) {
+        @RequiredUIAccess
+        void setVisible(boolean visible) {
+            label.setVisible(visible);
+            field.setVisible(visible);
+        }
+
+        @RequiredUIAccess
+        void setEnabled(boolean enabled) {
+            label.setEnabled(enabled);
+            field.setEnabled(enabled);
+        }
+    }
+
+    private class JUnitParametersLayout extends CommonJavaParametersLayout<T> {
+        private final JUnitConfigurationModel myModel = new JUnitConfigurationModel();
+        private final UnifiedConfigurationModuleSelector myModuleSelector;
+        private final UnifiedJrePathEditor myJrePathEditor;
+        private final UnifiedShortenCommandLineModeCombo myShortenCommandLineModeCombo;
+
+        private final ComboBox<Integer> myTypeChooser;
+        private final EditorBox myPackageField;
+        private final FileChooserTextBoxBuilder.Controller myDirField;
+        private final TextBox myPatternField;
+        private final EditorBox myClassField;
+        private final EditorBox myMethodField;
+        private final EditorBox myCategoryField;
+        private final TextBox myUniqueIdField;
+        private final ComboBox<String> myChangeListBox;
+        private final RadioGroup<TestSearchScope> myScopeGroup;
+        private final VerticalLayout myScopesLayout;
+
+        private final MutableFlatDataModel<String> myForkModel = FlatDataModel.of(new ArrayList<>(FORK_MODE_ALL));
+        private final ComboBox<String> myForkBox;
+        private final ComboBox<String> myRepeatBox;
+        private final IntBox myRepeatCountBox;
+
+        private final Row[] myTestLocations = new Row[6];
+        private @Nullable Row myUniqueIdRow;
+        private @Nullable Row myChangeListRow;
+        private @Nullable Row myScopesRow;
+
+        @RequiredUIAccess
+        private JUnitParametersLayout() {
+            super(myProject.getApplication().getInstance(DialogService.class));
+
+            myModuleSelector = new UnifiedConfigurationModuleSelector(myProject, JavaExecutionLocalize.runConfigurationModuleNone());
+            myModuleSelector.addValueListener(this::setModuleContext);
+            myJrePathEditor = new UnifiedJrePathEditor(JUnitConfigurable.this);
+            myShortenCommandLineModeCombo = new UnifiedShortenCommandLineModeCombo(myProject, myJrePathEditor, myModuleSelector);
+
+            List<Integer> types = new ArrayList<>(List.of(
+                JUnitConfigurationModel.ALL_IN_PACKAGE,
+                JUnitConfigurationModel.DIR,
+                JUnitConfigurationModel.PATTERN,
+                JUnitConfigurationModel.CLASS,
+                JUnitConfigurationModel.METHOD,
+                JUnitConfigurationModel.CATEGORY,
+                JUnitConfigurationModel.UNIQUE_ID
+            ));
+            if (TestDiscoveryExtension.TESTDISCOVERY_ENABLED) {
+                types.add(JUnitConfigurationModel.BY_SOURCE_POSITION);
+                types.add(JUnitConfigurationModel.BY_SOURCE_CHANGES);
             }
-        });
+            myTypeChooser = ComboBox.create(types);
+            myTypeChooser.setTextRenderer(type -> type == null ? LocalizeValue.empty() : getTypeName(type));
 
-        myTestLocations[JUnitConfigurationModel.ALL_IN_PACKAGE] = myPackage;
-        myTestLocations[JUnitConfigurationModel.CLASS] = myClass;
-        myTestLocations[JUnitConfigurationModel.METHOD] = myMethod;
-        myTestLocations[JUnitConfigurationModel.DIR] = myDir;
-        myTestLocations[JUnitConfigurationModel.CATEGORY] = myCategory;
+            myPackageField = createReferenceField(false, JavaCodeFragment.VisibilityChecker.EVERYTHING_VISIBLE);
 
-        myRepeatCb.setModel(new DefaultComboBoxModel(RepeatCount.REPEAT_TYPES));
-        myRepeatCb.setSelectedItem(RepeatCount.ONCE);
-        myRepeatCb.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                myRepeatCountField.setEnabled(RepeatCount.N.equals(myRepeatCb.getSelectedItem()));
-            }
-        });
+            FileChooserDescriptor dirDescriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
+            dirDescriptor.setHideIgnored(false);
+            myDirField = FileChooserTextBoxBuilder.create(myProject).fileChooserDescriptor(dirDescriptor).build();
 
-        JPanel panel = myPattern.getComponent();
-        panel.setLayout(new BorderLayout());
-        myPatternTextField = new TextFieldWithBrowseButton();
-        myPatternTextField.setButtonIcon(PlatformIconGroup.generalAdd());
-        panel.add(myPatternTextField, BorderLayout.CENTER);
-        myTestLocations[JUnitConfigurationModel.PATTERN] = myPattern;
+            myPatternField = TextBox.create();
 
-        FileChooserDescriptor dirFileChooser = FileChooserDescriptorFactory.createSingleFolderDescriptor();
-        dirFileChooser.setHideIgnored(false);
-        JTextField textField = myDir.getComponent().getTextField();
-        InsertPathAction.addTo(textField, dirFileChooser);
-        FileChooserFactory.getInstance().installFileCompletion(textField, dirFileChooser, true, null);
-        // Done
-
-        myModel.setListener(this);
-
-        myTypeChooser.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Object selectedItem = myTypeChooser.getSelectedItem();
-                myModel.setType((Integer)selectedItem);
-                changePanel();
-            }
-        });
-
-        myRepeatCb.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if ((Integer)myTypeChooser.getSelectedItem() == JUnitConfigurationModel.CLASS) {
-                    myForkCb.setModel(getForkModelBasedOnRepeat());
-                }
-            }
-        });
-        myModel.setType(JUnitConfigurationModel.CLASS);
-        installDocuments();
-        addRadioButtonsListeners(new JRadioButton[]{
-            myWholeProjectScope,
-            mySingleModuleScope,
-            myModuleWDScope
-        }, null);
-        myWholeProjectScope.addChangeListener(e -> onScopeChanged());
-
-        UIUtil.setEnabled(myCommonJavaParameters.getProgramParametersComponent(), false, true);
-
-        setAnchor(mySearchForTestsLabel);
-        myJrePathEditor.setAnchor(myModule.getLabel());
-        myCommonJavaParameters.setAnchor(myModule.getLabel());
-        myShortenClasspathModeCombo.setAnchor(myModule.getLabel());
-
-        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-        myChangeListLabeledComponent.getComponent().setModel(model);
-        model.addElement("All");
-
-        List<LocalChangeList> changeLists = ChangeListManager.getInstance(project).getChangeLists();
-        for (LocalChangeList changeList : changeLists) {
-            model.addElement(changeList.getName());
-        }
-
-        myShortenClasspathModeCombo.setComponent(new ShortenCommandLineModeCombo(myProject, myJrePathEditor, myModule.getComponent()));
-    }
-
-    private static void addRadioButtonsListeners(JRadioButton[] radioButtons, ChangeListener listener) {
-        ButtonGroup group = new ButtonGroup();
-        for (JRadioButton radioButton : radioButtons) {
-            radioButton.getModel().addChangeListener(listener);
-            group.add(radioButton);
-        }
-        if (group.getSelection() == null) {
-            group.setSelected(radioButtons[0].getModel(), true);
-        }
-    }
-
-    @Override
-    public void applyEditorTo(@Nonnull JUnitConfiguration configuration) {
-        configuration.setRepeatMode((String)myRepeatCb.getSelectedItem());
-        try {
-            configuration.setRepeatCount(Integer.parseInt(myRepeatCountField.getText()));
-        }
-        catch (NumberFormatException e) {
-            configuration.setRepeatCount(1);
-        }
-        myModel.apply(getModuleSelector().getModule(), configuration);
-        configuration.getPersistentData().setUniqueIds(myUniqueIdField.getComponent().getText().split(" "));
-        configuration.getPersistentData().setChangeList((String)myChangeListLabeledComponent.getComponent().getSelectedItem());
-        applyHelpersTo(configuration);
-        JUnitConfiguration.Data data = configuration.getPersistentData();
-        if (myWholeProjectScope.isSelected()) {
-            data.setScope(TestSearchScope.WHOLE_PROJECT);
-        }
-        else if (mySingleModuleScope.isSelected()) {
-            data.setScope(TestSearchScope.SINGLE_MODULE);
-        }
-        else if (myModuleWDScope.isSelected()) {
-            data.setScope(TestSearchScope.MODULE_WITH_DEPENDENCIES);
-        }
-        configuration.setAlternativeJrePath(myJrePathEditor.getJrePathOrName());
-        configuration.setAlternativeJrePathEnabled(myJrePathEditor.isAlternativeJreSelected());
-
-        myCommonJavaParameters.applyTo(configuration);
-        configuration.setForkMode((String)myForkCb.getSelectedItem());
-        configuration.setShortenCommandLine((ShortenCommandLine)myShortenClasspathModeCombo.getComponent().getSelectedItem());
-    }
-
-    @Override
-    public void resetEditorFrom(@Nonnull JUnitConfiguration configuration) {
-        int count = configuration.getRepeatCount();
-        myRepeatCountField.setText(String.valueOf(count));
-        myRepeatCountField.setEnabled(count > 1);
-        myRepeatCb.setSelectedItem(configuration.getRepeatMode());
-
-        myModel.reset(configuration);
-        myChangeListLabeledComponent.getComponent().setSelectedItem(configuration.getPersistentData().getChangeList());
-        String[] ids = configuration.getPersistentData().getUniqueIds();
-        myUniqueIdField.getComponent().setText(ids != null ? StringUtil.join(ids, " ") : null);
-        myCommonJavaParameters.reset(configuration);
-        getModuleSelector().reset(configuration);
-        TestSearchScope scope = configuration.getPersistentData().getScope();
-        if (scope == TestSearchScope.SINGLE_MODULE) {
-            mySingleModuleScope.setSelected(true);
-        }
-        else if (scope == TestSearchScope.MODULE_WITH_DEPENDENCIES) {
-            myModuleWDScope.setSelected(true);
-        }
-        else {
-            myWholeProjectScope.setSelected(true);
-        }
-        myJrePathEditor.setPathOrName(configuration.getAlternativeJrePath(), configuration.isAlternativeJrePathEnabled());
-        myForkCb.setSelectedItem(configuration.getForkMode());
-        myShortenClasspathModeCombo.getComponent().setSelectedItem(configuration.getShortenCommandLine());
-    }
-
-    private void changePanel() {
-        String selectedItem = (String)myForkCb.getSelectedItem();
-        if (selectedItem == null) {
-            selectedItem = JUnitConfiguration.FORK_NONE;
-        }
-        Integer selectedType = (Integer)myTypeChooser.getSelectedItem();
-        if (selectedType == JUnitConfigurationModel.ALL_IN_PACKAGE) {
-            myPackagePanel.setVisible(true);
-            myScopesPanel.setVisible(true);
-            myPattern.setVisible(false);
-            myClass.setVisible(false);
-            myCategory.setVisible(false);
-            myUniqueIdField.setVisible(false);
-            myMethod.setVisible(false);
-            myDir.setVisible(false);
-            myChangeListLabeledComponent.setVisible(false);
-            myForkCb.setEnabled(true);
-            myForkCb.setModel(new DefaultComboBoxModel(FORK_MODE_ALL));
-            myForkCb.setSelectedItem(selectedItem);
-        }
-        else if (selectedType == JUnitConfigurationModel.DIR) {
-            myPackagePanel.setVisible(false);
-            myScopesPanel.setVisible(false);
-            myDir.setVisible(true);
-            myPattern.setVisible(false);
-            myClass.setVisible(false);
-            myCategory.setVisible(false);
-            myUniqueIdField.setVisible(false);
-            myChangeListLabeledComponent.setVisible(false);
-            myMethod.setVisible(false);
-            myForkCb.setEnabled(true);
-            myForkCb.setModel(new DefaultComboBoxModel(FORK_MODE_ALL));
-            myForkCb.setSelectedItem(selectedItem);
-        }
-        else if (selectedType == JUnitConfigurationModel.CLASS) {
-            myPackagePanel.setVisible(false);
-            myScopesPanel.setVisible(false);
-            myPattern.setVisible(false);
-            myDir.setVisible(false);
-            myClass.setVisible(true);
-            myCategory.setVisible(false);
-            myUniqueIdField.setVisible(false);
-            myChangeListLabeledComponent.setVisible(false);
-            myMethod.setVisible(false);
-            myForkCb.setEnabled(true);
-            myForkCb.setModel(getForkModelBasedOnRepeat());
-            myForkCb.setSelectedItem(selectedItem != JUnitConfiguration.FORK_KLASS ? selectedItem : JUnitConfiguration.FORK_METHOD);
-        }
-        else if (selectedType == JUnitConfigurationModel.METHOD || selectedType == JUnitConfigurationModel.BY_SOURCE_POSITION) {
-            myPackagePanel.setVisible(false);
-            myScopesPanel.setVisible(false);
-            myPattern.setVisible(false);
-            myDir.setVisible(false);
-            myClass.setVisible(true);
-            myCategory.setVisible(false);
-            myUniqueIdField.setVisible(false);
-            myMethod.setVisible(true);
-            myChangeListLabeledComponent.setVisible(false);
-            myForkCb.setEnabled(false);
-            myForkCb.setSelectedItem(JUnitConfiguration.FORK_NONE);
-        }
-        else if (selectedType == JUnitConfigurationModel.CATEGORY) {
-            myPackagePanel.setVisible(false);
-            myScopesPanel.setVisible(true);
-            myDir.setVisible(false);
-            myPattern.setVisible(false);
-            myClass.setVisible(false);
-            myCategory.setVisible(true);
-            myUniqueIdField.setVisible(false);
-            myMethod.setVisible(false);
-            myChangeListLabeledComponent.setVisible(false);
-            myForkCb.setEnabled(true);
-            myForkCb.setModel(new DefaultComboBoxModel(FORK_MODE_ALL));
-            myForkCb.setSelectedItem(selectedItem);
-        }
-        else if (selectedType == JUnitConfigurationModel.BY_SOURCE_CHANGES) {
-            myPackagePanel.setVisible(false);
-            myScopesPanel.setVisible(false);
-            myDir.setVisible(false);
-            myPattern.setVisible(false);
-            myClass.setVisible(false);
-            myCategory.setVisible(false);
-            myUniqueIdField.setVisible(false);
-            myMethod.setVisible(false);
-            myChangeListLabeledComponent.setVisible(true);
-            myForkCb.setEnabled(true);
-            myForkCb.setModel(new DefaultComboBoxModel(FORK_MODE_ALL));
-            myForkCb.setSelectedItem(selectedItem);
-        }
-        else if (selectedType == JUnitConfigurationModel.UNIQUE_ID) {
-            myPackagePanel.setVisible(false);
-            myScopesPanel.setVisible(false);
-            myDir.setVisible(false);
-            myPattern.setVisible(false);
-            myClass.setVisible(false);
-            myCategory.setVisible(false);
-            myUniqueIdField.setVisible(true);
-            myMethod.setVisible(false);
-            myChangeListLabeledComponent.setVisible(false);
-            myForkCb.setEnabled(true);
-            myForkCb.setModel(new DefaultComboBoxModel(FORK_MODE_ALL));
-            myForkCb.setSelectedItem(selectedItem);
-        }
-        else {
-            myPackagePanel.setVisible(false);
-            myScopesPanel.setVisible(true);
-            myPattern.setVisible(true);
-            myDir.setVisible(false);
-            myClass.setVisible(false);
-            myCategory.setVisible(false);
-            myUniqueIdField.setVisible(false);
-            myMethod.setVisible(true);
-            myChangeListLabeledComponent.setVisible(false);
-            myForkCb.setEnabled(true);
-            myForkCb.setModel(new DefaultComboBoxModel(FORK_MODE_ALL));
-            myForkCb.setSelectedItem(selectedItem);
-        }
-    }
-
-    private DefaultComboBoxModel getForkModelBasedOnRepeat() {
-        return new DefaultComboBoxModel(RepeatCount.ONCE.equals(myRepeatCb.getSelectedItem()) ? FORK_MODE : FORK_MODE_ALL);
-    }
-
-    public ModuleDescriptionsComboBox getModulesComponent() {
-        return myModule.getComponent();
-    }
-
-    public ConfigurationModuleSelector getModuleSelector() {
-        return myModuleSelector;
-    }
-
-    private void installDocuments() {
-        for (int i = 0; i < myTestLocations.length; i++) {
-            LabeledComponent testLocation = getTestLocation(i);
-            JComponent component = testLocation.getComponent();
-            ComponentWithBrowseButton field;
-            Object document;
-            if (component instanceof TextFieldWithBrowseButton textFieldWithBrowseButton) {
-                field = textFieldWithBrowseButton;
-                document = new PlainDocument();
-                textFieldWithBrowseButton.getTextField().setDocument((Document)document);
-            }
-            else if (component instanceof EditorTextFieldWithBrowseButton editorTextFieldWithBrowseButton) {
-                field = editorTextFieldWithBrowseButton;
-                document = ((EditorTextField)field.getChildComponent()).getDocument();
-            }
-            else {
-                field = myPatternTextField;
-                document = new PlainDocument();
-                ((TextFieldWithBrowseButton)field).getTextField().setDocument((Document)document);
-            }
-            myBrowsers[i].setField(field);
-            if (myBrowsers[i] instanceof MethodBrowser methodBrowser) {
-                EditorTextField childComponent = (EditorTextField)field.getChildComponent();
-                methodBrowser.installCompletion(childComponent);
-                document = childComponent.getDocument();
-            }
-            myModel.setJUnitDocument(i, document);
-        }
-    }
-
-    public LabeledComponent getTestLocation(int index) {
-        return myTestLocations[index];
-    }
-
-    private void createUIComponents() {
-        myPackage = new LabeledComponent<>();
-        myPackage.setComponent(new EditorTextFieldWithBrowseButton(myProject, false));
-
-        myClass = new LabeledComponent<>();
-        final TestClassBrowser classBrowser = new TestClassBrowser(myProject);
-        myClass.setComponent(new EditorTextFieldWithBrowseButton(myProject, true, new JavaCodeFragment.VisibilityChecker() {
-            @Override
-            public Visibility isDeclarationVisible(PsiElement declaration, PsiElement place) {
+            TestClassBrowser classBrowser = new TestClassBrowser();
+            myClassField = createReferenceField(true, (declaration, place) -> {
                 try {
-                    if (declaration instanceof PsiClass psiClass && (
-                        classBrowser.getFilter().isAccepted(psiClass)
-                            || classBrowser.findClass(psiClass.getQualifiedName()) != null && place.getParent() != null
-                    )) {
-                        return Visibility.VISIBLE;
+                    if (declaration instanceof PsiClass psiClass
+                        && (classBrowser.getFilter().isAccepted(psiClass)
+                        || classBrowser.findClass(psiClass.getQualifiedName()) != null && place.getParent() != null)) {
+                        return JavaCodeFragment.VisibilityChecker.Visibility.VISIBLE;
                     }
                 }
                 catch (ClassBrowser.NoFilterException e) {
-                    return Visibility.NOT_VISIBLE;
+                    return JavaCodeFragment.VisibilityChecker.Visibility.NOT_VISIBLE;
                 }
-                return Visibility.NOT_VISIBLE;
-            }
-        }));
+                return JavaCodeFragment.VisibilityChecker.Visibility.NOT_VISIBLE;
+            });
 
-        myCategory = new LabeledComponent<>();
-        myCategory.setComponent(new EditorTextFieldWithBrowseButton(myProject, true, new JavaCodeFragment.VisibilityChecker() {
-            @Override
-            public Visibility isDeclarationVisible(PsiElement declaration, PsiElement place) {
-                if (declaration instanceof PsiClass) {
-                    return Visibility.VISIBLE;
-                }
-                return Visibility.NOT_VISIBLE;
-            }
-        }));
+            myMethodField = createMethodField();
 
-        myMethod = new LabeledComponent<>();
-        EditorTextFieldWithBrowseButton textFieldWithBrowseButton = new EditorTextFieldWithBrowseButton(
-            myProject,
-            true,
-            JavaCodeFragment.VisibilityChecker.EVERYTHING_VISIBLE,
-            PlainTextLanguage.INSTANCE.getAssociatedFileType()
-        );
-        myMethod.setComponent(textFieldWithBrowseButton);
-
-        myShortenClasspathModeCombo = new LabeledComponent<>();
-    }
-
-    @Override
-    public JComponent getAnchor() {
-        return anchor;
-    }
-
-    @Override
-    public void setAnchor(JComponent anchor) {
-        this.anchor = anchor;
-        mySearchForTestsLabel.setAnchor(anchor);
-        myTestLabel.setAnchor(anchor);
-        myClass.setAnchor(anchor);
-        myDir.setAnchor(anchor);
-        myMethod.setAnchor(anchor);
-        myPattern.setAnchor(anchor);
-        myPackage.setAnchor(anchor);
-        myCategory.setAnchor(anchor);
-        myUniqueIdField.setAnchor(anchor);
-        myChangeListLabeledComponent.setAnchor(anchor);
-    }
-
-    public void onTypeChanged(int newType) {
-        myTypeChooser.setSelectedItem(newType);
-        IntList enabledFields = ourEnabledFields.get(newType);
-        for (int i = 0; i < myTestLocations.length; i++) {
-            getTestLocation(i).setEnabled(enabledFields.contains(i));
-        }
-    /*if (newType == JUnitConfigurationModel.PATTERN) {
-      myModule.setEnabled(false);
-    } else */
-        if (newType != JUnitConfigurationModel.ALL_IN_PACKAGE && newType != JUnitConfigurationModel.PATTERN && newType != JUnitConfigurationModel.CATEGORY && newType != JUnitConfigurationModel
-            .UNIQUE_ID) {
-            myModule.setEnabled(true);
-        }
-        else {
-            onScopeChanged();
-        }
-    }
-
-    private void onScopeChanged() {
-        Integer selectedItem = (Integer)myTypeChooser.getSelectedItem();
-        boolean allInPackageAllInProject =
-            (selectedItem == JUnitConfigurationModel.ALL_IN_PACKAGE
-                || selectedItem == JUnitConfigurationModel.PATTERN
-                || selectedItem == JUnitConfigurationModel.CATEGORY
-                || selectedItem == JUnitConfigurationModel.UNIQUE_ID)
-                && myWholeProjectScope.isSelected();
-        myModule.setEnabled(!allInPackageAllInProject);
-        if (allInPackageAllInProject) {
-            myModule.getComponent().setSelectedItem(null);
-        }
-    }
-
-    private String getClassName() {
-        return ((LabeledComponent<EditorTextFieldWithBrowseButton>)getTestLocation(JUnitConfigurationModel.CLASS)).getComponent().getText();
-    }
-
-    private void setPackage(PsiPackage aPackage) {
-        if (aPackage == null) {
-            return;
-        }
-        ((LabeledComponent<EditorTextFieldWithBrowseButton>)getTestLocation(JUnitConfigurationModel.ALL_IN_PACKAGE)).getComponent()
-            .setText(aPackage.getQualifiedName());
-    }
-
-    @Nonnull
-    @Override
-    public JComponent createEditor() {
-        return myWholePanel;
-    }
-
-    private void applyHelpersTo(JUnitConfiguration currentState) {
-        myCommonJavaParameters.applyTo(currentState);
-        getModuleSelector().applyTo(currentState);
-    }
-
-    private static class PackageChooserActionListener extends BrowseModuleValueActionListener {
-        public PackageChooserActionListener(Project project) {
-            super(project);
-        }
-
-        @Override
-        protected String showDialog() {
-            PackageChooser chooser = getProject().getInstance(PackageChooserFactory.class).create();
-            List<PsiJavaPackage> packages = chooser.showAndSelect();
-            PsiPackage aPackage = packages == null || packages.isEmpty() ? null : packages.getFirst();
-            return aPackage != null ? aPackage.getQualifiedName() : null;
-        }
-    }
-
-    private class TestsChooserActionListener extends TestClassBrowser {
-        public TestsChooserActionListener(Project project) {
-            super(project);
-        }
-
-        @Override
-        protected void onClassChoosen(PsiClass psiClass) {
-            JTextField textField = myPatternTextField.getTextField();
-            String text = textField.getText();
-            textField.setText(text + (text.length() > 0 ? "||" : "") + psiClass.getQualifiedName());
-        }
-
-        @Override
-        protected ClassFilter.ClassFilterWithScope getFilter() throws NoFilterException {
-            return TestClassFilter.create(SourceScope.wholeProject(getProject()), null);
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            showDialog();
-        }
-    }
-
-    private class TestClassBrowser extends ClassBrowser {
-        public TestClassBrowser(Project project) {
-            super(project, ExecutionBundle.message("choose.test.class.dialog.title"));
-        }
-
-        @Override
-        protected void onClassChoosen(PsiClass psiClass) {
-            setPackage(JUnitUtil.getContainingPackage(psiClass));
-        }
-
-        @Override
-        protected PsiClass findClass(String className) {
-            return getModuleSelector().findClass(className);
-        }
-
-        @Override
-        protected ClassFilter.ClassFilterWithScope getFilter() throws NoFilterException {
-            ConfigurationModuleSelector moduleSelector = getModuleSelector();
-            Module module = moduleSelector.getModule();
-            if (module == null) {
-                throw NoFilterException.moduleDoesntExist(moduleSelector);
-            }
-            ClassFilter.ClassFilterWithScope classFilter;
-            JUnitConfiguration configurationCopy =
-                    new JUnitConfiguration(
-                            ExecutionBundle.message("default.junit.configuration.name"),
-                            getProject(),
-                            JUnitConfigurationType.getInstance()
-                                    .getConfigurationFactories()[0]
-                    );
-            applyEditorTo(configurationCopy);
-            classFilter = TestClassFilter.create(
-                    SourceScope.modulesWithDependencies(configurationCopy.getModules()),
-                    configurationCopy.getConfigurationModule().getModule()
+            myCategoryField = createReferenceField(
+                true,
+                (declaration, place) -> declaration instanceof PsiClass
+                    ? JavaCodeFragment.VisibilityChecker.Visibility.VISIBLE
+                    : JavaCodeFragment.VisibilityChecker.Visibility.NOT_VISIBLE
             );
-            return classFilter;
-        }
-    }
 
-    private class CategoryBrowser extends ClassBrowser {
-        public CategoryBrowser(Project project) {
-            super(project, "Category Interface");
+            myUniqueIdField = TextBox.create();
+
+            List<String> changeLists = new ArrayList<>();
+            changeLists.add(ALL_CHANGE_LISTS);
+            for (LocalChangeList changeList : ChangeListManager.getInstance(myProject).getChangeLists()) {
+                changeLists.add(changeList.getName());
+            }
+            myChangeListBox = ComboBox.create(changeLists);
+            myChangeListBox.setTextRenderer(name -> ALL_CHANGE_LISTS.equals(name)
+                ? JUnitLocalize.junitConfigurationChangeListAll()
+                : LocalizeValue.ofNullable(name));
+
+            myScopeGroup = RadioGroup.create();
+            myScopesLayout = VerticalLayout.create(Space.NONE);
+            myScopesLayout.add(myScopeGroup.newButton(ExecutionLocalize.junitConfigurationInWholeProjectRadio(), TestSearchScope.WHOLE_PROJECT));
+            myScopesLayout.add(myScopeGroup.newButton(ExecutionLocalize.junitConfigurationInSingleModuleRadio(), TestSearchScope.SINGLE_MODULE));
+            myScopesLayout.add(myScopeGroup.newButton(
+                ExecutionLocalize.junitConfigurationAcrossModuleDependenciesRadio(),
+                TestSearchScope.MODULE_WITH_DEPENDENCIES
+            ));
+            myScopeGroup.setValue(TestSearchScope.WHOLE_PROJECT, false);
+
+            myForkBox = ComboBox.create(myForkModel);
+            myForkBox.setTextRenderer(JUnitConfigurable::getForkModeName);
+
+            myRepeatBox = ComboBox.create(RepeatCount.REPEAT_TYPES);
+            myRepeatBox.setTextRenderer(JUnitConfigurable::getRepeatModeName);
+            myRepeatBox.setValue(RepeatCount.ONCE, false);
+
+            myRepeatCountBox = IntBox.create(1).withRange(1, Integer.MAX_VALUE);
+            myRepeatCountBox.setEnabled(false);
+
+            if (!myProject.getApplication().isUnifiedApplication()) {
+                installChooserActions(classBrowser);
+            }
         }
 
-        @Override
-        protected PsiClass findClass(String className) {
+        @RequiredUIAccess
+        private EditorBox createReferenceField(boolean classesAccepted, JavaCodeFragment.VisibilityChecker visibilityChecker) {
+            EditorBox field = myProject.getApplication().getInstance(EditorBoxBuilderFactory.class).create(myProject).build();
+            if (myProject.isDefault()) {
+                return field;
+            }
+
+            CoroutineScope.launchAsync(
+                myProject.coroutineContext(),
+                () -> Coroutine
+                    .first(ReadLock.<Void, @Nullable Document>apply(
+                        ignored -> JavaReferenceEditorUtil.createDocument("", myProject, classesAccepted, visibilityChecker)
+                    ))
+                    .then(UIAction.<@Nullable Document, Void>apply(document -> {
+                        if (document != null) {
+                            String text = StringUtil.notNullize(field.getValue());
+                            field.setDocument(document, JavaFileType.INSTANCE);
+                            field.setValue(text);
+                        }
+                        return null;
+                    }))
+            );
+            return field;
+        }
+
+        @RequiredUIAccess
+        private EditorBox createMethodField() {
+            TextFieldCompletionProvider completionProvider = new TextFieldCompletionProvider() {
+                @Override
+                public void addCompletionVariants(String text, int offset, String prefix, CompletionResultSet result) {
+                    PsiClass testClass = findTestClass();
+                    if (testClass == null) {
+                        return;
+                    }
+
+                    JUnitUtil.TestMethodFilter filter = new JUnitUtil.TestMethodFilter(testClass);
+                    for (PsiMethod psiMethod : testClass.getAllMethods()) {
+                        if (filter.value(psiMethod)) {
+                            result.addElement(LookupElementBuilder.create(psiMethod.getName()));
+                        }
+                    }
+                }
+            };
+
+            return myProject.getApplication()
+                .getInstance(EditorBoxBuilderFactory.class)
+                .create(myProject)
+                .completion(completionProvider)
+                .build();
+        }
+
+        private @Nullable PsiClass findTestClass() {
+            String className = StringUtil.notNullize(myClassField.getValue());
+            if (StringUtil.isEmptyOrSpaces(className)) {
+                return null;
+            }
             return myModuleSelector.findClass(className);
         }
 
-        @Override
-        protected ClassFilter.ClassFilterWithScope getFilter() throws NoFilterException {
-            Module module = myModuleSelector.getModule();
-            final GlobalSearchScope scope;
-            if (module == null) {
-                scope = GlobalSearchScope.allScope(myProject);
-            }
-            else {
-                scope = GlobalSearchScope.moduleWithDependenciesAndLibrariesScope(module);
-            }
-            return new ClassFilter.ClassFilterWithScope() {
+        @RequiredUIAccess
+        private void installChooserActions(TestClassBrowser classBrowser) {
+            installAction(myPackageField, "JUnitConfigurablePackage", DumbAwareAction.create(
+                JUnitLocalize.junitConfigurationChoosePackageAction(),
+                LocalizeValue.empty(),
+                PlatformIconGroup.nodesPackage(),
+                e -> {
+                    PackageChooser chooser = myProject.getInstance(PackageChooserFactory.class).create();
+                    List<PsiJavaPackage> packages = chooser.showAndSelect();
+                    PsiPackage aPackage = packages == null || packages.isEmpty() ? null : packages.getFirst();
+                    if (aPackage != null) {
+                        myPackageField.setValue(aPackage.getQualifiedName());
+                    }
+                }
+            ));
+
+            installAction(myClassField, "JUnitConfigurableClass", createClassAction(
+                ExecutionLocalize.chooseTestClassDialogTitle(),
+                PlatformIconGroup.nodesClass(),
+                () -> classBrowser.chooseClass(myClassField.getValue()),
+                myClassField::setValue
+            ));
+
+            installAction(myMethodField, "JUnitConfigurableMethod", DumbAwareAction.create(
+                JUnitLocalize.junitConfigurationChooseMethodAction(),
+                LocalizeValue.empty(),
+                PlatformIconGroup.nodesMethod(),
+                e -> {
+                    PsiClass testClass = findTestClass();
+                    if (testClass == null) {
+                        return;
+                    }
+
+                    MethodListDlg dialog =
+                        new MethodListDlg(testClass, new JUnitUtil.TestMethodFilter(testClass), (JComponent) TargetAWT.to(myMethodField));
+                    if (dialog.showAndGet()) {
+                        PsiMethod method = dialog.getSelected();
+                        if (method != null) {
+                            myMethodField.setValue(method.getName());
+                        }
+                    }
+                }
+            ));
+
+            TestClassBrowser patternBrowser = new TestClassBrowser() {
                 @Override
-                public GlobalSearchScope getScope() {
-                    return scope;
+                protected ClassFilter.ClassFilterWithScope getFilter() {
+                    return TestClassFilter.create(SourceScope.wholeProject(getProject()), null);
                 }
 
                 @Override
-                public boolean isAccepted(PsiClass aClass) {
-                    return true;
+                protected void onClassChoosen(PsiClass psiClass) {
                 }
             };
+            installAction(myPatternField, "JUnitConfigurablePattern", createClassAction(
+                JUnitLocalize.junitConfigurationAddTestClassAction(),
+                PlatformIconGroup.generalAdd(),
+                () -> patternBrowser.chooseClass(null),
+                className -> {
+                    String text = StringUtil.notNullize(myPatternField.getValue());
+                    myPatternField.setValue(text + (text.isEmpty() ? "" : "||") + className);
+                }
+            ));
+
+            CategoryBrowser categoryBrowser = new CategoryBrowser();
+            installAction(myCategoryField, "JUnitConfigurableCategory", createClassAction(
+                JUnitLocalize.categoryInterfaceDialogTitle(),
+                PlatformIconGroup.nodesClass(),
+                () -> categoryBrowser.chooseClass(myCategoryField.getValue()),
+                myCategoryField::setValue
+            ));
+        }
+
+        private AnAction createClassAction(
+            LocalizeValue text,
+            Image icon,
+            Supplier<@Nullable String> chooser,
+            Consumer<String> consumer
+        ) {
+            return DumbAwareAction.create(text, LocalizeValue.empty(), icon, e -> {
+                String className = chooser.get();
+                if (className != null) {
+                    consumer.accept(className);
+                }
+            });
+        }
+
+        @RequiredUIAccess
+        private <C extends Component & HasSuffixComponent> void installAction(C field, String place, AnAction action) {
+            ActionToolbar toolbar = ActionToolbarFactory.getInstance()
+                .createActionToolbar(place, ActionGroup.newImmutableBuilder().add(action).build(), ActionToolbar.Style.INPLACE);
+            toolbar.setTargetUIComponent(field);
+            toolbar.updateActionsAsync();
+            field.setSuffixComponent(toolbar.getUIComponent());
+        }
+
+        @RequiredUIAccess
+        private Row addRow(FormBuilder builder, LocalizeValue text, Component field) {
+            Label label = Label.create(text);
+            builder.addLabeled(label, field);
+            return new Row(label, field);
         }
 
         @Override
-        protected void onClassChoosen(PsiClass psiClass) {
-            ((LabeledComponent<EditorTextFieldWithBrowseButton>)getTestLocation(JUnitConfigurationModel.CATEGORY)).getComponent()
-                .setText(psiClass.getQualifiedName());
+        @RequiredUIAccess
+        protected void addBefore(FormBuilder builder) {
+            builder.addLabeled(ExecutionLocalize.junitConfigurationConfigureJunitTestKindLabel(), myTypeChooser);
+
+            myTestLocations[JUnitConfigurationModel.ALL_IN_PACKAGE] =
+                addRow(builder, ExecutionLocalize.junitConfigurationPackageLabel(), myPackageField);
+            myTestLocations[JUnitConfigurationModel.DIR] =
+                addRow(builder, JUnitLocalize.junitConfigurationDirectoryLabel(), myDirField.getComponent());
+            myTestLocations[JUnitConfigurationModel.PATTERN] =
+                addRow(builder, JUnitLocalize.junitConfigurationPatternLabel(), myPatternField);
+            myTestLocations[JUnitConfigurationModel.CLASS] =
+                addRow(builder, ExecutionLocalize.junitConfigurationClassLabel(), myClassField);
+            myTestLocations[JUnitConfigurationModel.METHOD] =
+                addRow(builder, ExecutionLocalize.junitConfigurationMethodLabel(), myMethodField);
+            myTestLocations[JUnitConfigurationModel.CATEGORY] =
+                addRow(builder, JUnitLocalize.junitConfigurationCategoryLabel(), myCategoryField);
+            myUniqueIdRow = addRow(builder, JUnitLocalize.junitConfigurationUniqueIdLabel(), myUniqueIdField);
+            myChangeListRow = addRow(builder, JUnitLocalize.junitConfigurationChangeListLabel(), myChangeListBox);
+            myScopesRow = addRow(builder, ExecutionLocalize.junitConfigurationSearchForTestsLabel(), myScopesLayout);
+
+            super.addBefore(builder);
         }
-    }
 
-    /**
-     * Method generated by Consulo GUI Designer
-     * >>> IMPORTANT!! <<<
-     * DO NOT edit this method OR call it in your code!
-     *
-     * @noinspection ALL
-     */
-    private void $$$setupUI$$$() {
-        createUIComponents();
-        myWholePanel = new JPanel();
-        myWholePanel.setLayout(new GridLayoutManager(4, 2, new Insets(0, 0, 0, 0), -1, -1));
-        final JPanel panel1 = new JPanel();
-        panel1.setLayout(new GridBagLayout());
-        myWholePanel.add(
-            panel1,
-            new GridConstraints(
-                0,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_NORTH,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
-                    .SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myTestLabel = new JBLabel();
-        myTestLabel.setHorizontalAlignment(2);
-        myTestLabel.setHorizontalTextPosition(2);
-        myTestLabel.setIconTextGap(4);
-        this.$$$loadLabelText$$$(
-            myTestLabel,
-            ResourceBundle.getBundle("consulo/execution/ExecutionBundle")
-                .getString("junit.configuration.configure.junit.test.kind.label")
-        );
-        GridBagConstraints gbc;
-        gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weighty = 1.0;
-        gbc.anchor = GridBagConstraints.WEST;
-        panel1.add(myTestLabel, gbc);
-        myTypeChooser = new JComboBox();
-        gbc = new GridBagConstraints();
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.weighty = 1.0;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(0, JBUI.scale(10), 0, 0);
-        panel1.add(myTypeChooser, gbc);
-        final JPanel spacer1 = new JPanel();
-        gbc = new GridBagConstraints();
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel1.add(spacer1, gbc);
-        final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(6, 1, new Insets(0, 0, 0, 0), -1, -1));
-        myWholePanel.add(
-            panel2,
-            new GridConstraints(
-                3,
-                0,
-                1,
-                2,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_BOTH,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
-                    .SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myCommonJavaParameters = new CommonJavaParametersPanel();
-        panel2.add(
-            myCommonJavaParameters,
-            new GridConstraints(
-                0,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
-                    .SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myModule = new LabeledComponent();
-        myModule.setComponent(new ModuleDescriptionsComboBox());
-        myModule.setEnabled(true);
-        myModule.setLabelLocation("West");
-        myModule.setText(ResourceBundle.getBundle("messages/JavaExecutionBundle")
-            .getString("application.configuration.use.classpath.and.jdk.of.module.label"));
-        panel2.add(
-            myModule,
-            new GridConstraints(
-                2,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
-                    .SIZEPOLICY_WANT_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myShortenClasspathModeCombo.setEnabled(true);
-        myShortenClasspathModeCombo.setLabelLocation("West");
-        myShortenClasspathModeCombo.setText(ResourceBundle.getBundle("messages/JavaExecutionBundle")
-            .getString("application.configuration.shorten.command.line.label"));
-        panel2.add(
-            myShortenClasspathModeCombo,
-            new GridConstraints(
-                4,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK |
-                    GridConstraints.SIZEPOLICY_WANT_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        final Spacer spacer2 = new Spacer();
-        panel2.add(
-            spacer2,
-            new GridConstraints(
-                1,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_VERTICAL,
-                1,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                new Dimension(-1, JBUI.scale(10)),
-                null,
-                0,
-                false
-            )
-        );
-        final Spacer spacer3 = new Spacer();
-        panel2.add(
-            spacer3,
-            new GridConstraints(
-                5,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_VERTICAL,
-                1,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints
-                    .SIZEPOLICY_WANT_GROW,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myJrePathEditor = new JrePathEditor();
-        panel2.add(
-            myJrePathEditor,
-            new GridConstraints(
-                3,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        final JPanel panel3 = new JPanel();
-        panel3.setLayout(new GridLayoutManager(1, 6, new Insets(0, 0, 0, 0), -1, -1));
-        myWholePanel.add(
-            panel3,
-            new GridConstraints(
-                0,
-                1,
-                1,
-                1,
-                GridConstraints.ANCHOR_NORTH,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        final Spacer spacer4 = new Spacer();
-        panel3.add(
-            spacer4,
-            new GridConstraints(
-                0,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_WANT_GROW,
-                1,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        final JLabel label1 = new JLabel();
-        label1.setText("Repeat:");
-        label1.setDisplayedMnemonic('R');
-        label1.setDisplayedMnemonicIndex(0);
-        panel3.add(label1, new GridConstraints(
-            0,
-            3,
-            1,
-            1,
-            GridConstraints.ANCHOR_WEST,
-            GridConstraints.FILL_NONE,
-            GridConstraints.SIZEPOLICY_FIXED,
-            GridConstraints.SIZEPOLICY_FIXED,
-            null,
-            null,
-            null,
-            0,
-            false
-        ));
-        final JBLabel jBLabel1 = new JBLabel();
-        panel3.add(
-            jBLabel1,
-            new GridConstraints(
-                0,
-                1,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_NONE,
-                GridConstraints.SIZEPOLICY_FIXED,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myForkCb = new JComboBox();
-        panel3.add(
-            myForkCb,
-            new GridConstraints(
-                0,
-                2,
-                1,
-                1,
-                GridConstraints.ANCHOR_WEST,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myRepeatCountField = new JTextField();
-        panel3.add(
-            myRepeatCountField,
-            new GridConstraints(
-                0,
-                5,
-                1,
-                1,
-                GridConstraints.ANCHOR_WEST,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                new Dimension(JBUI.scale(30), -1),
-                new Dimension(JBUI.scale(50), -1),
-                new Dimension(
-                    JBUI.scale(60),
-                    -1
-                ),
-                0,
-                false
-            )
-        );
-        myRepeatCb = new JComboBox();
-        panel3.add(
-            myRepeatCb,
-            new GridConstraints(
-                0,
-                4,
-                1,
-                1,
-                GridConstraints.ANCHOR_WEST,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        final JSeparator separator1 = new JSeparator();
-        myWholePanel.add(
-            separator1,
-            new GridConstraints(
-                2,
-                0,
-                1,
-                2,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_FIXED,
-                GridConstraints
-                    .SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        final JPanel panel4 = new JPanel();
-        panel4.setLayout(new GridLayoutManager(9, 1, new Insets(0, 0, 0, 0), -1, -1));
-        myWholePanel.add(
-            panel4,
-            new GridConstraints(
-                1,
-                0,
-                1,
-                2,
-                GridConstraints.ANCHOR_NORTH,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myMethod.setEnabled(true);
-        myMethod.setLabelLocation("West");
-        myMethod.setText(ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.method.label"));
-        panel4.add(
-            myMethod,
-            new GridConstraints(
-                7,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myPackagePanel = new JPanel();
-        myPackagePanel.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
-        panel4.add(
-            myPackagePanel,
-            new GridConstraints(
-                0,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_BOTH,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myPackage.setEnabled(true);
-        myPackage.setLabelLocation("West");
-        myPackage.setText(ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.package.label"));
-        myPackage.setVisible(true);
-        myPackagePanel.add(
-            myPackage,
-            new GridConstraints(
-                0,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myPattern = new LabeledComponent();
-        myPattern.setComponent(new JPanel());
-        myPattern.setLabelLocation("West");
-        myPattern.setText("Pattern");
-        myPattern.setVisible(true);
-        panel4.add(
-            myPattern,
-            new GridConstraints(
-                1,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myClass.setLabelLocation("West");
-        myClass.setText(ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.class.label"));
-        panel4.add(
-            myClass,
-            new GridConstraints(
-                2,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myCategory.setLabelLocation("West");
-        myCategory.setText("Category");
-        panel4.add(
-            myCategory,
-            new GridConstraints(
-                3,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myUniqueIdField = new LabeledComponent();
-        myUniqueIdField.setComponent(new RawCommandLineEditor());
-        myUniqueIdField.setLabelLocation("West");
-        myUniqueIdField.setText("UniqueId");
-        panel4.add(
-            myUniqueIdField,
-            new GridConstraints(
-                4,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myDir = new LabeledComponent();
-        myDir.setComponent(new TextFieldWithBrowseButton());
-        myDir.setLabelLocation("West");
-        myDir.setText("Directory");
-        panel4.add(
-            myDir,
-            new GridConstraints(
-                5,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myChangeListLabeledComponent = new LabeledComponent();
-        myChangeListLabeledComponent.setComponent(new JComboBox<>());
-        myChangeListLabeledComponent.setLabelLocation("West");
-        myChangeListLabeledComponent.setText("Change list");
-        panel4.add(
-            myChangeListLabeledComponent,
-            new GridConstraints(
-                6,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_HORIZONTAL,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myScopesPanel = new JPanel();
-        myScopesPanel.setLayout(new GridLayoutManager(3, 3, new Insets(0, 0, 0, 0), -1, -1));
-        panel4.add(
-            myScopesPanel,
-            new GridConstraints(
-                8,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_CENTER,
-                GridConstraints.FILL_BOTH,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        mySearchForTestsLabel = new JBLabel();
-        this.$$$loadLabelText$$$(
-            mySearchForTestsLabel,
-            ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.search.for.tests.label")
-        );
-        myScopesPanel.add(
-            mySearchForTestsLabel,
-            new GridConstraints(
-                0,
-                0,
-                1,
-                1,
-                GridConstraints.ANCHOR_WEST,
-                GridConstraints.FILL_NONE,
-                GridConstraints.SIZEPOLICY_FIXED,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myWholeProjectScope = new JRadioButton();
-        this.$$$loadButtonText$$$(
-            myWholeProjectScope,
-            ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.in.whole.project.radio")
-        );
-        myScopesPanel.add(
-            myWholeProjectScope,
-            new GridConstraints(
-                0,
-                1,
-                1,
-                1,
-                GridConstraints.ANCHOR_WEST,
-                GridConstraints.FILL_NONE,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        final Spacer spacer5 = new Spacer();
-        myScopesPanel.add(spacer5, new GridConstraints(
-            0,
-            2,
-            1,
-            1,
-            GridConstraints.ANCHOR_CENTER,
-            GridConstraints.FILL_HORIZONTAL,
-            GridConstraints.SIZEPOLICY_WANT_GROW,
-            1,
-            null,
-            null,
-            null,
-            0,
-            false
-        ));
-        mySingleModuleScope = new JRadioButton();
-        this.$$$loadButtonText$$$(
-            mySingleModuleScope,
-            ResourceBundle.getBundle("consulo/execution/ExecutionBundle").getString("junit.configuration.in.single.module.radio")
-        );
-        myScopesPanel.add(
-            mySingleModuleScope,
-            new GridConstraints(
-                1,
-                1,
-                1,
-                1,
-                GridConstraints.ANCHOR_WEST,
-                GridConstraints.FILL_NONE,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myModuleWDScope = new JRadioButton();
-        this.$$$loadButtonText$$$(
-            myModuleWDScope,
-            ResourceBundle.getBundle("consulo/execution/ExecutionBundle")
-                .getString("junit.configuration.across.module.dependencies.radio")
-        );
-        myScopesPanel.add(
-            myModuleWDScope,
-            new GridConstraints(
-                2,
-                1,
-                1,
-                1,
-                GridConstraints.ANCHOR_WEST,
-                GridConstraints.FILL_NONE,
-                GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                GridConstraints.SIZEPOLICY_FIXED,
-                null,
-                null,
-                null,
-                0,
-                false
-            )
-        );
-        myTestLabel.setLabelFor(myTypeChooser);
-        label1.setLabelFor(myRepeatCb);
-    }
+        @Override
+        @RequiredUIAccess
+        protected void addAfter(FormBuilder builder) {
+            builder.addLabeled(
+                JavaExecutionLocalize.applicationConfigurationUseClasspathAndJdkOfModuleLabel(),
+                myModuleSelector.getComponent()
+            );
+            builder.addLabeled(JavaExecutionLocalize.runConfigurationJreLabel(), myJrePathEditor.getComponent());
+            builder.addLabeled(
+                JavaExecutionLocalize.applicationConfigurationShortenCommandLineLabel(),
+                myShortenCommandLineModeCombo.getComponent()
+            );
+            builder.addLabeled(JUnitLocalize.junitConfigurationForkModeLabel(), myForkBox);
+            builder.addLabeled(JUnitLocalize.junitConfigurationRepeatLabel(), myRepeatBox);
+            builder.addLabeled(JUnitLocalize.junitConfigurationRepeatCountLabel(), myRepeatCountBox);
+        }
 
-    /**
-     * @noinspection ALL
-     */
-    private void $$$loadLabelText$$$(JLabel component, String text) {
-        StringBuffer result = new StringBuffer();
-        boolean haveMnemonic = false;
-        char mnemonic = '\0';
-        int mnemonicIndex = -1;
-        for (int i = 0; i < text.length(); i++) {
-            if (text.charAt(i) == '&') {
-                i++;
-                if (i == text.length()) {
-                    break;
+        @RequiredUIAccess
+        private void initialize() {
+            myModel.setJUnitField(JUnitConfigurationModel.ALL_IN_PACKAGE, myPackageField);
+            myModel.setJUnitField(JUnitConfigurationModel.CLASS, myClassField);
+            myModel.setJUnitField(JUnitConfigurationModel.METHOD, myMethodField);
+            myModel.setJUnitField(JUnitConfigurationModel.PATTERN, myPatternField);
+            myModel.setJUnitField(JUnitConfigurationModel.DIR, myDirField.getComponent());
+            myModel.setJUnitField(JUnitConfigurationModel.CATEGORY, myCategoryField);
+            myModel.setListener(JUnitConfigurable.this);
+
+            myTypeChooser.addValueListener(event -> {
+                Integer type = event.getValue();
+                if (type != null) {
+                    myModel.setType(type);
                 }
-                if (!haveMnemonic && text.charAt(i) != '&') {
-                    haveMnemonic = true;
-                    mnemonic = text.charAt(i);
-                    mnemonicIndex = result.length();
+            });
+            myRepeatBox.addValueListener(event -> {
+                myRepeatCountBox.setEnabled(RepeatCount.N.equals(event.getValue()));
+                if (myModel.getType() == JUnitConfigurationModel.CLASS) {
+                    setForkModes(getForkModesBasedOnRepeat(), myForkBox.getValue());
+                }
+            });
+            myScopeGroup.addValueListener(scope -> onScopeChanged());
+
+            myModel.setType(JUnitConfigurationModel.CLASS);
+        }
+
+        @RequiredUIAccess
+        private void onTypeChanged(int newType) {
+            myTypeChooser.setValue(newType, false);
+
+            int[] enabledFields = newType < ourEnabledFields.length ? ourEnabledFields[newType] : new int[0];
+            for (int i = 0; i < myTestLocations.length; i++) {
+                myTestLocations[i].setEnabled(contains(enabledFields, i));
+            }
+
+            if (isModuleOptional(newType)) {
+                onScopeChanged();
+            }
+            else {
+                myModuleSelector.getComponent().setEnabled(true);
+            }
+
+            changePanel(newType);
+        }
+
+        private boolean contains(int[] values, int value) {
+            for (int each : values) {
+                if (each == value) {
+                    return true;
                 }
             }
-            result.append(text.charAt(i));
+            return false;
         }
-        component.setText(result.toString());
-        if (haveMnemonic) {
-            component.setDisplayedMnemonic(mnemonic);
-            component.setDisplayedMnemonicIndex(mnemonicIndex);
-        }
-    }
 
-    /**
-     * @noinspection ALL
-     */
-    private void $$$loadButtonText$$$(AbstractButton component, String text) {
-        StringBuffer result = new StringBuffer();
-        boolean haveMnemonic = false;
-        char mnemonic = '\0';
-        int mnemonicIndex = -1;
-        for (int i = 0; i < text.length(); i++) {
-            if (text.charAt(i) == '&') {
-                i++;
-                if (i == text.length()) {
-                    break;
-                }
-                if (!haveMnemonic && text.charAt(i) != '&') {
-                    haveMnemonic = true;
-                    mnemonic = text.charAt(i);
-                    mnemonicIndex = result.length();
+        private boolean isModuleOptional(int type) {
+            return type == JUnitConfigurationModel.ALL_IN_PACKAGE
+                || type == JUnitConfigurationModel.PATTERN
+                || type == JUnitConfigurationModel.CATEGORY
+                || type == JUnitConfigurationModel.UNIQUE_ID;
+        }
+
+        @RequiredUIAccess
+        private void onScopeChanged() {
+            boolean wholeProject = isModuleOptional(myModel.getType()) && myScopeGroup.getValue() == TestSearchScope.WHOLE_PROJECT;
+            myModuleSelector.getComponent().setEnabled(!wholeProject);
+            if (wholeProject) {
+                myModuleSelector.setSelectedModule(null);
+            }
+        }
+
+        @RequiredUIAccess
+        private void changePanel(int type) {
+            String forkMode = myForkBox.getValue();
+            if (forkMode == null) {
+                forkMode = JUnitConfiguration.FORK_NONE;
+            }
+
+            boolean method = type == JUnitConfigurationModel.METHOD || type == JUnitConfigurationModel.BY_SOURCE_POSITION;
+
+            myTestLocations[JUnitConfigurationModel.ALL_IN_PACKAGE].setVisible(type == JUnitConfigurationModel.ALL_IN_PACKAGE);
+            myTestLocations[JUnitConfigurationModel.DIR].setVisible(type == JUnitConfigurationModel.DIR);
+            myTestLocations[JUnitConfigurationModel.PATTERN].setVisible(type == JUnitConfigurationModel.PATTERN);
+            myTestLocations[JUnitConfigurationModel.CLASS].setVisible(type == JUnitConfigurationModel.CLASS || method);
+            myTestLocations[JUnitConfigurationModel.METHOD].setVisible(method || type == JUnitConfigurationModel.PATTERN);
+            myTestLocations[JUnitConfigurationModel.CATEGORY].setVisible(type == JUnitConfigurationModel.CATEGORY);
+            setRowVisible(myUniqueIdRow, type == JUnitConfigurationModel.UNIQUE_ID);
+            setRowVisible(myChangeListRow, type == JUnitConfigurationModel.BY_SOURCE_CHANGES);
+            setRowVisible(
+                myScopesRow,
+                type == JUnitConfigurationModel.ALL_IN_PACKAGE
+                    || type == JUnitConfigurationModel.PATTERN
+                    || type == JUnitConfigurationModel.CATEGORY
+            );
+
+            if (method) {
+                myForkBox.setEnabled(false);
+                myForkBox.setValue(JUnitConfiguration.FORK_NONE);
+            }
+            else if (type == JUnitConfigurationModel.CLASS) {
+                myForkBox.setEnabled(true);
+                setForkModes(
+                    getForkModesBasedOnRepeat(),
+                    !JUnitConfiguration.FORK_KLASS.equals(forkMode) ? forkMode : JUnitConfiguration.FORK_METHOD
+                );
+            }
+            else {
+                myForkBox.setEnabled(true);
+                setForkModes(FORK_MODE_ALL, forkMode);
+            }
+        }
+
+        @RequiredUIAccess
+        private void setRowVisible(@Nullable Row row, boolean visible) {
+            if (row != null) {
+                row.setVisible(visible);
+            }
+        }
+
+        private List<String> getForkModesBasedOnRepeat() {
+            return RepeatCount.ONCE.equals(myRepeatBox.getValue()) ? FORK_MODE : FORK_MODE_ALL;
+        }
+
+        @RequiredUIAccess
+        private void setForkModes(List<String> modes, @Nullable String selected) {
+            if (!modes.equals(toList(myForkModel))) {
+                myForkModel.replaceAll(modes);
+            }
+            myForkBox.setValue(selected != null && modes.contains(selected) ? selected : JUnitConfiguration.FORK_NONE);
+        }
+
+        private List<String> toList(MutableFlatDataModel<String> model) {
+            List<String> items = new ArrayList<>(model.getSize());
+            for (String item : model) {
+                items.add(item);
+            }
+            return items;
+        }
+
+        @Override
+        @RequiredUIAccess
+        public void apply(T configuration) {
+            super.apply(configuration);
+
+            configuration.setRepeatMode(myRepeatBox.getValue());
+            Integer repeatCount = myRepeatCountBox.getValue();
+            configuration.setRepeatCount(repeatCount == null ? 1 : repeatCount);
+
+            myModel.apply(configuration);
+
+            JUnitConfiguration.Data data = configuration.getPersistentData();
+            data.setUniqueIds(StringUtil.notNullize(myUniqueIdField.getValue()).split(" "));
+            data.setChangeList(myChangeListBox.getValue());
+
+            myModuleSelector.applyTo(configuration);
+
+            TestSearchScope scope = myScopeGroup.getValue();
+            data.setScope(scope == null ? TestSearchScope.WHOLE_PROJECT : scope);
+
+            configuration.setAlternativeJrePath(myJrePathEditor.getJrePathOrName());
+            configuration.setAlternativeJrePathEnabled(myJrePathEditor.isAlternativeJreSelected());
+            configuration.setForkMode(myForkBox.getValue());
+            configuration.setShortenCommandLine(myShortenCommandLineModeCombo.getSelectedItem());
+        }
+
+        @Override
+        @RequiredUIAccess
+        public void reset(T configuration) {
+            super.reset(configuration);
+
+            int count = configuration.getRepeatCount();
+            myRepeatCountBox.setValue(Math.max(1, count));
+            myRepeatBox.setValue(configuration.getRepeatMode());
+            myRepeatCountBox.setEnabled(RepeatCount.N.equals(configuration.getRepeatMode()));
+
+            myModuleSelector.reset(configuration);
+            setModuleContext(myModuleSelector.getModule());
+
+            JUnitConfiguration.Data data = configuration.getPersistentData();
+            TestSearchScope scope = data.getScope();
+            myScopeGroup.setValue(
+                scope == TestSearchScope.SINGLE_MODULE || scope == TestSearchScope.MODULE_WITH_DEPENDENCIES
+                    ? scope
+                    : TestSearchScope.WHOLE_PROJECT,
+                false
+            );
+
+            myModel.reset(configuration);
+
+            String changeList = data.getChangeList();
+            myChangeListBox.setValue(changeList == null ? ALL_CHANGE_LISTS : changeList);
+            String[] ids = data.getUniqueIds();
+            myUniqueIdField.setValue(ids != null ? StringUtil.join(ids, " ") : "");
+
+            myJrePathEditor.setByName(configuration.isAlternativeJrePathEnabled() ? configuration.getAlternativeJrePath() : null);
+            setForkModes(toList(myForkModel), configuration.getForkMode());
+            myShortenCommandLineModeCombo.setSelectedItem(configuration.getShortenCommandLine());
+
+            onScopeChanged();
+        }
+
+        private class TestClassBrowser extends ClassBrowser {
+            TestClassBrowser() {
+                super(myProject, ExecutionLocalize.chooseTestClassDialogTitle().get());
+            }
+
+            @Override
+            protected void onClassChoosen(PsiClass psiClass) {
+                PsiPackage aPackage = JUnitUtil.getContainingPackage(psiClass);
+                if (aPackage != null) {
+                    myPackageField.setValue(aPackage.getQualifiedName());
                 }
             }
-            result.append(text.charAt(i));
-        }
-        component.setText(result.toString());
-        if (haveMnemonic) {
-            component.setMnemonic(mnemonic);
-            component.setDisplayedMnemonicIndex(mnemonicIndex);
-        }
-    }
 
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$() {
-        return myWholePanel;
+            @Override
+            protected PsiClass findClass(String className) {
+                return myModuleSelector.findClass(className);
+            }
+
+            @Override
+            protected ClassFilter.ClassFilterWithScope getFilter() throws NoFilterException {
+                Module module = myModuleSelector.getModule();
+                if (module == null) {
+                    throw NoFilterException.moduleDoesntExist(myModuleSelector);
+                }
+                return TestClassFilter.create(SourceScope.modulesWithDependencies(new Module[]{module}), module);
+            }
+        }
+
+        private class CategoryBrowser extends ClassBrowser {
+            CategoryBrowser() {
+                super(myProject, JUnitLocalize.categoryInterfaceDialogTitle().get());
+            }
+
+            @Override
+            protected PsiClass findClass(String className) {
+                return myModuleSelector.findClass(className);
+            }
+
+            @Override
+            protected ClassFilter.ClassFilterWithScope getFilter() {
+                Module module = myModuleSelector.getModule();
+                GlobalSearchScope scope = module == null
+                    ? GlobalSearchScope.allScope(myProject)
+                    : GlobalSearchScope.moduleWithDependenciesAndLibrariesScope(module);
+                return new ClassFilter.ClassFilterWithScope() {
+                    @Override
+                    public GlobalSearchScope getScope() {
+                        return scope;
+                    }
+
+                    @Override
+                    public boolean isAccepted(PsiClass aClass) {
+                        return true;
+                    }
+                };
+            }
+        }
     }
 }

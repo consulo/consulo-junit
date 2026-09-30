@@ -33,5 +33,4 @@ open module com.intellij.junit
 
     // TODO remove in future
     requires java.desktop;
-    requires forms.rt;
 }

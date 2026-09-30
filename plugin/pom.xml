@@ -100,13 +100,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>consulo.internal</groupId>
-            <artifactId>forms_rt</artifactId>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
         <!-- platform (required transitively by consulo.java.execution.impl) -->
         <dependency>
             <groupId>consulo</groupId>

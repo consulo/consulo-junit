@@ -164,6 +164,16 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
         return new File(ClassPathUtil.getJarPathForClass(JUnit5IdeaTestRunner.class));
     }
 
+    protected String getRuntimeMainClassName() {
+        JUnitConfiguration configuration = getConfiguration();
+        String className = configuration.getPersistentData().getMainClassName();
+        return ReadAction.compute(() -> {
+            PsiClass psiClass = configuration.getConfigurationModule().findClass(className);
+            String runtimeName = psiClass == null ? null : JavaExecutionUtil.getRuntimeQualifiedName(psiClass);
+            return runtimeName == null ? className : runtimeName;
+        });
+    }
+
     @Override
     protected OwnJavaParameters createJavaParameters() throws ExecutionException {
         OwnJavaParameters javaParameters = super.createJavaParameters();

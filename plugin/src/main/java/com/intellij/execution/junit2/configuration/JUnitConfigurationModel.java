@@ -13,230 +13,148 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.intellij.execution.junit2.configuration;
 
 import com.intellij.execution.junit.JUnitConfiguration;
-import com.intellij.execution.junit.JUnitUtil;
 import com.intellij.java.execution.JavaExecutionUtil;
-import com.intellij.java.language.psi.PsiClass;
-import consulo.application.dumb.IndexNotReadyException;
-import consulo.component.ProcessCanceledException;
-import consulo.document.Document;
-import consulo.language.editor.WriteCommandAction;
-import consulo.module.Module;
-import consulo.project.Project;
+import consulo.ui.ValueComponent;
+import consulo.ui.annotation.RequiredUIAccess;
 import consulo.util.lang.StringUtil;
+import org.jspecify.annotations.Nullable;
 
-import javax.swing.text.BadLocationException;
-import javax.swing.text.PlainDocument;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 // Author: dyoma
 
-public class JUnitConfigurationModel
-{
-	public static final int ALL_IN_PACKAGE = 0;
-	public static final int CLASS = 1;
-	public static final int METHOD = 2;
-	public static final int PATTERN = 3;
-	public static final int DIR = 4;
-	public static final int CATEGORY = 5;
-	public static final int UNIQUE_ID = 6;
-	public static final int BY_SOURCE_POSITION = 7;
-	public static final int BY_SOURCE_CHANGES = 8;
+public class JUnitConfigurationModel {
+    public static final int ALL_IN_PACKAGE = 0;
+    public static final int CLASS = 1;
+    public static final int METHOD = 2;
+    public static final int PATTERN = 3;
+    public static final int DIR = 4;
+    public static final int CATEGORY = 5;
+    public static final int UNIQUE_ID = 6;
+    public static final int BY_SOURCE_POSITION = 7;
+    public static final int BY_SOURCE_CHANGES = 8;
 
-	private static final List<String> ourTestObjects;
+    private static final List<String> ourTestObjects;
 
-	static
-	{
-		ourTestObjects = Arrays.asList(JUnitConfiguration.TEST_PACKAGE, JUnitConfiguration.TEST_CLASS, JUnitConfiguration.TEST_METHOD, JUnitConfiguration.TEST_PATTERN, JUnitConfiguration
-				.TEST_DIRECTORY, JUnitConfiguration.TEST_CATEGORY, JUnitConfiguration.TEST_UNIQUE_ID, JUnitConfiguration.BY_SOURCE_POSITION, JUnitConfiguration.BY_SOURCE_CHANGES);
-	}
+    static {
+        ourTestObjects = Arrays.asList(JUnitConfiguration.TEST_PACKAGE, JUnitConfiguration.TEST_CLASS, JUnitConfiguration.TEST_METHOD, JUnitConfiguration.TEST_PATTERN, JUnitConfiguration
+            .TEST_DIRECTORY, JUnitConfiguration.TEST_CATEGORY, JUnitConfiguration.TEST_UNIQUE_ID, JUnitConfiguration.BY_SOURCE_POSITION, JUnitConfiguration.BY_SOURCE_CHANGES);
+    }
 
-	private JUnitConfigurable myListener;
-	private int myType = -1;
-	private final Object[] myJUnitDocuments = new Object[6];
-	private final Project myProject;
+    private JUnitConfigurable<?> myListener;
+    private int myType = -1;
+    @SuppressWarnings("unchecked")
+    private final ValueComponent<String>[] myJUnitFields = new ValueComponent[6];
 
-	public JUnitConfigurationModel(Project project)
-	{
-		myProject = project;
-	}
+    public boolean setType(int type) {
+        if (type == myType) {
+            return false;
+        }
+        if (type < 0 || type >= ourTestObjects.size()) {
+            type = CLASS;
+        }
+        myType = type;
+        fireTypeChanged(type);
+        return true;
+    }
 
-	public boolean setType(int type)
-	{
-		if(type == myType)
-		{
-			return false;
-		}
-		if(type < 0 || type >= ourTestObjects.size())
-		{
-			type = CLASS;
-		}
-		myType = type;
-		fireTypeChanged(type);
-		return true;
-	}
+    public int getType() {
+        return myType;
+    }
 
-	private void fireTypeChanged(int newType)
-	{
-		myListener.onTypeChanged(newType);
-	}
+    private void fireTypeChanged(int newType) {
+        myListener.onTypeChanged(newType);
+    }
 
-	public void setListener(JUnitConfigurable listener)
-	{
-		myListener = listener;
-	}
+    public void setListener(JUnitConfigurable<?> listener) {
+        myListener = listener;
+    }
 
-	public Object getJUnitDocument(int i)
-	{
-		return myJUnitDocuments[i];
-	}
+    public void setJUnitField(int i, ValueComponent<String> field) {
+        myJUnitFields[i] = field;
+    }
 
-	public void setJUnitDocument(int i, Object doc)
-	{
-		myJUnitDocuments[i] = doc;
-	}
+    public void apply(JUnitConfiguration configuration) {
+        boolean shouldUpdateName = configuration.isGeneratedName();
+        applyTo(configuration.getPersistentData());
+        if (shouldUpdateName && !JavaExecutionUtil.isNewName(configuration.getName())) {
+            configuration.setGeneratedName();
+        }
+    }
 
-	public void apply(Module module, JUnitConfiguration configuration)
-	{
-		boolean shouldUpdateName = configuration.isGeneratedName();
-		applyTo(configuration.getPersistentData(), module);
-		if(shouldUpdateName && !JavaExecutionUtil.isNewName(configuration.getName()))
-		{
-			configuration.setGeneratedName();
-		}
-	}
+    private void applyTo(JUnitConfiguration.Data data) {
+        String testObject = getTestObject();
+        data.TEST_OBJECT = testObject;
+        if (testObject != JUnitConfiguration.TEST_PACKAGE && testObject != JUnitConfiguration.TEST_PATTERN && testObject != JUnitConfiguration.TEST_DIRECTORY && testObject != JUnitConfiguration
+            .TEST_CATEGORY && testObject != JUnitConfiguration.BY_SOURCE_CHANGES) {
+            data.METHOD_NAME = getJUnitTextValue(METHOD);
 
-	private void applyTo(JUnitConfiguration.Data data, Module module)
-	{
-		String testObject = getTestObject();
-		String className = getJUnitTextValue(CLASS);
-		data.TEST_OBJECT = testObject;
-		if(testObject != JUnitConfiguration.TEST_PACKAGE && testObject != JUnitConfiguration.TEST_PATTERN && testObject != JUnitConfiguration.TEST_DIRECTORY && testObject != JUnitConfiguration
-				.TEST_CATEGORY && testObject != JUnitConfiguration.BY_SOURCE_CHANGES)
-		{
-			try
-			{
-				data.METHOD_NAME = getJUnitTextValue(METHOD);
-				PsiClass testClass = !myProject.isDefault() && !StringUtil.isEmptyOrSpaces(className) ? JUnitUtil.findPsiClass(className, module, myProject) : null;
-				if(testClass != null && testClass.isValid())
-				{
-					data.setMainClass(testClass);
-				}
-				else
-				{
-					data.MAIN_CLASS_NAME = className;
-				}
-			}
-			catch(ProcessCanceledException | IndexNotReadyException e)
-			{
-				data.MAIN_CLASS_NAME = className;
-			}
-		}
-		else if(testObject != JUnitConfiguration.BY_SOURCE_CHANGES)
-		{
-			if(testObject == JUnitConfiguration.TEST_PACKAGE)
-			{
-				data.PACKAGE_NAME = getJUnitTextValue(ALL_IN_PACKAGE);
-			}
-			else if(testObject == JUnitConfiguration.TEST_DIRECTORY)
-			{
-				data.setDirName(getJUnitTextValue(DIR));
-			}
-			else if(testObject == JUnitConfiguration.TEST_CATEGORY)
-			{
-				data.setCategoryName(getJUnitTextValue(CATEGORY));
-			}
-			else
-			{
-				LinkedHashSet<String> set = new LinkedHashSet<>();
-				String[] patterns = getJUnitTextValue(PATTERN).split("\\|\\|");
-				for(String pattern : patterns)
-				{
-					if(pattern.length() > 0)
-					{
-						set.add(pattern);
-					}
-				}
-				data.setPatterns(set);
-			}
-			data.MAIN_CLASS_NAME = "";
-			data.METHOD_NAME = "";
-		}
-	}
+            String className = getJUnitTextValue(CLASS);
+            if (!className.equals(toPresentableClassName(data.getMainClassName()))) {
+                data.MAIN_CLASS_NAME = className;
+                data.PACKAGE_NAME = StringUtil.getPackageName(className);
+            }
+        }
+        else if (testObject != JUnitConfiguration.BY_SOURCE_CHANGES) {
+            if (testObject == JUnitConfiguration.TEST_PACKAGE) {
+                data.PACKAGE_NAME = getJUnitTextValue(ALL_IN_PACKAGE);
+            }
+            else if (testObject == JUnitConfiguration.TEST_DIRECTORY) {
+                data.setDirName(getJUnitTextValue(DIR));
+            }
+            else if (testObject == JUnitConfiguration.TEST_CATEGORY) {
+                data.setCategoryName(getJUnitTextValue(CATEGORY));
+            }
+            else {
+                LinkedHashSet<String> set = new LinkedHashSet<>();
+                String[] patterns = getJUnitTextValue(PATTERN).split("\\|\\|");
+                for (String pattern : patterns) {
+                    if (pattern.length() > 0) {
+                        set.add(pattern);
+                    }
+                }
+                data.setPatterns(set);
+            }
+            data.MAIN_CLASS_NAME = "";
+            data.METHOD_NAME = "";
+        }
+    }
 
-	private String getTestObject()
-	{
-		return ourTestObjects.get(myType);
-	}
+    private static String toPresentableClassName(@Nullable String className) {
+        return className == null ? "" : className.replace('$', '.');
+    }
 
-	private String getJUnitTextValue(int index)
-	{
-		return getDocumentText(index, myJUnitDocuments);
-	}
+    private String getTestObject() {
+        return ourTestObjects.get(myType);
+    }
 
-	private static String getDocumentText(int index, Object[] documents)
-	{
-		Object document = documents[index];
-		if(document instanceof PlainDocument)
-		{
-			try
-			{
-				return ((PlainDocument) document).getText(0, ((PlainDocument) document).getLength());
-			}
-			catch(BadLocationException e)
-			{
-				throw new RuntimeException(e);
-			}
-		}
-		return ((Document) document).getText();
-	}
+    private String getJUnitTextValue(int index) {
+        return StringUtil.notNullize(myJUnitFields[index].getValue());
+    }
 
-	public void reset(JUnitConfiguration configuration)
-	{
-		JUnitConfiguration.Data data = configuration.getPersistentData();
-		setTestType(data.TEST_OBJECT);
-		setJUnitTextValue(ALL_IN_PACKAGE, data.getPackageName());
-		setJUnitTextValue(CLASS, data.getMainClassName() != null ? data.getMainClassName().replaceAll("\\$", "\\.") : "");
-		setJUnitTextValue(METHOD, data.getMethodNameWithSignature());
-		setJUnitTextValue(PATTERN, data.getPatternPresentation());
-		setJUnitTextValue(DIR, data.getDirName());
-		setJUnitTextValue(CATEGORY, data.getCategory());
-	}
+    @RequiredUIAccess
+    public void reset(JUnitConfiguration configuration) {
+        JUnitConfiguration.Data data = configuration.getPersistentData();
+        setTestType(data.TEST_OBJECT);
+        setJUnitTextValue(ALL_IN_PACKAGE, data.getPackageName());
+        setJUnitTextValue(CLASS, toPresentableClassName(data.getMainClassName()));
+        setJUnitTextValue(METHOD, data.getMethodNameWithSignature());
+        setJUnitTextValue(PATTERN, data.getPatternPresentation());
+        setJUnitTextValue(DIR, data.getDirName());
+        setJUnitTextValue(CATEGORY, data.getCategory());
+    }
 
-	private void setJUnitTextValue(int index, String text)
-	{
-		setDocumentText(index, text, myJUnitDocuments);
-	}
+    @RequiredUIAccess
+    private void setJUnitTextValue(int index, @Nullable String text) {
+        myJUnitFields[index].setValue(StringUtil.notNullize(text));
+    }
 
-	private void setDocumentText(int index, String text, Object[] documents)
-	{
-		Object document = documents[index];
-		if(document instanceof PlainDocument)
-		{
-			try
-			{
-				((PlainDocument) document).remove(0, ((PlainDocument) document).getLength());
-				((PlainDocument) document).insertString(0, text, null);
-			}
-			catch(BadLocationException e)
-			{
-				throw new RuntimeException(e);
-			}
-		}
-		else
-		{
-			WriteCommandAction.runWriteCommandAction(myProject, () -> ((Document) document).replaceString(0, ((Document) document).getTextLength(), text));
-		}
-	}
-
-	private void setTestType(String testObject)
-	{
-		setType(ourTestObjects.indexOf(testObject));
-	}
+    private void setTestType(String testObject) {
+        setType(ourTestObjects.indexOf(testObject));
+    }
 }
-

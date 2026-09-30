@@ -32,76 +32,62 @@ import consulo.language.psi.PsiElement;
 import consulo.language.psi.PsiPackage;
 import consulo.process.ExecutionException;
 import consulo.util.lang.Comparing;
-
 import jakarta.annotation.Nonnull;
 
-class TestClass extends TestObject
-{
-	public TestClass(JUnitConfiguration configuration, ExecutionEnvironment environment)
-	{
-		super(configuration, environment);
-	}
+class TestClass extends TestObject {
+    public TestClass(JUnitConfiguration configuration, ExecutionEnvironment environment) {
+        super(configuration, environment);
+    }
 
-	@Override
-	protected OwnJavaParameters createJavaParameters() throws ExecutionException
-	{
-		OwnJavaParameters javaParameters = super.createJavaParameters();
-		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		javaParameters.getProgramParametersList().add(data.getMainClassName());
-		return javaParameters;
-	}
+    @Override
+    protected OwnJavaParameters createJavaParameters() throws ExecutionException {
+        OwnJavaParameters javaParameters = super.createJavaParameters();
+        javaParameters.getProgramParametersList().add(getRuntimeMainClassName());
+        return javaParameters;
+    }
 
-	@Nonnull
-	@Override
-	protected String getForkMode()
-	{
-		String forkMode = super.getForkMode();
-		return JUnitConfiguration.FORK_KLASS.equals(forkMode) ? JUnitConfiguration.FORK_REPEAT : forkMode;
-	}
+    @Nonnull
+    @Override
+    protected String getForkMode() {
+        String forkMode = super.getForkMode();
+        return JUnitConfiguration.FORK_KLASS.equals(forkMode) ? JUnitConfiguration.FORK_REPEAT : forkMode;
+    }
 
-	@Override
-	public String suggestActionName()
-	{
-		String name = getConfiguration().getPersistentData().MAIN_CLASS_NAME;
-		if(name != null && name.endsWith("."))
-		{
-			return name;
-		}
-		return JavaExecutionUtil.getShortClassName(name);
-	}
+    @Override
+    public String suggestActionName() {
+        String name = getConfiguration().getPersistentData().MAIN_CLASS_NAME;
+        if (name != null && name.endsWith(".")) {
+            return name;
+        }
+        return JavaExecutionUtil.getShortClassName(name);
+    }
 
-	@Override
-	public RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration)
-	{
-		return RefactoringListeners.getClassOrPackageListener(element, configuration.myClass);
-	}
+    @Override
+    public RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration) {
+        return RefactoringListeners.getClassOrPackageListener(element, configuration.myClass);
+    }
 
-	@Override
-	public boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
-	{
+    @Override
+    public boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir) {
 
-		if(testClass == null)
-		{
-			return false;
-		}
-		if(testMethod != null)
-		{
-			// 'test class' configuration is not equal to the 'test method' configuration!
-			return false;
-		}
-		return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), configuration.getPersistentData().getMainClassName());
-	}
+        if (testClass == null) {
+            return false;
+        }
+        if (testMethod != null) {
+            // 'test class' configuration is not equal to the 'test method' configuration!
+            return false;
+        }
+        return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), configuration.getPersistentData().getMainClassName());
+    }
 
-	@Override
-	public void checkConfiguration() throws RuntimeConfigurationException
-	{
-		super.checkConfiguration();
-		String testClassName = getConfiguration().getPersistentData().getMainClassName();
-		JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
-		PsiClass testClass = configurationModule.checkModuleAndClassName(testClassName, ExecutionBundle.message("no.test.class.specified.error.text"));
-		if(!JUnitUtil.isTestClass(testClass))
-		{
-			throw new RuntimeConfigurationWarning(ExecutionBundle.message("class.isnt.test.class.error.message", testClassName));
-		}
-	}
+    @Override
+    public void checkConfiguration() throws RuntimeConfigurationException {
+        super.checkConfiguration();
+        String testClassName = getConfiguration().getPersistentData().getMainClassName();
+        JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
+        PsiClass testClass = configurationModule.checkModuleAndClassName(testClassName, ExecutionBundle.message("no.test.class.specified.error.text"));
+        if (!JUnitUtil.isTestClass(testClass)) {
+            throw new RuntimeConfigurationWarning(ExecutionBundle.message("class.isnt.test.class.error.message", testClassName));
+        }
+    }
 }

@@ -27,149 +27,122 @@ import consulo.util.lang.Comparing;
 
 import jakarta.annotation.Nonnull;
 
-class TestMethod extends TestObject
-{
-	public TestMethod(JUnitConfiguration configuration, ExecutionEnvironment environment)
-	{
-		super(configuration, environment);
-	}
+class TestMethod extends TestObject {
+    public TestMethod(JUnitConfiguration configuration, ExecutionEnvironment environment) {
+        super(configuration, environment);
+    }
 
-	@Override
-	protected OwnJavaParameters createJavaParameters() throws ExecutionException
-	{
-		OwnJavaParameters javaParameters = createDefaultJavaParameters();
-		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		javaParameters.getProgramParametersList().add(data.getMainClassName() + "," + data.getMethodNameWithSignature());
-		return javaParameters;
-	}
+    @Override
+    protected OwnJavaParameters createJavaParameters() throws ExecutionException {
+        OwnJavaParameters javaParameters = createDefaultJavaParameters();
+        JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+        javaParameters.getProgramParametersList().add(getRuntimeMainClassName() + "," + data.getMethodNameWithSignature());
+        return javaParameters;
+    }
 
-	protected OwnJavaParameters createDefaultJavaParameters() throws ExecutionException
-	{
-		return super.createJavaParameters();
-	}
+    protected OwnJavaParameters createDefaultJavaParameters() throws ExecutionException {
+        return super.createJavaParameters();
+    }
 
-	@Override
-	public String suggestActionName()
-	{
-		return ProgramRunnerUtil.shortenName(getConfiguration().getPersistentData().METHOD_NAME, 2) + "()";
-	}
+    @Override
+    public String suggestActionName() {
+        return ProgramRunnerUtil.shortenName(getConfiguration().getPersistentData().METHOD_NAME, 2) + "()";
+    }
 
-	@Override
-	public RefactoringElementListener getListener(PsiElement element, final JUnitConfiguration configuration)
-	{
-		if(element instanceof PsiMethod)
-		{
-			PsiMethod method = (PsiMethod) element;
-			if(!method.getName().equals(configuration.getPersistentData().getMethodName()))
-			{
-				return null;
-			}
-			//noinspection ConstantConditions
-			if(!method.getContainingClass().equals(configuration.myClass.getPsiElement()))
-			{
-				return null;
-			}
-			class Listener extends RefactoringElementAdapter implements UndoRefactoringElementListener
-			{
-				@Override
-				public void elementRenamedOrMoved(@Nonnull PsiElement newElement)
-				{
-					boolean generatedName = configuration.isGeneratedName();
-					configuration.getPersistentData().setTestMethod(PsiLocation.fromPsiElement((PsiMethod) newElement));
-					if(generatedName)
-					{
-						configuration.setGeneratedName();
-					}
-				}
+    @Override
+    public RefactoringElementListener getListener(PsiElement element, final JUnitConfiguration configuration) {
+        if (element instanceof PsiMethod) {
+            PsiMethod method = (PsiMethod) element;
+            if (!method.getName().equals(configuration.getPersistentData().getMethodName())) {
+                return null;
+            }
+            //noinspection ConstantConditions
+            if (!method.getContainingClass().equals(configuration.myClass.getPsiElement())) {
+                return null;
+            }
+            class Listener extends RefactoringElementAdapter implements UndoRefactoringElementListener {
+                @Override
+                public void elementRenamedOrMoved(@Nonnull PsiElement newElement) {
+                    boolean generatedName = configuration.isGeneratedName();
+                    configuration.getPersistentData().setTestMethod(PsiLocation.fromPsiElement((PsiMethod) newElement));
+                    if (generatedName) {
+                        configuration.setGeneratedName();
+                    }
+                }
 
-				@Override
-				public void undoElementMovedOrRenamed(@Nonnull PsiElement newElement, @Nonnull String oldQualifiedName)
-				{
-					int methodIdx = oldQualifiedName.indexOf("#") + 1;
-					if(methodIdx <= 0 || methodIdx >= oldQualifiedName.length())
-					{
-						return;
-					}
-					boolean generatedName = configuration.isGeneratedName();
-					configuration.getPersistentData().METHOD_NAME = oldQualifiedName.substring(methodIdx);
-					if(generatedName)
-					{
-						configuration.setGeneratedName();
-					}
-				}
-			}
-			return new Listener();
-		}
-		else
-		{
-			return RefactoringListeners.getClassOrPackageListener(element, configuration.myClass);
-		}
-	}
+                @Override
+                public void undoElementMovedOrRenamed(@Nonnull PsiElement newElement, @Nonnull String oldQualifiedName) {
+                    int methodIdx = oldQualifiedName.indexOf("#") + 1;
+                    if (methodIdx <= 0 || methodIdx >= oldQualifiedName.length()) {
+                        return;
+                    }
+                    boolean generatedName = configuration.isGeneratedName();
+                    configuration.getPersistentData().METHOD_NAME = oldQualifiedName.substring(methodIdx);
+                    if (generatedName) {
+                        configuration.setGeneratedName();
+                    }
+                }
+            }
+            return new Listener();
+        }
+        else {
+            return RefactoringListeners.getClassOrPackageListener(element, configuration.myClass);
+        }
+    }
 
 
-	@Override
-	public boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
-	{
-		if(testMethod == null)
-		{
-			return false;
-		}
-		if(testClass == null)
-		{
-			return false;
-		}
-		JUnitConfiguration.Data data = configuration.getPersistentData();
-	/*final PsiClass containingClass = testMethod.getContainingClass();
+    @Override
+    public boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir) {
+        if (testMethod == null) {
+            return false;
+        }
+        if (testClass == null) {
+            return false;
+        }
+        JUnitConfiguration.Data data = configuration.getPersistentData();
+    /*final PsiClass containingClass = testMethod.getContainingClass();
     if (testClass == null && (containingClass == null || !containingClass.hasModifierProperty(PsiModifier.ABSTRACT))) return false;
 
     if (containingClass != null && containingClass.hasModifierProperty(PsiModifier.ABSTRACT)) {
       return Comparing.equal(testMethod.getName(), data.getMethodName());
     }*/
-		return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), data.getMainClassName()) && Comparing.equal(JUnitConfiguration.Data.getMethodPresentation(testMethod), data
-				.getMethodNameWithSignature());
-	}
+        return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), data.getMainClassName()) && Comparing.equal(JUnitConfiguration.Data.getMethodPresentation(testMethod), data
+            .getMethodNameWithSignature());
+    }
 
-	@Override
-	public void checkConfiguration() throws RuntimeConfigurationException
-	{
-		super.checkConfiguration();
-		JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
-		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		String testClass = data.getMainClassName();
-		PsiClass psiClass = configurationModule.checkModuleAndClassName(testClass, ExecutionBundle.message("no.test.class.specified.error.text"));
+    @Override
+    public void checkConfiguration() throws RuntimeConfigurationException {
+        super.checkConfiguration();
+        JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
+        JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+        String testClass = data.getMainClassName();
+        PsiClass psiClass = configurationModule.checkModuleAndClassName(testClass, ExecutionBundle.message("no.test.class.specified.error.text"));
 
-		String methodName = data.getMethodName();
-		String methodNameWithSignature = data.getMethodNameWithSignature();
-		if(methodName == null || methodName.trim().length() == 0)
-		{
-			throw new RuntimeConfigurationError(ExecutionBundle.message("method.name.not.specified.error.message"));
-		}
-		JUnitUtil.TestMethodFilter filter = new JUnitUtil.TestMethodFilter(psiClass);
-		boolean found = false;
-		boolean testAnnotated = false;
-		for(PsiMethod method : psiClass.findMethodsByName(methodName, true))
-		{
-			if(filter.value(method) && Comparing.equal(methodNameWithSignature, JUnitConfiguration.Data.getMethodPresentation(method)))
-			{
-				found = true;
-			}
-			if(JUnitUtil.isTestAnnotated(method))
-			{
-				testAnnotated = true;
-			}
-		}
-		if(!found)
-		{
-			throw new RuntimeConfigurationWarning(ExecutionBundle.message("test.method.doesnt.exist.error.message", methodName));
-		}
+        String methodName = data.getMethodName();
+        String methodNameWithSignature = data.getMethodNameWithSignature();
+        if (methodName == null || methodName.trim().length() == 0) {
+            throw new RuntimeConfigurationError(ExecutionBundle.message("method.name.not.specified.error.message"));
+        }
+        JUnitUtil.TestMethodFilter filter = new JUnitUtil.TestMethodFilter(psiClass);
+        boolean found = false;
+        boolean testAnnotated = false;
+        for (PsiMethod method : psiClass.findMethodsByName(methodName, true)) {
+            if (filter.value(method) && Comparing.equal(methodNameWithSignature, JUnitConfiguration.Data.getMethodPresentation(method))) {
+                found = true;
+            }
+            if (JUnitUtil.isTestAnnotated(method)) {
+                testAnnotated = true;
+            }
+        }
+        if (!found) {
+            throw new RuntimeConfigurationWarning(ExecutionBundle.message("test.method.doesnt.exist.error.message", methodName));
+        }
 
-		if(!AnnotationUtil.isAnnotated(psiClass, JUnitUtil.RUN_WITH, AnnotationUtil.CHECK_HIERARCHY) && !testAnnotated)
-		{
-			PsiClass testCaseClass = JUnitUtil.getTestCaseClass(configurationModule.getModule());
-			if (testCaseClass != null && !psiClass.isInheritor(testCaseClass, true))
-			{
-				throw new RuntimeConfigurationError(ExecutionBundle.message("class.isnt.inheritor.of.testcase.error.message", testClass));
-			}
-		}
-	}
+        if (!AnnotationUtil.isAnnotated(psiClass, JUnitUtil.RUN_WITH, AnnotationUtil.CHECK_HIERARCHY) && !testAnnotated) {
+            PsiClass testCaseClass = JUnitUtil.getTestCaseClass(configurationModule.getModule());
+            if (testCaseClass != null && !psiClass.isInheritor(testCaseClass, true)) {
+                throw new RuntimeConfigurationError(ExecutionBundle.message("class.isnt.inheritor.of.testcase.error.message", testClass));
+            }
+        }
+    }
 }

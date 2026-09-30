@@ -8,3 +8,61 @@ inspections.migrate.assert.to.assertj.static.import.option:
   text: "Statically import AssertJ's methods"
 inspections.migrate.assert.to.assertj.description:
   text: "Assert expression <code>#ref</code> can be replaced with ''{0}'' call #loc"
+junit.configuration.kind.all.in.package:
+  text: All in package
+junit.configuration.kind.all.in.directory:
+  text: All in directory
+junit.configuration.kind.by.pattern:
+  text: Pattern
+junit.configuration.kind.class:
+  text: Class
+junit.configuration.kind.method:
+  text: Method
+junit.configuration.kind.category:
+  text: Category
+junit.configuration.kind.by.unique.id:
+  text: UniqueId
+junit.configuration.kind.by.source.position:
+  text: Through source location
+junit.configuration.kind.by.source.changes:
+  text: Over changes in sources
+junit.configuration.directory.label:
+  text: 'Directory:'
+junit.configuration.pattern.label:
+  text: 'Pattern:'
+junit.configuration.category.label:
+  text: 'Category:'
+junit.configuration.unique.id.label:
+  text: 'UniqueId:'
+junit.configuration.change.list.label:
+  text: 'Change list:'
+junit.configuration.change.list.all:
+  text: All
+junit.configuration.fork.mode.label:
+  text: 'Fork mode:'
+junit.configuration.fork.mode.none:
+  text: None
+junit.configuration.fork.mode.method:
+  text: Method
+junit.configuration.fork.mode.class:
+  text: Class
+junit.configuration.repeat.label:
+  text: 'Repeat:'
+junit.configuration.repeat.count.label:
+  text: 'Repeat count:'
+junit.configuration.repeat.mode.once:
+  text: Once
+junit.configuration.repeat.mode.n.times:
+  text: N times
+junit.configuration.repeat.mode.until.failure:
+  text: Until failure
+junit.configuration.repeat.mode.until.stopped:
+  text: Until stopped
+junit.configuration.choose.package.action:
+  text: Choose Package
+junit.configuration.add.test.class.action:
+  text: Add Test Class
+junit.configuration.choose.method.action:
+  text: Choose Method
+category.interface.dialog.title:
+  text: Category Interface
