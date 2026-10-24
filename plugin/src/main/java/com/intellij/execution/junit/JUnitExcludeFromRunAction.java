@@ -19,6 +19,9 @@ package com.intellij.execution.junit;
 import com.intellij.java.execution.impl.actions.AbstractExcludeFromRunAction;
 import consulo.execution.configuration.RunConfiguration;
 
+import java.util.AbstractSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public class JUnitExcludeFromRunAction extends AbstractExcludeFromRunAction<JUnitConfiguration>
@@ -26,12 +29,26 @@ public class JUnitExcludeFromRunAction extends AbstractExcludeFromRunAction<JUni
 	@Override
 	protected Set<String> getPattern(JUnitConfiguration configuration)
 	{
-		return configuration.getPersistentData().getPatterns();
+		List<String> patterns = configuration.getOptions().getPatterns();
+		return new AbstractSet<>()
+		{
+			@Override
+			public Iterator<String> iterator()
+			{
+				return patterns.iterator();
+			}
+
+			@Override
+			public int size()
+			{
+				return patterns.size();
+			}
+		};
 	}
 
 	@Override
 	protected boolean isPatternBasedConfiguration(RunConfiguration configuration)
 	{
-		return configuration instanceof JUnitConfiguration && ((JUnitConfiguration) configuration).getPersistentData().TEST_OBJECT == JUnitConfiguration.TEST_PATTERN;
+		return configuration instanceof JUnitConfiguration && ((JUnitConfiguration) configuration).getOptions().getTestObject().equals(JUnitConfiguration.TEST_PATTERN);
 	}
 }

@@ -16,6 +16,7 @@
 package com.intellij.execution.junit.testDiscovery;
 
 import com.intellij.execution.junit.JUnitConfiguration;
+import com.intellij.execution.junit.JUnitConfigurationOptions;
 import consulo.execution.runner.ExecutionEnvironment;
 import consulo.util.lang.Pair;
 
@@ -35,7 +36,7 @@ public class TestBySource extends JUnitTestDiscoveryRunnableState
 	@Override
 	protected Pair<String, String> getPosition()
 	{
-		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		return Pair.create(data.getMainClassName(), data.getMethodName());
+		JUnitConfigurationOptions data = getConfiguration().getOptions();
+		return Pair.create(data.getMainClassName(), getConfiguration().getMethodNameWithoutSignature());
 	}
 }

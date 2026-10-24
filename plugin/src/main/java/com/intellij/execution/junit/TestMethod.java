@@ -35,8 +35,8 @@ class TestMethod extends TestObject {
     @Override
     protected OwnJavaParameters createJavaParameters() throws ExecutionException {
         OwnJavaParameters javaParameters = createDefaultJavaParameters();
-        JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-        javaParameters.getProgramParametersList().add(getRuntimeMainClassName() + "," + data.getMethodNameWithSignature());
+        JUnitConfigurationOptions data = getConfiguration().getOptions();
+        javaParameters.getProgramParametersList().add(getRuntimeMainClassName() + "," + data.getMethodName());
         return javaParameters;
     }
 
@@ -46,14 +46,14 @@ class TestMethod extends TestObject {
 
     @Override
     public String suggestActionName() {
-        return ProgramRunnerUtil.shortenName(getConfiguration().getPersistentData().METHOD_NAME, 2) + "()";
+        return ProgramRunnerUtil.shortenName(getConfiguration().getOptions().getMethodName(), 2) + "()";
     }
 
     @Override
     public RefactoringElementListener getListener(PsiElement element, final JUnitConfiguration configuration) {
         if (element instanceof PsiMethod) {
             PsiMethod method = (PsiMethod) element;
-            if (!method.getName().equals(configuration.getPersistentData().getMethodName())) {
+            if (!method.getName().equals(configuration.getMethodNameWithoutSignature())) {
                 return null;
             }
             //noinspection ConstantConditions
@@ -64,7 +64,7 @@ class TestMethod extends TestObject {
                 @Override
                 public void elementRenamedOrMoved(@Nonnull PsiElement newElement) {
                     boolean generatedName = configuration.isGeneratedName();
-                    configuration.getPersistentData().setTestMethod(PsiLocation.fromPsiElement((PsiMethod) newElement));
+                    configuration.setTestMethod(PsiLocation.fromPsiElement((PsiMethod) newElement));
                     if (generatedName) {
                         configuration.setGeneratedName();
                     }
@@ -77,7 +77,7 @@ class TestMethod extends TestObject {
                         return;
                     }
                     boolean generatedName = configuration.isGeneratedName();
-                    configuration.getPersistentData().METHOD_NAME = oldQualifiedName.substring(methodIdx);
+                    configuration.getOptions().setMethodName(oldQualifiedName.substring(methodIdx));
                     if (generatedName) {
                         configuration.setGeneratedName();
                     }
@@ -99,27 +99,26 @@ class TestMethod extends TestObject {
         if (testClass == null) {
             return false;
         }
-        JUnitConfiguration.Data data = configuration.getPersistentData();
+        JUnitConfigurationOptions data = configuration.getOptions();
     /*final PsiClass containingClass = testMethod.getContainingClass();
     if (testClass == null && (containingClass == null || !containingClass.hasModifierProperty(PsiModifier.ABSTRACT))) return false;
 
     if (containingClass != null && containingClass.hasModifierProperty(PsiModifier.ABSTRACT)) {
       return Comparing.equal(testMethod.getName(), data.getMethodName());
     }*/
-        return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), data.getMainClassName()) && Comparing.equal(JUnitConfiguration.Data.getMethodPresentation(testMethod), data
-            .getMethodNameWithSignature());
+        return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), data.getMainClassName()) && Comparing.equal(JUnitConfiguration.getMethodPresentation(testMethod), data.getMethodName());
     }
 
     @Override
     public void checkConfiguration() throws RuntimeConfigurationException {
         super.checkConfiguration();
         JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
-        JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+        JUnitConfigurationOptions data = getConfiguration().getOptions();
         String testClass = data.getMainClassName();
         PsiClass psiClass = configurationModule.checkModuleAndClassName(testClass, ExecutionBundle.message("no.test.class.specified.error.text"));
 
-        String methodName = data.getMethodName();
-        String methodNameWithSignature = data.getMethodNameWithSignature();
+        String methodName = getConfiguration().getMethodNameWithoutSignature();
+        String methodNameWithSignature = data.getMethodName();
         if (methodName == null || methodName.trim().length() == 0) {
             throw new RuntimeConfigurationError(ExecutionBundle.message("method.name.not.specified.error.message"));
         }
@@ -127,7 +126,7 @@ class TestMethod extends TestObject {
         boolean found = false;
         boolean testAnnotated = false;
         for (PsiMethod method : psiClass.findMethodsByName(methodName, true)) {
-            if (filter.value(method) && Comparing.equal(methodNameWithSignature, JUnitConfiguration.Data.getMethodPresentation(method))) {
+            if (filter.value(method) && Comparing.equal(methodNameWithSignature, JUnitConfiguration.getMethodPresentation(method))) {
                 found = true;
             }
             if (JUnitUtil.isTestAnnotated(method)) {

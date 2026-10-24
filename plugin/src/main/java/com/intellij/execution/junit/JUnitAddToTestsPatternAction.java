@@ -21,6 +21,9 @@ import consulo.execution.action.RunConfigurationProducer;
 import consulo.execution.configuration.ConfigurationType;
 
 import jakarta.annotation.Nonnull;
+import java.util.AbstractSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public class JUnitAddToTestsPatternAction extends AbstractAddToTestsPatternAction<JUnitConfiguration>
@@ -42,12 +45,36 @@ public class JUnitAddToTestsPatternAction extends AbstractAddToTestsPatternActio
 	@Override
 	protected boolean isPatternBasedConfiguration(JUnitConfiguration configuration)
 	{
-		return configuration.getPersistentData().TEST_OBJECT == JUnitConfiguration.TEST_PATTERN;
+		return JUnitConfiguration.TEST_PATTERN.equals(configuration.getOptions().getTestObject());
 	}
 
 	@Override
 	protected Set<String> getPatterns(JUnitConfiguration configuration)
 	{
-		return configuration.getPersistentData().getPatterns();
+		List<String> patterns = configuration.getOptions().getPatterns();
+		return new AbstractSet<>()
+		{
+			@Override
+			public boolean add(String pattern)
+			{
+				if(patterns.contains(pattern))
+				{
+					return false;
+				}
+				return patterns.add(pattern);
+			}
+
+			@Override
+			public Iterator<String> iterator()
+			{
+				return patterns.iterator();
+			}
+
+			@Override
+			public int size()
+			{
+				return patterns.size();
+			}
+		};
 	}
 }

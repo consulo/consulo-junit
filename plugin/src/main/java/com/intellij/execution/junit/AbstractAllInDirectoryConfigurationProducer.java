@@ -53,9 +53,9 @@ public abstract class AbstractAllInDirectoryConfigurationProducer extends JUnitC
             return false;
         }
         setupConfigurationModule(context, configuration);
-        JUnitConfiguration.Data data = configuration.getPersistentData();
+        JUnitConfigurationOptions data = configuration.getOptions();
         data.setDirName(virtualFile.getPath());
-        data.TEST_OBJECT = JUnitConfiguration.TEST_DIRECTORY;
+        data.setTestObject(JUnitConfiguration.TEST_DIRECTORY);
         configuration.setGeneratedName();
         return true;
     }

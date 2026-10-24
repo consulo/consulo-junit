@@ -37,10 +37,10 @@ public abstract class AbstractAllInPackageConfigurationProducer extends JUnitCon
         )) {
             return false;
         }
-        JUnitConfiguration.Data data = configuration.getPersistentData();
-        data.PACKAGE_NAME = psiPackage.getQualifiedName();
-        data.TEST_OBJECT = JUnitConfiguration.TEST_PACKAGE;
-        data.setScope(setupPackageConfiguration(context, configuration, data.getScope()));
+        JUnitConfigurationOptions data = configuration.getOptions();
+        data.setPackageName(psiPackage.getQualifiedName());
+        data.setTestObject(JUnitConfiguration.TEST_PACKAGE);
+        configuration.setTestSearchScope(setupPackageConfiguration(context, configuration, configuration.getTestSearchScope()));
         configuration.setGeneratedName();
         return true;
     }

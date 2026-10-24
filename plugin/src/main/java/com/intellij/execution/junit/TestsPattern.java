@@ -50,13 +50,13 @@ public class TestsPattern extends TestPackage
 	}
 
 	@Override
-	protected TestClassFilter getClassFilter(JUnitConfiguration.Data data) throws CantRunException
+	protected TestClassFilter getClassFilter(JUnitConfigurationOptions data) throws CantRunException
 	{
-		return TestClassFilter.create(getSourceScope(), getConfiguration().getConfigurationModule().getModule(), data.getPatternPresentation());
+		return TestClassFilter.create(getSourceScope(), getConfiguration().getConfigurationModule().getModule(), getConfiguration().getPatternPresentation());
 	}
 
 	@Override
-	protected String getPackageName(JUnitConfiguration.Data data)
+	protected String getPackageName(JUnitConfigurationOptions data)
 	{
 		return "";
 	}
@@ -64,7 +64,7 @@ public class TestsPattern extends TestPackage
 	@Override
 	public SearchForTestsTask createSearchingForTestsTask()
 	{
-		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		final JUnitConfigurationOptions data = getConfiguration().getOptions();
 		final Project project = getConfiguration().getProject();
 		final Set<String> classNames = new LinkedHashSet<>();
 		boolean hasPattern = false;
@@ -96,7 +96,7 @@ public class TestsPattern extends TestPackage
 				@Override
 				protected void onFound() throws ExecutionException
 				{
-					Function<String, String> nameFunction = StringUtil.isEmpty(data.METHOD_NAME) ? Function.identity() : className -> className;
+					Function<String, String> nameFunction = StringUtil.isEmpty(data.getMethodName()) ? Function.identity() : className -> className;
 					addClassesListToJavaParameters(classNames, nameFunction, "", false, getJavaParameters());
 				}
 			};
@@ -108,7 +108,7 @@ public class TestsPattern extends TestPackage
 	@Override
 	protected boolean acceptClassName(String className)
 	{
-		String pattern = getConfiguration().getPersistentData().getPatternPresentation();
+		String pattern = getConfiguration().getPatternPresentation();
 		return TestClassFilter.getClassNamePredicate(pattern).test(className);
 	}
 
@@ -136,8 +136,7 @@ public class TestsPattern extends TestPackage
 	public RefactoringElementListener getListener(PsiElement element, JUnitConfiguration configuration)
 	{
 		RefactoringElementListenerComposite composite = new RefactoringElementListenerComposite();
-		JUnitConfiguration.Data data = configuration.getPersistentData();
-		final Set<String> patterns = data.getPatterns();
+		final Set<String> patterns = configuration.getPatterns();
 		for(String pattern : patterns)
 		{
 			final PsiClass testClass = getTestClass(configuration.getProject(), pattern.trim());
@@ -165,6 +164,7 @@ public class TestsPattern extends TestPackage
 						}
 						patterns.clear();
 						patterns.addAll(replaced);
+						configuration.setPatterns(replaced);
 					}
 
 					@Override
@@ -194,7 +194,7 @@ public class TestsPattern extends TestPackage
 	@Override
 	public boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
 	{
-	/*if (testMethod != null && Comparing.strEqual(testMethod.getName(), configuration.getPersistentData().METHOD_NAME)) {
+	/*if (testMethod != null && Comparing.strEqual(testMethod.getName(), configuration.getOptions().getMethodName())) {
       return true;
     }*/
 		return false;
@@ -203,8 +203,7 @@ public class TestsPattern extends TestPackage
 	@Override
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
-		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		Set<String> patterns = data.getPatterns();
+		Set<String> patterns = getConfiguration().getPatterns();
 		if(patterns.isEmpty())
 		{
 			throw new RuntimeConfigurationWarning("No pattern selected");

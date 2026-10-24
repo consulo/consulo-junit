@@ -166,7 +166,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 
     protected String getRuntimeMainClassName() {
         JUnitConfiguration configuration = getConfiguration();
-        String className = configuration.getPersistentData().getMainClassName();
+        String className = configuration.getOptions().getMainClassName();
         return ReadAction.compute(() -> {
             PsiClass psiClass = configuration.getConfigurationModule().findClass(className);
             String runtimeName = psiClass == null ? null : JavaExecutionUtil.getRuntimeQualifiedName(psiClass);
@@ -297,19 +297,19 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
                     testNames.add(name);
                 }
             }
-            JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+            JUnitConfigurationOptions data = getConfiguration().getOptions();
             if (perModule != null) {
                 for (List<String> perModuleClasses : perModule.values()) {
                     Collections.sort(perModuleClasses);
                     testNames.addAll(perModuleClasses);
                 }
             }
-            else if (JUnitConfiguration.TEST_PACKAGE.equals(data.TEST_OBJECT)) {
+            else if (JUnitConfiguration.TEST_PACKAGE.equals(data.getTestObject())) {
                 Collections.sort(testNames); //sort tests in FQN order
             }
 
-            String category = JUnitConfiguration.TEST_CATEGORY.equals(data.TEST_OBJECT) ? data.getCategory() : "";
-            String filters = JUnitConfiguration.TEST_PATTERN.equals(data.TEST_OBJECT) ? data.getPatternPresentation() : "";
+            String category = JUnitConfiguration.TEST_CATEGORY.equals(data.getTestObject()) ? data.getCategoryName() : "";
+            String filters = JUnitConfiguration.TEST_PATTERN.equals(data.getTestObject()) ? getConfiguration().getPatternPresentation() : "";
             JUnitStarter.printClassesList(testNames, packageName, category, filters, myTempFile);
 
             writeClassesPerModule(packageName, javaParameters, perModule);
@@ -356,7 +356,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 
     @Override
     protected TestSearchScope getScope() {
-        return getConfiguration().getPersistentData().getScope();
+        return getConfiguration().getTestSearchScope();
     }
 
     @Override
@@ -379,10 +379,10 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
 
     private String getRunnerInner() {
         GlobalSearchScope globalSearchScope = getScopeForJUnit(myConfiguration);
-        JUnitConfiguration.Data data = myConfiguration.getPersistentData();
+        JUnitConfigurationOptions data = myConfiguration.getOptions();
         Project project = myConfiguration.getProject();
-        boolean isMethodConfiguration = JUnitConfiguration.TEST_METHOD.equals(data.TEST_OBJECT);
-        boolean isClassConfiguration = JUnitConfiguration.TEST_CLASS.equals(data.TEST_OBJECT);
+        boolean isMethodConfiguration = JUnitConfiguration.TEST_METHOD.equals(data.getTestObject());
+        boolean isClassConfiguration = JUnitConfiguration.TEST_CLASS.equals(data.getTestObject());
         PsiClass psiClass = isMethodConfiguration || isClassConfiguration ? JavaExecutionUtil.findMainClass(project, data.getMainClassName(), globalSearchScope) : null;
         if (psiClass != null) {
             if (JUnitUtil.isJUnit5TestClass(psiClass, false)) {
@@ -393,7 +393,7 @@ public abstract class TestObject extends JavaTestFrameworkRunnableState<JUnitCon
                 return JUnitStarter.JUNIT4_PARAMETER;
             }
 
-            String methodName = data.getMethodName();
+            String methodName = myConfiguration.getMethodNameWithoutSignature();
             PsiMethod[] methods = psiClass.findMethodsByName(methodName, true);
             for (PsiMethod method : methods) {
                 if (JUnitUtil.isTestAnnotated(method)) {

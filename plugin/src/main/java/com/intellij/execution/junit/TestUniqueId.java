@@ -23,6 +23,7 @@ import consulo.project.Project;
 
 import jakarta.annotation.Nonnull;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 public class TestUniqueId extends TestObject
@@ -36,8 +37,8 @@ public class TestUniqueId extends TestObject
 	protected OwnJavaParameters createJavaParameters() throws ExecutionException
 	{
 		OwnJavaParameters javaParameters = super.createJavaParameters();
-		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		addClassesListToJavaParameters(Arrays.asList(data.getUniqueIds()), getUniqueIdPresentation(), "", true, javaParameters);
+		JUnitConfigurationOptions data = getConfiguration().getOptions();
+		addClassesListToJavaParameters(data.getUniqueIds(), getUniqueIdPresentation(), "", true, javaParameters);
 		return javaParameters;
 	}
 
@@ -103,8 +104,8 @@ public class TestUniqueId extends TestObject
 	@Override
 	public String suggestActionName()
 	{
-		String[] ids = getConfiguration().getPersistentData().getUniqueIds();
-		return JavaExecutionUtil.getShortClassName(ids.length > 0 ? ids[0] : "<empty>");
+		List<String> ids = getConfiguration().getOptions().getUniqueIds();
+		return JavaExecutionUtil.getShortClassName(!ids.isEmpty() ? ids.get(0) : "<empty>");
 	}
 
 	@Override
@@ -124,8 +125,8 @@ public class TestUniqueId extends TestObject
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
 		super.checkConfiguration();
-		String[] ids = getConfiguration().getPersistentData().getUniqueIds();
-		if(ids == null || ids.length == 0)
+		List<String> ids = getConfiguration().getOptions().getUniqueIds();
+		if(ids.isEmpty())
 		{
 			throw new RuntimeConfigurationException("No unique id specified");
 		}

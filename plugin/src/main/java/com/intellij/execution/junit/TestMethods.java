@@ -56,7 +56,7 @@ public class TestMethods extends TestMethod {
     @Override
     protected OwnJavaParameters createJavaParameters() throws ExecutionException {
         OwnJavaParameters javaParameters = super.createDefaultJavaParameters();
-        JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+        JUnitConfigurationOptions data = getConfiguration().getOptions();
         RunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
         Project project = configurationModule.getProject();
         Module module = configurationModule.getModule();
@@ -92,13 +92,12 @@ public class TestMethods extends TestMethod {
     @Nullable
     @Override
     public SourceScope getSourceScope() {
-        JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-        return data.getScope().getSourceScope(getConfiguration());
+        return getConfiguration().getTestSearchScope().getSourceScope(getConfiguration());
     }
 
     @Override
     protected boolean configureByModule(Module module) {
-        return super.configureByModule(module) && getConfiguration().getPersistentData().getScope() != TestSearchScope.WHOLE_PROJECT;
+        return super.configureByModule(module) && getConfiguration().getTestSearchScope() != TestSearchScope.WHOLE_PROJECT;
     }
 
     @Nullable
@@ -117,7 +116,7 @@ public class TestMethods extends TestMethod {
             };
             if (containingClass != null) {
                 String proxyName = testInfo.getName();
-                String methodWithSignaturePresentation = JUnitConfiguration.Data.getMethodPresentation(method);
+                String methodWithSignaturePresentation = JUnitConfiguration.getMethodPresentation(method);
                 return JavaExecutionUtil.getRuntimeQualifiedName(containingClass) + "," +
                     (proxyName.contains(methodWithSignaturePresentation)
                         ? proxyName.substring(proxyName.indexOf(methodWithSignaturePresentation))

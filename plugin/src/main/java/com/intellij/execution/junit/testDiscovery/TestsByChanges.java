@@ -29,7 +29,7 @@ public class TestsByChanges extends JUnitTestDiscoveryRunnableState
 	@Override
 	protected String getChangeList()
 	{
-		return getConfiguration().getPersistentData().getChangeList();
+		return getConfiguration().getOptions().getChangeList();
 	}
 
 	@Override

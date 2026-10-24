@@ -40,7 +40,7 @@ public class PatternConfigurationProducer extends AbstractPatternBasedConfigurat
     @Override
     protected String getMethodPresentation(PsiMember member) {
         return member instanceof PsiMethod method
-            ? JUnitConfiguration.Data.getMethodPresentation(method)
+            ? JUnitConfiguration.getMethodPresentation(method)
             : super.getMethodPresentation(member);
     }
 
@@ -57,10 +57,9 @@ public class PatternConfigurationProducer extends AbstractPatternBasedConfigurat
             return false;
         }
         sourceElement.set(element);
-        JUnitConfiguration.Data data = configuration.getPersistentData();
-        data.setPatterns(classes);
-        data.TEST_OBJECT = JUnitConfiguration.TEST_PATTERN;
-        data.setScope(setupPackageConfiguration(context, configuration, data.getScope()));
+        configuration.setPatterns(classes);
+        configuration.getOptions().setTestObject(JUnitConfiguration.TEST_PATTERN);
+        configuration.setTestSearchScope(setupPackageConfiguration(context, configuration, configuration.getTestSearchScope()));
         configuration.setGeneratedName();
         Location contextLocation = context.getLocation();
         if (contextLocation instanceof PsiMemberParameterizedLocation memberParameterizedLocation) {
@@ -75,7 +74,7 @@ public class PatternConfigurationProducer extends AbstractPatternBasedConfigurat
     @Override
     @RequiredReadAction
     protected Module findModule(JUnitConfiguration configuration, Module contextModule) {
-        Set<String> patterns = configuration.getPersistentData().getPatterns();
+        Set<String> patterns = configuration.getPatterns();
         return findModule(configuration, contextModule, patterns);
     }
 
@@ -87,7 +86,7 @@ public class PatternConfigurationProducer extends AbstractPatternBasedConfigurat
             if (differentParamSet(unitConfiguration, context.getLocation())) {
                 return false;
             }
-            Set<String> patterns = unitConfiguration.getPersistentData().getPatterns();
+            Set<String> patterns = unitConfiguration.getPatterns();
             if (isConfiguredFromContext(context, patterns)) {
                 return true;
             }

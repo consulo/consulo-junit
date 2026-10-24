@@ -16,6 +16,7 @@
 package com.intellij.execution.junit.testDiscovery;
 
 import com.intellij.execution.junit.JUnitConfiguration;
+import com.intellij.execution.junit.JUnitConfigurationOptions;
 import com.intellij.execution.junit.JUnitConfigurationType;
 import com.intellij.java.execution.impl.JavaTestConfigurationBase;
 import com.intellij.java.execution.impl.testDiscovery.TestDiscoveryConfigurationProducer;
@@ -35,9 +36,9 @@ public class JUnitTestDiscoveryConfigurationProducer extends TestDiscoveryConfig
 
     @Override
     protected Couple<String> getPosition(JavaTestConfigurationBase configuration) {
-        JUnitConfiguration.Data data = ((JUnitConfiguration)configuration).getPersistentData();
-        if (data.TEST_OBJECT.equals(JUnitConfiguration.BY_SOURCE_POSITION)) {
-            return Couple.of(data.getMainClassName(), data.getMethodName());
+        JUnitConfigurationOptions data = ((JUnitConfiguration)configuration).getOptions();
+        if (data.getTestObject().equals(JUnitConfiguration.BY_SOURCE_POSITION)) {
+            return Couple.of(data.getMainClassName(), ((JUnitConfiguration)configuration).getMethodNameWithoutSignature());
         }
         return null;
     }

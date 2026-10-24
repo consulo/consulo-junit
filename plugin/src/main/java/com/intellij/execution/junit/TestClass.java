@@ -55,7 +55,7 @@ class TestClass extends TestObject {
 
     @Override
     public String suggestActionName() {
-        String name = getConfiguration().getPersistentData().MAIN_CLASS_NAME;
+        String name = getConfiguration().getOptions().getMainClassName();
         if (name != null && name.endsWith(".")) {
             return name;
         }
@@ -77,13 +77,13 @@ class TestClass extends TestObject {
             // 'test class' configuration is not equal to the 'test method' configuration!
             return false;
         }
-        return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), configuration.getPersistentData().getMainClassName());
+        return Comparing.equal(JavaExecutionUtil.getRuntimeQualifiedName(testClass), configuration.getOptions().getMainClassName());
     }
 
     @Override
     public void checkConfiguration() throws RuntimeConfigurationException {
         super.checkConfiguration();
-        String testClassName = getConfiguration().getPersistentData().getMainClassName();
+        String testClassName = getConfiguration().getOptions().getMainClassName();
         JavaRunConfigurationModule configurationModule = getConfiguration().getConfigurationModule();
         PsiClass testClass = configurationModule.checkModuleAndClassName(testClassName, ExecutionBundle.message("no.test.class.specified.error.text"));
         if (!JUnitUtil.isTestClass(testClass)) {

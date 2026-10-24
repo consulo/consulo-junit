@@ -66,3 +66,11 @@ junit.configuration.choose.method.action:
   text: Choose Method
 category.interface.dialog.title:
   text: Category Interface
+run.configuration.fragment.group.junit:
+  text: JUnit
+run.configuration.fragment.test.kind:
+  text: Test kind
+run.configuration.fragment.fork.mode:
+  text: Fork mode
+run.configuration.fragment.repeat:
+  text: Repeat

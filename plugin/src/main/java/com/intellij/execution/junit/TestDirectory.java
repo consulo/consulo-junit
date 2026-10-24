@@ -55,7 +55,7 @@ class TestDirectory extends TestPackage {
     @Nullable
     @Override
     public SourceScope getSourceScope() {
-        String dirName = getConfiguration().getPersistentData().getDirName();
+        String dirName = getConfiguration().getOptions().getDirName();
         VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
         final GlobalSearchScope globalSearchScope = file == null ? GlobalSearchScope.EMPTY_SCOPE : GlobalSearchScopesCore.directoryScope(
             getConfiguration().getProject(),
@@ -91,7 +91,7 @@ class TestDirectory extends TestPackage {
     @Override
     protected Path getRootPath() {
         VirtualFile file = LocalFileSystem.getInstance()
-            .findFileByPath(FileUtil.toSystemIndependentName(getConfiguration().getPersistentData().getDirName()));
+            .findFileByPath(FileUtil.toSystemIndependentName(getConfiguration().getOptions().getDirName()));
         if (file == null) {
             return null;
         }
@@ -115,7 +115,7 @@ class TestDirectory extends TestPackage {
             getConfiguration().getProject(),
             getConfiguration().getConfigurationModule().getModule()
         );
-        String dirName = getConfiguration().getPersistentData().getDirName();
+        String dirName = getConfiguration().getOptions().getDirName();
         if (dirName == null || dirName.isEmpty()) {
             throw new RuntimeConfigurationError(LocalizeValue.localizeTODO("Directory is not specified"));
         }
@@ -130,17 +130,17 @@ class TestDirectory extends TestPackage {
     }
 
     @Override
-    protected GlobalSearchScope filterScope(JUnitConfiguration.Data data) throws CantRunException {
+    protected GlobalSearchScope filterScope(JUnitConfigurationOptions data) throws CantRunException {
         return GlobalSearchScope.allScope(getConfiguration().getProject());
     }
 
     @Override
-    protected String getPackageName(JUnitConfiguration.Data data) throws CantRunException {
+    protected String getPackageName(JUnitConfigurationOptions data) throws CantRunException {
         return "";
     }
 
     @Override
-    protected PsiPackage getPackage(JUnitConfiguration.Data data) throws CantRunException {
+    protected PsiPackage getPackage(JUnitConfigurationOptions data) throws CantRunException {
         String dirName = data.getDirName();
         VirtualFile file = LocalFileSystem.getInstance().findFileByPath(FileUtil.toSystemIndependentName(dirName));
         if (file == null) {
@@ -155,7 +155,7 @@ class TestDirectory extends TestPackage {
 
     @Override
     public String suggestActionName() {
-        JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+        JUnitConfigurationOptions data = getConfiguration().getOptions();
         String dirName = data.getDirName();
         return dirName.isEmpty()
             ? ExecutionLocalize.allTestsScopePresentableText().get()
@@ -170,9 +170,9 @@ class TestDirectory extends TestPackage {
         PsiPackage testPackage,
         PsiDirectory testDir
     ) {
-        if (JUnitConfiguration.TEST_DIRECTORY.equals(configuration.getPersistentData().TEST_OBJECT) && testDir != null) {
+        if (JUnitConfiguration.TEST_DIRECTORY.equals(configuration.getOptions().getTestObject()) && testDir != null) {
             if (Comparing.strEqual(
-                FileUtil.toSystemIndependentName(configuration.getPersistentData().getDirName()),
+                FileUtil.toSystemIndependentName(configuration.getOptions().getDirName()),
                 testDir.getVirtualFile().getPath()
             )) {
                 return true;

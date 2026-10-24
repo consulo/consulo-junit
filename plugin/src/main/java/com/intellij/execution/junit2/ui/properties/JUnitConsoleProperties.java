@@ -16,6 +16,7 @@
 package com.intellij.execution.junit2.ui.properties;
 
 import com.intellij.execution.junit.JUnitConfiguration;
+import com.intellij.execution.junit.JUnitConfigurationOptions;
 import com.intellij.execution.junit2.ui.actions.RerunFailedTestsAction;
 import com.intellij.java.execution.impl.testframework.JavaAwareTestConsoleProperties;
 import com.intellij.java.execution.impl.testframework.JavaTestLocator;
@@ -44,12 +45,12 @@ public class JUnitConsoleProperties extends JavaAwareTestConsoleProperties<JUnit
 	@Override
 	protected GlobalSearchScope initScope()
 	{
-		JUnitConfiguration.Data persistentData = getConfiguration().getPersistentData();
-		String testObject = persistentData.TEST_OBJECT;
+		JUnitConfigurationOptions persistentData = getConfiguration().getOptions();
+		String testObject = persistentData.getTestObject();
 		//ignore invisible setting
 		if(JUnitConfiguration.TEST_CATEGORY.equals(testObject) || JUnitConfiguration.TEST_PATTERN.equals(testObject) || JUnitConfiguration.TEST_PACKAGE.equals(testObject))
 		{
-			SourceScope sourceScope = persistentData.getScope().getSourceScope(getConfiguration());
+			SourceScope sourceScope = getConfiguration().getTestSearchScope().getSourceScope(getConfiguration());
 			return sourceScope != null ? sourceScope.getGlobalSearchScope() : GlobalSearchScope.allScope(getProject());
 		}
 		else

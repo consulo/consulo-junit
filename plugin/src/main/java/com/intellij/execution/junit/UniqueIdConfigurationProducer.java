@@ -51,9 +51,9 @@ public class UniqueIdConfigurationProducer extends JUnitConfigurationProducer {
         if (nodeIds == null || nodeIds.length == 0) {
             return false;
         }
-        JUnitConfiguration.Data data = configuration.getPersistentData();
-        data.setUniqueIds(nodeIds);
-        data.TEST_OBJECT = JUnitConfiguration.TEST_UNIQUE_ID;
+        JUnitConfigurationOptions data = configuration.getOptions();
+        data.setUniqueIds(Arrays.asList(nodeIds));
+        data.setTestObject(JUnitConfiguration.TEST_UNIQUE_ID);
         configuration.setGeneratedName();
         return true;
     }

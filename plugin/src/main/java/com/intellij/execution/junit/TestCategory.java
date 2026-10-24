@@ -43,7 +43,7 @@ class TestCategory extends TestPackage
 	}
 
 	@Override
-	protected GlobalSearchScope filterScope(JUnitConfiguration.Data data) throws CantRunException
+	protected GlobalSearchScope filterScope(JUnitConfigurationOptions data) throws CantRunException
 	{
 		return GlobalSearchScope.allScope(getConfiguration().getProject());
 	}
@@ -53,7 +53,7 @@ class TestCategory extends TestPackage
 	{
 		JavaParametersUtil.checkAlternativeJRE(getConfiguration());
 		ProgramParametersUtil.checkWorkingDirectoryExist(getConfiguration(), getConfiguration().getProject(), getConfiguration().getConfigurationModule().getModule());
-		String category = getConfiguration().getPersistentData().getCategory();
+		String category = getConfiguration().getOptions().getCategoryName();
 		if(category == null || category.isEmpty())
 		{
 			throw new RuntimeConfigurationError("Category is not specified");
@@ -77,7 +77,7 @@ class TestCategory extends TestPackage
 	@Override
 	public String suggestActionName()
 	{
-		return "Tests of " + getConfiguration().getPersistentData().getCategory();
+		return "Tests of " + getConfiguration().getOptions().getCategoryName();
 	}
 
 	@Override

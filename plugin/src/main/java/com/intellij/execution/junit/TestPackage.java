@@ -73,14 +73,13 @@ public class TestPackage extends TestObject
 	@Override
 	public SourceScope getSourceScope()
 	{
-		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
-		return data.getScope().getSourceScope(getConfiguration());
+		return getConfiguration().getTestSearchScope().getSourceScope(getConfiguration());
 	}
 
 	@Override
 	public SearchForTestsTask createSearchingForTestsTask()
 	{
-		final JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		final JUnitConfigurationOptions data = getConfiguration().getOptions();
 
 		return new SearchForTestsTask(getConfiguration().getProject(), myServerSocket)
 		{
@@ -160,7 +159,7 @@ public class TestPackage extends TestObject
 		return false;
 	}
 
-	protected String getPackageName(JUnitConfiguration.Data data) throws CantRunException
+	protected String getPackageName(JUnitConfigurationOptions data) throws CantRunException
 	{
 		return getPackage(data).getQualifiedName();
 	}
@@ -179,13 +178,13 @@ public class TestPackage extends TestObject
 	@Override
 	protected boolean configureByModule(Module module)
 	{
-		return super.configureByModule(module) && getConfiguration().getPersistentData().getScope() != TestSearchScope.WHOLE_PROJECT;
+		return super.configureByModule(module) && getConfiguration().getTestSearchScope() != TestSearchScope.WHOLE_PROJECT;
 	}
 
-	protected TestClassFilter getClassFilter(JUnitConfiguration.Data data) throws CantRunException
+	protected TestClassFilter getClassFilter(JUnitConfigurationOptions data) throws CantRunException
 	{
 		Module module = getConfiguration().getConfigurationModule().getModule();
-		if(getConfiguration().getPersistentData().getScope() == TestSearchScope.WHOLE_PROJECT)
+		if(getConfiguration().getTestSearchScope() == TestSearchScope.WHOLE_PROJECT)
 		{
 			module = null;
 		}
@@ -193,7 +192,7 @@ public class TestPackage extends TestObject
 		return classFilter.intersectionWith(filterScope(data));
 	}
 
-	protected GlobalSearchScope filterScope(JUnitConfiguration.Data data) throws CantRunException
+	protected GlobalSearchScope filterScope(JUnitConfigurationOptions data) throws CantRunException
 	{
 		Ref<CantRunException> ref = new Ref<>();
 		GlobalSearchScope aPackage = ReadAction.compute(() ->
@@ -216,7 +215,7 @@ public class TestPackage extends TestObject
 		return aPackage;
 	}
 
-	protected PsiPackage getPackage(JUnitConfiguration.Data data) throws CantRunException
+	protected PsiPackage getPackage(JUnitConfigurationOptions data) throws CantRunException
 	{
 		Project project = getConfiguration().getProject();
 		String packageName = data.getPackageName();
@@ -232,7 +231,7 @@ public class TestPackage extends TestObject
 	@Override
 	public String suggestActionName()
 	{
-		JUnitConfiguration.Data data = getConfiguration().getPersistentData();
+		JUnitConfigurationOptions data = getConfiguration().getOptions();
 		if(data.getPackageName().trim().length() > 0)
 		{
 			return ExecutionBundle.message("test.in.scope.presentable.text", data.getPackageName());
@@ -253,14 +252,14 @@ public class TestPackage extends TestObject
 	@Override
 	public boolean isConfiguredByElement(JUnitConfiguration configuration, PsiClass testClass, PsiMethod testMethod, PsiPackage testPackage, PsiDirectory testDir)
 	{
-		return testPackage != null && Comparing.equal(testPackage.getQualifiedName(), configuration.getPersistentData().getPackageName());
+		return testPackage != null && Comparing.equal(testPackage.getQualifiedName(), configuration.getOptions().getPackageName());
 	}
 
 	@Override
 	public void checkConfiguration() throws RuntimeConfigurationException
 	{
 		super.checkConfiguration();
-		String packageName = getConfiguration().getPersistentData().getPackageName();
+		String packageName = getConfiguration().getOptions().getPackageName();
 		PsiPackage aPackage = JavaPsiFacade.getInstance(getConfiguration().getProject()).findPackage(packageName);
 		if(aPackage == null)
 		{
